@@ -1,0 +1,6 @@
+---
+description: agent files are first-class infrastructure
+alwaysApply: true
+---
+
+Read and follow `.agent/rules/agent-files-are-infrastructure.md`.

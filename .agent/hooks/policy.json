@@ -1,0 +1,34 @@
+{
+  "session_start_message": "Read .agent/commands/start-right-quick.md before substantive work.",
+  "quality_gate_message": "If Python or tooling files change, run uv run check before you stop.",
+  "blocked_shell_patterns": [
+    {
+      "pattern": "(^|\\s)git\\s+stash(\\s|$)",
+      "reason": "git stash is prohibited here because it can lose uncommitted work."
+    },
+    {
+      "pattern": "(^|\\s)git\\s+reset(\\s|$)",
+      "reason": "git reset is prohibited here because it can discard commits or changes."
+    },
+    {
+      "pattern": "(^|\\s)git\\s+checkout\\s+--(\\s|$)",
+      "reason": "git checkout -- is prohibited here because it discards uncommitted changes."
+    },
+    {
+      "pattern": "(^|\\s)git\\s+clean(\\s|$)",
+      "reason": "git clean is prohibited here because it deletes untracked files."
+    },
+    {
+      "pattern": "(^|\\s)git\\s+rebase(\\s|$)",
+      "reason": "git rebase is prohibited here because it rewrites history."
+    },
+    {
+      "pattern": "(^|\\s)--no-verify(\\s|$)",
+      "reason": "--no-verify is prohibited here because it bypasses git hooks."
+    },
+    {
+      "pattern": "(^|\\s)git\\s+push\\b[^\\n]*\\s(--force|-f)(\\s|$)",
+      "reason": "Force push is prohibited here because it overwrites remote history."
+    }
+  ]
+}

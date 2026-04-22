@@ -1,0 +1,2 @@
+description = "Consolidate documentation and check Practice fitness"
+prompt = "Read and follow `.agent/commands/consolidate-docs.md`."

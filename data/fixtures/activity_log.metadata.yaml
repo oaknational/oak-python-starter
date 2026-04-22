@@ -1,0 +1,13 @@
+name: activity-log
+description: Seed fixture for the activity-report demo CLI.
+source: handwritten example data for template verification
+rows: 4
+fields:
+  - name: date
+    type: iso-date
+  - name: category
+    type: string
+  - name: minutes
+    type: positive-integer
+  - name: notes
+    type: optional-string

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "uv run python tools/agent_hooks.py --platform github --event pre-tool",
+        "comment": "Block repo-canonical prohibited git and history-bypass commands",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}

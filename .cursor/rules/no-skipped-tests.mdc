@@ -1,0 +1,6 @@
+---
+description: no skipped tests
+alwaysApply: true
+---
+
+Read and follow `.agent/rules/no-skipped-tests.md`.

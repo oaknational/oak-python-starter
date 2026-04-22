@@ -1,0 +1,2 @@
+description = "Quick re-grounding during a session"
+prompt = "Read and follow `.agent/commands/go.md`."

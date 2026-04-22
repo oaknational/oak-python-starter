@@ -1,0 +1,6 @@
+---
+description: never disable checks
+alwaysApply: true
+---
+
+Read and follow `.agent/rules/never-disable-checks.md`.

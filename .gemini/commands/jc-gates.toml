@@ -1,0 +1,2 @@
+description = "Run quality gates workflow"
+prompt = "Read and follow `.agent/commands/gates.md`."

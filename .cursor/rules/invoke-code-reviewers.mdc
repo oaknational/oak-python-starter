@@ -1,0 +1,6 @@
+---
+description: invoke code reviewers
+alwaysApply: true
+---
+
+Read and follow `.agent/rules/invoke-code-reviewers.md`.

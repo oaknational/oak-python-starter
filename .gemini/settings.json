@@ -1,0 +1,33 @@
+{
+  "experimental": {
+    "enableAgents": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "name": "repo-grounding",
+            "type": "command",
+            "command": "cd \"$GEMINI_PROJECT_DIR\" && uv run python tools/agent_hooks.py --platform gemini --event session-start",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "BeforeTool": [
+      {
+        "matcher": "^run_shell_command$",
+        "hooks": [
+          {
+            "name": "repo-shell-guardrails",
+            "type": "command",
+            "command": "cd \"$GEMINI_PROJECT_DIR\" && uv run python tools/agent_hooks.py --platform gemini --event pre-tool",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}

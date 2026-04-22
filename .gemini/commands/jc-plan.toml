@@ -1,0 +1,2 @@
+description = "Create plan with value traceability"
+prompt = "Read and follow `.agent/commands/plan.md`."

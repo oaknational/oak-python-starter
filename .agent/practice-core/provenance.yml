@@ -1,0 +1,13 @@
+files:
+  practice.md:
+    - repo: python-repo-template
+      date: 2026-04-21
+      purpose: Seeded portable Practice blueprint for the template repo
+  practice-lineage.md:
+    - repo: python-repo-template
+      date: 2026-04-21
+      purpose: Seeded Practice propagation guidance for the template repo
+  practice-bootstrap.md:
+    - repo: python-repo-template
+      date: 2026-04-21
+      purpose: Seeded bootstrap guidance for generic Python template hydration

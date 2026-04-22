@@ -1,0 +1,6 @@
+---
+description: no compatibility layers
+alwaysApply: true
+---
+
+Read and follow `.agent/rules/no-compatibility-layers.md`.

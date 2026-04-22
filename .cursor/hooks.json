@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "uv run python tools/agent_hooks.py --platform cursor --event session-start",
+        "timeout": 30
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "uv run python tools/agent_hooks.py --platform cursor --event pre-tool",
+        "timeout": 30,
+        "matcher": "Shell"
+      }
+    ]
+  }
+}

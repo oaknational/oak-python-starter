@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: quality-gates
+        name: quality gates (format-check -> typecheck -> lint -> import-linter -> test -> coverage)
+        entry: uv run check
+        language: system
+        stages: [pre-commit, pre-push]
+        pass_filenames: false

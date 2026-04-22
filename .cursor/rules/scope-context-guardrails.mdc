@@ -1,0 +1,6 @@
+---
+description: Preserve strategy intent and debug before behavior changes
+alwaysApply: true
+---
+
+Read and follow `.agent/rules/scope-context-guardrails.md`.

@@ -1,0 +1,10 @@
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+approval_policy = "never"
+name = "security-reviewer"
+
+developer_instructions = """
+Read and follow `.agent/sub-agents/templates/security-reviewer.md`.
+
+Mode: Observe, analyse and report. Do not modify code.
+"""

@@ -1,0 +1,2 @@
+description = "Conventional commit workflow with quality gates"
+prompt = "Read and follow `.agent/commands/commit.md`."

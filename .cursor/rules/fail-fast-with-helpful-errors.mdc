@@ -1,0 +1,6 @@
+---
+description: fail fast with helpful errors
+alwaysApply: true
+---
+
+Read and follow `.agent/rules/fail-fast-with-helpful-errors.md`.

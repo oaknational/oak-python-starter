@@ -1,0 +1,6 @@
+---
+description: no global state in tests
+alwaysApply: true
+---
+
+Read and follow `.agent/rules/no-global-state-in-tests.md`.
