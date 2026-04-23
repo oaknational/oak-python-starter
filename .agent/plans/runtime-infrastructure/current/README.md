@@ -1,9 +1,9 @@
 # Runtime Infrastructure Current
 
-| Priority | Work | Status |
-| --- | --- | --- |
-| P0 | [Final review findings closeout](review-findings-final-closeout.md) | 🟢 Complete — validated and reviewer-clean |
+No current runtime-infrastructure plan is open right now.
 
-Closed reference:
-[Pythonic alignment, demo expansion, and Commitizen adoption](pythonic-alignment-and-commitizen-adoption.md)
-— complete as of 2026-04-23.
+Closed references:
+- [Pythonic alignment, demo expansion, and Commitizen adoption](../archive/pythonic-alignment-and-commitizen-adoption.md)
+  — archived 2026-04-23.
+- [Final review findings closeout](../archive/review-findings-final-closeout.md)
+  — archived 2026-04-23.

@@ -2,9 +2,10 @@
 
 **Last refreshed**: 2026-04-23 — the source-Practice transfer remains the
 closed baseline. `pythonic-alignment` and `review-findings-closeout` are now
-closed reference threads. The blocker fixes, direct proof, repeated canonical
-validation reruns, and final whole-repo reviewer sweep are complete on the
-repaired diff, so no live blocker-only runtime closeout thread remains.
+closed reference threads, their runtime plans are archived, and the blocker
+fixes, direct proof, repeated canonical validation reruns, and final
+whole-repo reviewer sweep are complete on the repaired diff landed in
+`268f04f`.
 
 ## Active Threads
 
@@ -27,8 +28,8 @@ repaired diff, so no live blocker-only runtime closeout thread remains.
 
 ## Current Session Focus
 
-- Capture the completed runtime closeout truthfully in its closing commit
-  without reopening scope.
+- No live runtime closeout or consolidation work remains. The repo is at the
+  post-closeout steady state after commit `268f04f`.
 
 ## Repo-Wide Invariants / Non-Goals
 
@@ -60,5 +61,9 @@ repaired diff, so no live blocker-only runtime closeout thread remains.
   audit after language and source-local residue were generalised away.
 - README, testing doctrine, distilled memory, and experience were refreshed to
   reflect the final steady state.
+- The completed runtime plans are now archived and recorded in
+  `completed-plans.md`.
+- The active napkin has been rotated after the closeout so the next session
+  starts from a fresh active-memory surface.
 - The `practice-foundation-upgrade` thread remains as the closed baseline
   reference for the landed Practice transfer.

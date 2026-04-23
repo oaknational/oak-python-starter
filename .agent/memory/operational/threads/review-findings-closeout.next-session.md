@@ -8,7 +8,7 @@
 
 ## Owning Plans
 
-- [`../../../plans/runtime-infrastructure/current/review-findings-final-closeout.md`](../../../plans/runtime-infrastructure/current/review-findings-final-closeout.md)
+- [`../../../plans/runtime-infrastructure/archive/review-findings-final-closeout.md`](../../../plans/runtime-infrastructure/archive/review-findings-final-closeout.md)
 
 ## Current Objective
 
@@ -41,6 +41,8 @@
   `uv run python -m oaknational.python_repo_template.devtools check-ci`.
 - The final whole-repo reviewer rerun is clean across code, architecture, test,
   security, and config review.
+- The closing commit is `268f04f`, and the owning closeout plan now lives in
+  the runtime archive as a closure record.
 
 ## Blockers / Low-Confidence Areas
 

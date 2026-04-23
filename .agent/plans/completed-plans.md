@@ -16,7 +16,10 @@ Before archiving a plan:
 
 ## Runtime Infrastructure
 
-No archived runtime-infrastructure plans yet.
+| Plan | Completed | Key outcomes | Archive |
+| --- | --- | --- | --- |
+| Pythonic Alignment, Demo Expansion, and Commitizen Adoption | 2026-04-23 | Landed the bounded richer demo, strict typing truth, Commitizen enforcement, installed-wheel smoke proof, gate registry, and dependency hygiene | [archived plan](runtime-infrastructure/archive/pythonic-alignment-and-commitizen-adoption.md) |
+| Final Review Findings Closeout | 2026-04-23 | Closed the blocker-only runtime hardening tranche with reviewer-clean hook and repo-audit truth surfaces | [archived plan](runtime-infrastructure/archive/review-findings-final-closeout.md) |
 
 ## Demo Application
 

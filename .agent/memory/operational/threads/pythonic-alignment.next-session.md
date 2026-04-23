@@ -8,19 +8,18 @@
 
 ## Owning Plans
 
-- [`../../../plans/runtime-infrastructure/current/pythonic-alignment-and-commitizen-adoption.md`](../../../plans/runtime-infrastructure/current/pythonic-alignment-and-commitizen-adoption.md)
+- [`../../../plans/runtime-infrastructure/archive/pythonic-alignment-and-commitizen-adoption.md`](../../../plans/runtime-infrastructure/archive/pythonic-alignment-and-commitizen-adoption.md)
 
 ## Current Objective
 
-- Deliver the bounded Pythonic alignment pass: broaden the demo so every direct
-  runtime dependency is used truthfully, adopt `matplotlib` and `commitizen`,
-  add installed-wheel verification, ship `py.typed`, centralise gate-command
-  truth, and enforce dependency hygiene without weakening Oak constraints.
+- Closed. The bounded Pythonic alignment pass landed and now lives as an
+  archived runtime reference rather than a live execution thread.
 
 ## Current State
 
 - The plan for Pythonic alignment, demo expansion, and Commitizen adoption is
-  written and queued in the runtime-infrastructure current lane.
+  now archived as a closed runtime reference rather than queued in the current
+  lane.
 - Architecture review has already challenged the framing and confirmed the
   highest-value Pythonic moves are package truthfulness, installed-surface
   verification, strict typing, and tooling coherence rather than broad repo
@@ -77,6 +76,8 @@
   one landing.
 - The final session closed green with passing `uv run deptry .`, focused
   tooling tests, and `uv run check`.
+- The broader runtime closeout later landed in `268f04f`, leaving this thread
+  as a closed reference with no live follow-up.
 
 ## Blockers / Low-Confidence Areas
 

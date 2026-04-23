@@ -42,3 +42,11 @@
   scanner.
 - Keep dependency-hygiene enforcement inside the existing aggregate gate flow
   when no new public `uv run` command contract is needed.
+- Parse shell and env launchers by executable basename so absolute-path forms
+  such as `/bin/bash` and `/usr/bin/env bash` cannot slip past hook policy as
+  if they were different commands.
+- Split shipped runtime contracts from repo-audit-only documentation contracts;
+  repo-local command-surface policy does not belong in runtime artefacts.
+- If docs are validated against a command contract, prove the documented names
+  exist in the runtime truth source, not just that the docs contain the right
+  strings.
