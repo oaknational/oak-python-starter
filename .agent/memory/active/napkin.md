@@ -1,5 +1,58 @@
 # Napkin
 
+## Session: 2026-04-23 — WS6 Dependency Hygiene and Final Closeout
+
+### What Was Done
+
+- Added `deptry` to the dev dependency group and configured it minimally in
+  `pyproject.toml` with `known_first_party = ["oaknational"]`.
+- Recorded one deliberate `deptry` `DEP002` exception for `pyarrow`, because
+  the seeded demo uses it indirectly through pandas' Parquet path rather than a
+  direct import.
+- Wired dependency hygiene into both `uv run check` and `uv run check-ci`
+  before `repo-audit`, without adding a new public gate command or changing the
+  installed-wheel smoke path.
+- Added targeted tests for the aggregate gate sequence and repo-audit
+  dependency-hygiene contract, then refreshed README, `docs/dev-tooling.md`,
+  `.agent/commands/gates.md`, and the start-right gate sequence doc together.
+- Verified the closeout with passing `uv run deptry .`,
+  `uv run pytest tests/test_devtools.py tests/test_repo_audit.py`, and
+  `uv run check`.
+- The first final reviewer rerun then surfaced the remaining blocker-only gaps:
+  shell-wrapper and alias/config hook bypasses, UNC path handling, the shipped
+  gate contract carrying repo-audit policy, missing direct proof for malformed
+  hook-config shapes and build smoke, and stale continuity state.
+- Closed those blockers by splitting repo-audit command metadata into
+  `tools/repo_audit_contract.toml`, hardening the hook parser against wrapped
+  shells, exported env carry-over, alias indirection, dynamic git config, and
+  exact hooksPath overrides, rejecting UNC activity sources, and adding direct
+  regression tests for the temp build probe, installed-wheel smoke steps, and
+  hook-config fail-closed behaviour.
+- The final reviewer passes then exposed two last truth gaps: `/usr/bin/env`
+  shell wrappers still bypassed hook inspection, and repo audit did not yet
+  prove that documented repo-local commands still existed in
+  `gate_contract.toml`.
+- Closed those final gaps by treating basename-equivalent `env` launchers as
+  real env wrappers, adding direct regressions for `/usr/bin/env bash -lc ...`
+  and `/usr/bin/env /bin/bash -lc ...` forms, and making repo audit reject
+  documented repo-local commands that are not defined in the runtime gate
+  contract.
+- Revalidated the final repaired diff with passing `uv run pytest`,
+  `uv run python -m oaknational.python_repo_template.devtools check`, and
+  `uv run python -m oaknational.python_repo_template.devtools check-ci`; the
+  closing code, architecture, test, security, and config reviewer reruns all
+  returned clean blocker-only passes.
+
+### Patterns to Remember
+
+- For Oak namespace repos, `deptry` can usually stay small and readable with
+  `known_first_party = ["oaknational"]`.
+- If a runtime dependency is only visible through an indirect backend selected
+  by another library, document the exception explicitly instead of forcing a
+  synthetic import into product code.
+- Keep dependency-hygiene enforcement inside the existing aggregate gates when
+  the public command surface is already coherent.
+
 ## Session: 2026-04-23 — Pythonic Alignment Planning
 
 ### What Was Done
@@ -97,6 +150,51 @@
   default.
 - When a tooling change touches both docs and enforcement, add a small audit
   contract in the same landing or the docs will drift back to aspiration.
+
+## Session: 2026-04-23 — WS5 Wheel Smoke and Gate Registry
+
+### What Was Done
+
+- Added `src/oaknational/python_repo_template/gate_registry.py` as the shared
+  Python-side registry for canonical gate-command names and devtools handler
+  targets.
+- Updated `devtools.py` so `uv run build` smoke-tests the newest built wheel,
+  while the build step inside both `uv run check-ci` and `uv run check` now
+  builds into a temporary artefact directory and proves the installed wheel in
+  isolation from the source tree.
+- Built the repaired `oaknational.python_repo_template` wheel, installed it in
+  a temporary virtual environment outside the repo, copied the seeded activity
+  pack into a temporary workspace, and proved the installed package import plus
+  both `activity-report` and
+  `python -m oaknational.python_repo_template`.
+- Tightened the internal command runner so absolute paths to other virtualenv
+  scripts keep their own interpreter rather than being rewritten onto the
+  current environment's `sys.executable`.
+- Updated repo audit, tests, README, `docs/dev-tooling.md`, and the canonical
+  gates command doc so the new build truth is enforced and documented together.
+- Verified the landing with passing `uv run build`, `uv run check-ci`, and
+  `uv run check`.
+
+### Patterns to Remember
+
+- Share canonical gate-command names from a small registry module rather than
+  duplicating them across dispatch and audit code.
+- When proving an installed wheel outside the source tree, copy the seeded
+  fixture into a temporary workspace and run both the console-script and
+  `python -m` entry surfaces there.
+- A helper that rewrites Python-script shebangs to `sys.executable` must only
+  do so for commands resolved from the current environment; absolute paths to
+  other virtualenv scripts must keep their own interpreter.
+
+### Closeout Note
+
+- Lightweight handoff recorded: the next session should land WS6 dependency
+  hygiene first and then run the review round in that same session; the active
+  plan's already-run gates item was synced to completed so the remaining work
+  is represented truthfully.
+- Follow-up owner direction: the next session is intended to be the final
+  session for `pythonic-alignment`, so WS6 and the review pass should be
+  treated as one closing tranche.
 
 ## Session: 2026-04-23 — Oak Namespace Packaging
 
@@ -303,3 +401,25 @@
   supported repo contract
 - Keep file-presence canon load-bearing inside `tools/repo_audit.py` itself;
   do not mirror it in `pytest` tests that constrain repo configuration
+
+## Session: 2026-04-23 — Final Reviewer Closeout Planning
+
+### What Was Done
+
+- Re-grounded on the planning doctrine, metacognition directive, runtime plan
+  architecture, and the closed `pythonic-alignment` continuity state.
+- Wrote a new queued runtime-infrastructure plan,
+  `review-findings-final-closeout.md`, to address the remaining whole-repo
+  reviewer findings in one final session.
+- Reopened branch-primary continuity around a new
+  `review-findings-closeout` thread instead of pretending the repo was fully
+  done after the first green closeout.
+
+### Patterns to Remember
+
+- When a reviewer pass finds a bounded but real follow-up tranche, write a new
+  plan and continuity thread rather than stretching a completed plan past its
+  truthful end state.
+- For a final-session plan, make the command-surface decision explicit early if
+  the repo-local workflow and the distributable package surface might need to
+  diverge.

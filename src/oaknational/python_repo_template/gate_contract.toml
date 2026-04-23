@@ -1,0 +1,43 @@
+[repo_local_commands]
+clean = "clean"
+build = "build"
+dev = "dev"
+lint = "lint"
+lint-fix = "lint_fix"
+format = "format_gate"
+format-fix = "format_fix"
+typecheck = "typecheck"
+repo-audit = "repo_audit"
+test = "test"
+coverage = "coverage"
+fix = "fix"
+check = "check"
+check-ci = "check_ci"
+
+[gate_sequences]
+fix = ["format-fix", "lint-fix", "format-fix", "import-linter"]
+check = [
+  "format-fix",
+  "lint-fix",
+  "format-fix",
+  "import-linter",
+  "format",
+  "typecheck",
+  "lint",
+  "dependency-hygiene",
+  "repo-audit",
+  "build",
+  "test",
+  "coverage",
+]
+check-ci = [
+  "format",
+  "typecheck",
+  "lint",
+  "import-linter",
+  "dependency-hygiene",
+  "repo-audit",
+  "build",
+  "test",
+  "coverage",
+]

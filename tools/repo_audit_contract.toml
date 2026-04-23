@@ -1,0 +1,35 @@
+legacy_public_commands = ["format-check"]
+
+[published_entry_points]
+activity-report = "oaknational.python_repo_template.demo.activity_report:main"
+
+[documentation_commands]
+".agent/directives/AGENT.md" = [
+  "clean",
+  "build",
+  "dev",
+  "check",
+  "check-ci",
+  "fix",
+  "test",
+  "coverage",
+]
+".agent/skills/start-right-quick/SKILL.md" = ["check", "check-ci"]
+".agent/commands/gates.md" = ["clean", "build", "dev", "check", "check-ci"]
+"README.md" = ["clean", "build", "dev", "check", "check-ci", "fix", "test", "coverage"]
+"docs/dev-tooling.md" = [
+  "clean",
+  "build",
+  "dev",
+  "format",
+  "format-fix",
+  "lint",
+  "lint-fix",
+  "typecheck",
+  "repo-audit",
+  "test",
+  "coverage",
+  "fix",
+  "check",
+  "check-ci",
+]

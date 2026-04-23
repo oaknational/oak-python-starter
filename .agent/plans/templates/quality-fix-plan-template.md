@@ -56,7 +56,7 @@ todos:
 
 ## Phase 2 — Hardening
 
-- run `uv run check-ci`
+- run `uv run python -m oaknational.python_repo_template.devtools check-ci`
 - run the relevant reviewers
 - update durable docs or record no-change rationale
 

@@ -1,34 +1,34 @@
 # Repo Continuity
 
 **Last refreshed**: 2026-04-23 — the source-Practice transfer remains the
-closed baseline, and active branch-primary work has shifted to the
-`pythonic-alignment` thread. WS4 has now landed: `commitizen` is installed,
-the repo's `pre-commit` configuration installs `commit-msg` alongside
-`pre-commit` and `pre-push`, real commit-message files are validated through
-`uv run cz check --allow-abort --commit-msg-file`, and repo docs now expose
-the canonical `uv run cz commit` / `uv run cz check` workflow. While landing
-WS4, a wheel-packaging regression was discovered and fixed: Hatch now preserves
-the `oaknational/python_repo_template` namespace in built wheels via
-`only-include` plus `sources`, repo audit guards that contract, and the landing
-again finished with a passing `uv run check`.
+closed baseline. `pythonic-alignment` and `review-findings-closeout` are now
+closed reference threads. The blocker fixes, direct proof, repeated canonical
+validation reruns, and final whole-repo reviewer sweep are complete on the
+repaired diff, so no live blocker-only runtime closeout thread remains.
 
 ## Active Threads
 
-| Thread | Purpose | Next-session record | Active identities |
-| --- | --- | --- | --- |
-| `pythonic-alignment` | Make the repo more Pythonic without weakening Oak constraints by broadening the bounded demo and tightening package/tool truth | [`threads/pythonic-alignment.next-session.md`](threads/pythonic-alignment.next-session.md) | `codex / gpt-5 / unknown / executor / 2026-04-23` |
+- None. The runtime closeout thread is complete and now lives as a closed
+  reference:
+  [`threads/review-findings-closeout.next-session.md`](threads/review-findings-closeout.next-session.md)
+- Closed references:
+  [`threads/pythonic-alignment.next-session.md`](threads/pythonic-alignment.next-session.md)
+  and
+  [`threads/practice-foundation-upgrade.next-session.md`](threads/practice-foundation-upgrade.next-session.md)
 
 ## Branch-Primary Lane State
 
-- Current branch-primary thread: `pythonic-alignment`
-- Canonical next-session record:
+- No live branch-primary runtime thread remains after the closeout.
+- Most recent closed threads:
+  [`threads/review-findings-closeout.next-session.md`](threads/review-findings-closeout.next-session.md),
   [`threads/pythonic-alignment.next-session.md`](threads/pythonic-alignment.next-session.md)
+  and
+  [`threads/practice-foundation-upgrade.next-session.md`](threads/practice-foundation-upgrade.next-session.md)
 
 ## Current Session Focus
 
-- Preserve the landed Practice baseline while carrying the Pythonic alignment
-  thread from landed WS4 Commitizen enforcement into the next packaging and
-  gate-truth pass.
+- Capture the completed runtime closeout truthfully in its closing commit
+  without reopening scope.
 
 ## Repo-Wide Invariants / Non-Goals
 
@@ -44,10 +44,8 @@ again finished with a passing `uv run check`.
 
 ## Next Safe Step
 
-- Start WS5 of
-  `.agent/plans/runtime-infrastructure/current/pythonic-alignment-and-commitizen-adoption.md`:
-  add installed-wheel verification to the canonical build and check path and
-  keep the repaired Oak namespace packaging contract green.
+- Start a new owner-directed thread only if new work is requested; this
+  blocker-only runtime closeout is complete.
 
 ## Deep Consolidation Status
 

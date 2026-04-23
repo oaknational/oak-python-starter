@@ -8,7 +8,8 @@ When merging branches that have diverged significantly:
 1. inspect deleted or moved files, not just conflicted files
 2. check for signature or contract drift in untouched callers
 3. check for ADR or plan numbering collisions
-4. run `uv run typecheck` immediately after conflict resolution
+4. run `uv run python -m oaknational.python_repo_template.devtools typecheck`
+   immediately after conflict resolution
 
 Standard text-level conflict resolution misses:
 
@@ -23,5 +24,7 @@ Standard text-level conflict resolution misses:
 - **Numbering collisions** — both branches create an ADR or plan with the
   same number but different content and different filenames
 
-Always run `uv run typecheck` immediately after resolving text conflicts —
-this catches the silent breaks that Git cannot detect.
+Always run
+`uv run python -m oaknational.python_repo_template.devtools typecheck`
+immediately after resolving text conflicts — this catches the silent breaks
+that Git cannot detect.

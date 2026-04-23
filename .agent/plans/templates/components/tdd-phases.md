@@ -22,6 +22,6 @@ behaviour. The proof stays green throughout.
 Every task should carry commands with expected outcomes, for example:
 
 ```bash
-uv run test
+uv run python -m oaknational.python_repo_template.devtools test
 # Expected: exit 0
 ```

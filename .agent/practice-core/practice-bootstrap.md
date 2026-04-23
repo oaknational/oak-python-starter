@@ -191,14 +191,16 @@ Whatever the entry mechanism is, it must support:
 
 In this Python template, the canonical gate API is:
 
-- `uv run clean`
-- `uv run build`
-- `uv run dev`
-- `uv run format` / `uv run format-fix`
-- `uv run lint` / `uv run lint-fix`
-- `uv run fix`
-- `uv run check`
-- `uv run check-ci`
+- `uv run python -m oaknational.python_repo_template.devtools clean`
+- `uv run python -m oaknational.python_repo_template.devtools build`
+- `uv run python -m oaknational.python_repo_template.devtools dev`
+- `uv run python -m oaknational.python_repo_template.devtools format` /
+  `uv run python -m oaknational.python_repo_template.devtools format-fix`
+- `uv run python -m oaknational.python_repo_template.devtools lint` /
+  `uv run python -m oaknational.python_repo_template.devtools lint-fix`
+- `uv run python -m oaknational.python_repo_template.devtools fix`
+- `uv run python -m oaknational.python_repo_template.devtools check`
+- `uv run python -m oaknational.python_repo_template.devtools check-ci`
 
 Use Python-native separators such as dashes where the host ecosystem cannot
 express colon-shaped script names cleanly. Do not preserve legacy names as

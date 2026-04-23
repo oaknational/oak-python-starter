@@ -86,8 +86,10 @@ Before choosing a lane, apply this order:
 All quality gates are blocking. The gate sequence for this repo:
 
 ```
-format -> typecheck -> lint -> repo-audit -> build -> tests -> coverage
+format -> typecheck -> lint -> import-linter -> dependency-hygiene -> repo-audit -> build -> test -> coverage
 ```
 
-Non-mutating gate entry point: `uv run check-ci`
-Local fix-and-verify aggregate: `uv run check`
+Non-mutating gate entry point:
+`uv run python -m oaknational.python_repo_template.devtools check-ci`
+Local fix-and-verify aggregate:
+`uv run python -m oaknational.python_repo_template.devtools check`

@@ -20,9 +20,25 @@
   `oaknational.some_package`, and a namespace layout under `src/oaknational/`.
 - When pytest injects the source tree onto `pythonpath`, pair source-tree tests
   with an installed-wheel smoke check so packaging truth is still proven.
+- Make installed-wheel smoke checks run from a temporary workspace outside the
+  repo and cover the installed import plus both console-script and
+  `python -m` entry surfaces.
 - If the owner wants a richer template rather than a leaner one, make the demo
   justify the declared dependency surface instead of trimming dependencies to a
   placeholder example.
 - When Hatch wheel packaging is scoped with `packages = [...]`, verify that
   `py.typed` lands in the built wheel; if it does not, add an explicit wheel
   `force-include` mapping rather than assuming the source-tree marker is enough.
+- If a command helper rewrites Python-script shebangs to the current
+  interpreter, restrict that behaviour to commands resolved from the current
+  environment; absolute paths to other virtualenv scripts must keep their own
+  interpreter.
+- For Oak namespace packages, keep `deptry` configuration explicit and small by
+  marking `oaknational` as known first party instead of reaching first for
+  experimental namespace-package support.
+- If a dependency is exercised truthfully only through an indirect backend such
+  as pandas' Parquet engine loading `pyarrow`, prefer one documented
+  dependency-hygiene exception over artificial imports added only to satisfy a
+  scanner.
+- Keep dependency-hygiene enforcement inside the existing aggregate gate flow
+  when no new public `uv run` command contract is needed.

@@ -87,7 +87,7 @@ Only name reviewers the repo actually has.
 ## Quality Gates
 
 ```bash
-uv run check-ci
+uv run python -m oaknational.python_repo_template.devtools check-ci
 ```
 
 ## Risk Assessment

@@ -1,7 +1,8 @@
 # Lint After Edit
 
-After editing Python files, run `uv run check`. Catch violations early and do
-not let them accumulate.
+After editing Python files, run
+`uv run python -m oaknational.python_repo_template.devtools check`. Catch
+violations early and do not let them accumulate.
 
 When a violation appears, follow the refactoring rules in `.agent/directives/principles.md`:
 

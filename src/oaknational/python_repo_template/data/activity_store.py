@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import ntpath
 from collections.abc import Callable, Collection
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -31,6 +32,7 @@ ParquetLoader = Callable[[Path], pd.DataFrame]
 ParquetWriter = Callable[[pd.DataFrame, Path], None]
 RemoteReader = Callable[[str], bytes]
 LocalTextLoader = Callable[[Path], str]
+HttpGet = Callable[..., requests.Response]
 
 
 def _empty_category_labels() -> dict[str, str]:
@@ -105,10 +107,17 @@ def default_parquet_writer(frame: pd.DataFrame, path: Path) -> None:
     frame.to_parquet(path, index=False)
 
 
-def default_remote_reader(url: str) -> bytes:
+def default_remote_reader(
+    url: str,
+    *,
+    http_get: HttpGet = requests.get,
+) -> bytes:
     """Fetch one remote artefact over HTTPS."""
 
-    response = requests.get(url, timeout=REMOTE_TIMEOUT_SECONDS)
+    response = http_get(url, timeout=REMOTE_TIMEOUT_SECONDS, allow_redirects=False)
+    if 300 <= response.status_code < 400:
+        msg = "Remote activity sources must not redirect."
+        raise requests.HTTPError(msg, response=response)
     response.raise_for_status()
     return response.content
 
@@ -123,6 +132,11 @@ def resolve_activity_source(source: str | Path) -> ActivitySource:
     """Resolve a local path or HTTPS URL into a validated source."""
 
     raw = str(source)
+    if _is_unc_path(raw):
+        msg = "UNC activity sources are not supported; use a local path or HTTPS URL."
+        raise ActivityDataError(msg)
+    if _is_windows_drive_path(raw):
+        return ActivitySource(raw=raw, suffix=Path(raw).suffix.lower(), is_remote=False)
     parsed = urlsplit(raw)
     if parsed.scheme:
         return _resolve_remote_source(raw, parsed)
@@ -274,6 +288,15 @@ def _resolve_remote_source(raw: str, parsed: SplitResult) -> ActivitySource:
     return ActivitySource(raw=raw, suffix=Path(parsed.path).suffix.lower(), is_remote=True)
 
 
+def _is_windows_drive_path(raw: str) -> bool:
+    drive, _tail = ntpath.splitdrive(raw)
+    return len(drive) == 2 and drive[1] == ":"
+
+
+def _is_unc_path(raw: str) -> bool:
+    return raw.startswith(("//", "\\\\"))
+
+
 def _derive_metadata_path(path: str) -> str:
     return str(Path(path).with_name(f"{Path(path).stem}.metadata.yaml"))
 
@@ -284,7 +307,11 @@ def _load_csv_source(
     remote_reader: RemoteReader,
 ) -> pd.DataFrame:
     if not source.is_remote:
-        return csv_loader(Path(source.raw))
+        try:
+            return csv_loader(Path(source.raw))
+        except (OSError, ValueError) as exc:
+            msg = f"Could not load activity data from {source.raw}."
+            raise ActivityDataError(msg) from exc
 
     try:
         payload = remote_reader(source.raw)
@@ -301,7 +328,11 @@ def _load_parquet_source(
     remote_reader: RemoteReader,
 ) -> pd.DataFrame:
     if not source.is_remote:
-        return parquet_loader(Path(source.raw))
+        try:
+            return parquet_loader(Path(source.raw))
+        except (OSError, ValueError) as exc:
+            msg = f"Could not load activity data from {source.raw}."
+            raise ActivityDataError(msg) from exc
 
     try:
         payload = remote_reader(source.raw)
@@ -317,7 +348,11 @@ def _load_remote_text(url: str, remote_reader: RemoteReader) -> str:
 
 
 def _parse_activity_metadata(text: str, categories: Collection[str]) -> ActivityMetadata:
-    raw_metadata: object = yaml.safe_load(text)
+    try:
+        raw_metadata: object = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        msg = "Activity metadata must be valid YAML."
+        raise ActivityDataError(msg) from exc
     if raw_metadata is None:
         raw_mapping: dict[str, object] = {}
     else:

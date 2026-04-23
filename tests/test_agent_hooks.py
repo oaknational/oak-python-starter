@@ -1,45 +1,58 @@
+from __future__ import annotations
+
+import io
 import json
+
+import pytest
 
 import tools.agent_hooks as subject
 
+QUALITY_GATE_MESSAGE = (
+    "If Python or tooling files change, run uv run python -m "
+    "oaknational.python_repo_template.devtools check before you stop."
+)
+SKIP_BYPASS_REASON = (
+    "SKIP is prohibited here when it bypasses the repo's quality-gates or "
+    "commitizen-commit-msg hooks."
+)
+HOOKS_PATH_BYPASS_REASON = (
+    "core.hooksPath overrides are prohibited here because they bypass repo git hooks."
+)
+GIT_CONFIG_ENV_BYPASS_REASON = (
+    "GIT_CONFIG_* is prohibited here because it can hide hook bypasses or force pushes."
+)
+GIT_ALIAS_BYPASS_REASON = (
+    "Git alias overrides are prohibited here because they can hide hook bypasses or force pushes."
+)
+DYNAMIC_GIT_CONFIG_REASON = (
+    "Dynamic git config is prohibited here for git commit and git push because "
+    "it can hide hook bypasses or force pushes."
+)
 
-def make_policy() -> subject.HookPolicy:
-    return subject.HookPolicy(
-        session_start_message="Read .agent/commands/start-right-quick.md before substantive work.",
-        quality_gate_message="If Python or tooling files change, run uv run check before you stop.",
-        blocked_shell_patterns=(
-            subject.BlockedShellPattern(
-                pattern=r"(^|\s)git\s+stash(\s|$)",
-                reason="git stash is prohibited here because it can lose uncommitted work.",
-            ),
-            subject.BlockedShellPattern(
-                pattern=r"(^|\s)git\s+reset(\s|$)",
-                reason="git reset is prohibited here because it can discard commits or changes.",
-            ),
-            subject.BlockedShellPattern(
-                pattern=r"(^|\s)git\s+checkout\s+--(\s|$)",
-                reason=(
-                    "git checkout -- is prohibited here because it discards uncommitted changes."
-                ),
-            ),
-            subject.BlockedShellPattern(
-                pattern=r"(^|\s)git\s+clean(\s|$)",
-                reason="git clean is prohibited here because it deletes untracked files.",
-            ),
-            subject.BlockedShellPattern(
-                pattern=r"(^|\s)git\s+rebase(\s|$)",
-                reason="git rebase is prohibited here because it rewrites history.",
-            ),
-            subject.BlockedShellPattern(
-                pattern=r"(^|\s)--no-verify(\s|$)",
-                reason="--no-verify is prohibited here because it bypasses git hooks.",
-            ),
-            subject.BlockedShellPattern(
-                pattern=r"(^|\s)git\s+push\b[^\n]*\s(--force|-f)(\s|$)",
-                reason="Force push is prohibited here because it overwrites remote history.",
-            ),
+
+def test_load_policy_reads_the_canonical_repo_policy() -> None:
+    policy = subject.load_policy()
+
+    assert (
+        policy.session_start_message
+        == "Read .agent/commands/start-right-quick.md before substantive work."
+    )
+    assert policy.quality_gate_message == QUALITY_GATE_MESSAGE
+    assert policy.blocked_pre_commit_skip_ids == ("quality-gates", "commitizen-commit-msg")
+    assert policy.blocked_pre_commit_skip_reason == SKIP_BYPASS_REASON
+    assert policy.blocked_hook_bypass_env_var_prefixes == (
+        subject.BlockedPrefix(
+            prefix="GIT_CONFIG_",
+            reason=GIT_CONFIG_ENV_BYPASS_REASON,
         ),
     )
+    assert policy.blocked_git_config_prefixes == (
+        subject.BlockedPrefix(
+            prefix="alias.",
+            reason=GIT_ALIAS_BYPASS_REASON,
+        ),
+    )
+    assert policy.blocked_dynamic_git_config_reason == DYNAMIC_GIT_CONFIG_REASON
 
 
 def test_normalise_pre_tool_payload_extracts_shell_command_per_platform() -> None:
@@ -105,11 +118,7 @@ def test_normalise_session_start_payload_preserves_platform_sources() -> None:
     assert subject.normalise_hook_context(
         platform="cursor",
         event="session-start",
-        payload={
-            "session_id": "cursor-session",
-            "is_background_agent": False,
-            "composer_mode": "agent",
-        },
+        payload={"session_id": "cursor-session"},
     ) == subject.HookContext(
         platform="cursor",
         event="session-start",
@@ -139,7 +148,7 @@ def test_normalise_session_start_payload_preserves_platform_sources() -> None:
 
 
 def test_evaluate_hook_policy_denies_repo_canonical_prohibited_shell_commands() -> None:
-    policy = make_policy()
+    policy = subject.load_policy()
 
     cases = [
         ("git stash", "git stash is prohibited here because it can lose uncommitted work."),
@@ -165,6 +174,107 @@ def test_evaluate_hook_policy_denies_repo_canonical_prohibited_shell_commands() 
             "git push -f origin main",
             "Force push is prohibited here because it overwrites remote history.",
         ),
+        (
+            "git push --force-with-lease origin main",
+            "Force push is prohibited here because it overwrites remote history.",
+        ),
+        (
+            "SKIP=quality-gates git commit -m test",
+            SKIP_BYPASS_REASON,
+        ),
+        (
+            "SKIP=quality-gates env git commit -m test",
+            SKIP_BYPASS_REASON,
+        ),
+        (
+            "env SKIP=commitizen-commit-msg git commit -m test",
+            SKIP_BYPASS_REASON,
+        ),
+        (
+            "env -i SKIP=quality-gates git commit -m test",
+            SKIP_BYPASS_REASON,
+        ),
+        (
+            "export SKIP=quality-gates && git commit -m test",
+            SKIP_BYPASS_REASON,
+        ),
+        (
+            "HUSKY=0 git push origin main",
+            "HUSKY=0 is prohibited here because it disables git hooks.",
+        ),
+        (
+            "SKIP_HOOKS=1 git commit -m test",
+            "SKIP_HOOKS=1 is prohibited here because it disables git hooks.",
+        ),
+        (
+            "git commit --no-pre-commit -m test",
+            "--no-pre-commit is prohibited here because it bypasses pre-commit hooks.",
+        ),
+        (
+            "command git commit --no-pre-commit -m test",
+            "--no-pre-commit is prohibited here because it bypasses pre-commit hooks.",
+        ),
+        (
+            "git -c core.hooksPath=/dev/null commit -m test",
+            HOOKS_PATH_BYPASS_REASON,
+        ),
+        (
+            "git --config-env=core.hooksPath=HOOKS_PATH commit -m test",
+            HOOKS_PATH_BYPASS_REASON,
+        ),
+        (
+            "git -c color.ui=always commit -m test",
+            DYNAMIC_GIT_CONFIG_REASON,
+        ),
+        (
+            "git -c alias.c='commit --no-verify' c -m test",
+            GIT_ALIAS_BYPASS_REASON,
+        ),
+        (
+            "git -c alias.fp='push --force' fp origin main",
+            GIT_ALIAS_BYPASS_REASON,
+        ),
+        (
+            "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath "
+            "GIT_CONFIG_VALUE_0=/dev/null git commit -m test",
+            GIT_CONFIG_ENV_BYPASS_REASON,
+        ),
+        (
+            "sh -c 'SKIP=quality-gates git commit -m test'",
+            SKIP_BYPASS_REASON,
+        ),
+        (
+            "bash -lc 'HUSKY=0 git push origin main'",
+            "HUSKY=0 is prohibited here because it disables git hooks.",
+        ),
+        (
+            "/bin/bash -lc 'git push --force origin main'",
+            "Force push is prohibited here because it overwrites remote history.",
+        ),
+        (
+            "/bin/bash -lc 'git -c core.hooksPath=/dev/null commit -m test'",
+            HOOKS_PATH_BYPASS_REASON,
+        ),
+        (
+            "/bin/bash -lc 'git commit --no-pre-commit -m test'",
+            "--no-pre-commit is prohibited here because it bypasses pre-commit hooks.",
+        ),
+        (
+            "/bin/sh -c 'SKIP=quality-gates git commit -m test'",
+            SKIP_BYPASS_REASON,
+        ),
+        (
+            "/usr/bin/env bash -lc 'SKIP=quality-gates git commit -m test'",
+            SKIP_BYPASS_REASON,
+        ),
+        (
+            "/usr/bin/env /bin/bash -lc 'git push --force origin main'",
+            "Force push is prohibited here because it overwrites remote history.",
+        ),
+        (
+            "export SKIP=quality-gates\ngit commit -m test",
+            SKIP_BYPASS_REASON,
+        ),
     ]
 
     for command, reason in cases:
@@ -185,18 +295,26 @@ def test_evaluate_hook_policy_denies_repo_canonical_prohibited_shell_commands() 
         )
 
 
-def test_evaluate_hook_policy_allows_safe_shell_commands_and_non_shell_tools() -> None:
-    policy = make_policy()
+def test_evaluate_hook_policy_allows_safe_shell_commands_and_safe_mentions() -> None:
+    policy = subject.load_policy()
 
-    assert subject.evaluate_hook_policy(
-        policy,
-        subject.HookContext(
-            platform="cursor",
-            event="pre-tool",
-            shell_command="uv run check",
-            session_source=None,
-        ),
-    ) == subject.HookOutcome(decision="allow", reason=None, message=None)
+    safe_commands = [
+        "uv run python -m oaknational.python_repo_template.devtools check",
+        "echo SKIP=quality-gates",
+        "SKIP=quality-gates python -c 'print(1)'",
+        "export SKIP=quality-gates && python -c 'print(1)'",
+    ]
+    for command in safe_commands:
+        assert subject.evaluate_hook_policy(
+            policy,
+            subject.HookContext(
+                platform="cursor",
+                event="pre-tool",
+                shell_command=command,
+                session_source=None,
+            ),
+        ) == subject.HookOutcome(decision="allow", reason=None, message=None)
+
     assert subject.evaluate_hook_policy(
         policy,
         subject.HookContext(
@@ -209,10 +327,10 @@ def test_evaluate_hook_policy_allows_safe_shell_commands_and_non_shell_tools() -
 
 
 def test_evaluate_hook_policy_generates_session_start_advisory_message() -> None:
-    policy = make_policy()
+    policy = subject.load_policy()
     expected = (
         "Read .agent/commands/start-right-quick.md before substantive work.\n"
-        "If Python or tooling files change, run uv run check before you stop."
+        f"{QUALITY_GATE_MESSAGE}"
     )
 
     for platform in ("cursor", "claude", "gemini"):
@@ -231,8 +349,9 @@ def test_render_hook_emission_matches_platform_output_contracts() -> None:
     advisory = subject.HookOutcome(
         decision="advisory",
         reason=None,
-        message="Ground first.\nRun uv run check before you stop.",
+        message=f"Ground first.\n{QUALITY_GATE_MESSAGE}",
     )
+    allow = subject.HookOutcome(decision="allow", reason=None, message=None)
     deny = subject.HookOutcome(
         decision="deny",
         reason="git reset is prohibited here because it can discard commits or changes.",
@@ -246,7 +365,7 @@ def test_render_hook_emission_matches_platform_output_contracts() -> None:
     )
     assert cursor_session.exit_code == 0
     assert json.loads(cursor_session.stdout) == {
-        "additional_context": "Ground first.\nRun uv run check before you stop."
+        "additional_context": f"Ground first.\n{QUALITY_GATE_MESSAGE}"
     }
 
     claude_session = subject.render_hook_emission(
@@ -255,7 +374,7 @@ def test_render_hook_emission_matches_platform_output_contracts() -> None:
         outcome=advisory,
     )
     assert claude_session.exit_code == 0
-    assert claude_session.stdout == "Ground first.\nRun uv run check before you stop."
+    assert claude_session.stdout == f"Ground first.\n{QUALITY_GATE_MESSAGE}"
     assert claude_session.stderr == ""
 
     gemini_session = subject.render_hook_emission(
@@ -265,10 +384,8 @@ def test_render_hook_emission_matches_platform_output_contracts() -> None:
     )
     assert gemini_session.exit_code == 0
     assert json.loads(gemini_session.stdout) == {
-        "systemMessage": "Ground first.\nRun uv run check before you stop.",
-        "hookSpecificOutput": {
-            "additionalContext": "Ground first.\nRun uv run check before you stop."
-        },
+        "systemMessage": f"Ground first.\n{QUALITY_GATE_MESSAGE}",
+        "hookSpecificOutput": {"additionalContext": f"Ground first.\n{QUALITY_GATE_MESSAGE}"},
     }
 
     github_deny = subject.render_hook_emission(
@@ -295,3 +412,90 @@ def test_render_hook_emission_matches_platform_output_contracts() -> None:
         claude_deny.stderr
         == "git reset is prohibited here because it can discard commits or changes."
     )
+
+    cursor_allow = subject.render_hook_emission(
+        platform="cursor",
+        event="pre-tool",
+        outcome=allow,
+    )
+    assert cursor_allow == subject.RenderedHookEmission(
+        exit_code=0,
+        stdout='{"continue":true,"permission":"allow"}',
+        stderr="",
+    )
+
+    claude_allow = subject.render_hook_emission(
+        platform="claude",
+        event="pre-tool",
+        outcome=allow,
+    )
+    assert claude_allow == subject.RenderedHookEmission(exit_code=0, stdout="", stderr="")
+
+    gemini_allow = subject.render_hook_emission(
+        platform="gemini",
+        event="pre-tool",
+        outcome=allow,
+    )
+    assert gemini_allow == subject.RenderedHookEmission(
+        exit_code=0,
+        stdout='{"decision":"allow"}',
+        stderr="",
+    )
+
+    github_allow = subject.render_hook_emission(
+        platform="github",
+        event="pre-tool",
+        outcome=allow,
+    )
+    assert github_allow == subject.RenderedHookEmission(exit_code=0, stdout="", stderr="")
+
+
+def test_main_emits_cursor_session_start_payload() -> None:
+    stdin = io.StringIO("{}")
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+
+    with pytest.raises(SystemExit) as exc_info:
+        subject.main(
+            ["--platform", "cursor", "--event", "session-start"],
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+        )
+
+    assert exc_info.value.code == 0
+    assert stderr.getvalue() == ""
+    assert json.loads(stdout.getvalue()) == {
+        "additional_context": (
+            "Read .agent/commands/start-right-quick.md before substantive work.\n"
+            f"{QUALITY_GATE_MESSAGE}"
+        )
+    }
+
+
+def test_main_emits_github_deny_payload_for_skip_bypass() -> None:
+    stdin = io.StringIO(
+        json.dumps(
+            {
+                "toolName": "bash",
+                "toolArgs": json.dumps({"command": "env SKIP=quality-gates git commit -m test"}),
+            }
+        )
+    )
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+
+    with pytest.raises(SystemExit) as exc_info:
+        subject.main(
+            ["--platform", "github", "--event", "pre-tool"],
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+        )
+
+    assert exc_info.value.code == 0
+    assert stderr.getvalue() == ""
+    assert json.loads(stdout.getvalue()) == {
+        "permissionDecision": "deny",
+        "permissionDecisionReason": SKIP_BYPASS_REASON,
+    }

@@ -14,9 +14,10 @@ Its package identity follows the Oak Python convention:
 - Python version management: `.python-version`
 - formatter and linter: `ruff`
 - type checking: `pyright`
+- dependency hygiene: `deptry`
 - commit workflow: `commitizen`
 - tests: `pytest`
-- repo-state audit: `uv run repo-audit`
+- repo-state audit: `uv run python -m oaknational.python_repo_template.devtools repo-audit`
 
 ## Typing contract
 
@@ -26,20 +27,41 @@ Its package identity follows the Oak Python convention:
 
 ## Canonical command surface
 
-- `uv run clean`
-- `uv run build`
-- `uv run dev`
-- `uv run format`
-- `uv run format-fix`
-- `uv run lint`
-- `uv run lint-fix`
-- `uv run typecheck`
-- `uv run repo-audit`
-- `uv run test`
-- `uv run coverage`
-- `uv run fix`
-- `uv run check`
-- `uv run check-ci`
+- `uv run python -m oaknational.python_repo_template.devtools clean`
+- `uv run python -m oaknational.python_repo_template.devtools build`
+- `uv run python -m oaknational.python_repo_template.devtools dev`
+- `uv run python -m oaknational.python_repo_template.devtools format`
+- `uv run python -m oaknational.python_repo_template.devtools format-fix`
+- `uv run python -m oaknational.python_repo_template.devtools lint`
+- `uv run python -m oaknational.python_repo_template.devtools lint-fix`
+- `uv run python -m oaknational.python_repo_template.devtools typecheck`
+- `uv run python -m oaknational.python_repo_template.devtools repo-audit`
+- `uv run python -m oaknational.python_repo_template.devtools test`
+- `uv run python -m oaknational.python_repo_template.devtools coverage`
+- `uv run python -m oaknational.python_repo_template.devtools fix`
+- `uv run python -m oaknational.python_repo_template.devtools check`
+- `uv run python -m oaknational.python_repo_template.devtools check-ci`
+
+## Dependency hygiene
+
+- direct command: `uv run deptry .`
+- `deptry` proves declared dependency hygiene, not vulnerability scanning
+- `uv run python -m oaknational.python_repo_template.devtools check` and
+  `uv run python -m oaknational.python_repo_template.devtools check-ci` both
+  run dependency hygiene before the tracked-repo audit
+- `pyarrow` remains a deliberate `deptry` `DEP002` exception because pandas
+  exercises it indirectly through the bounded Parquet path
+
+## Packaging proof
+
+- `uv run python -m oaknational.python_repo_template.devtools build` builds the
+  repo artefacts and then smoke-tests the newest built wheel from a temporary
+  virtual environment outside the source tree
+- `uv run python -m oaknational.python_repo_template.devtools check` and
+  `uv run python -m oaknational.python_repo_template.devtools check-ci` keep
+  the same proof in their build step
+- the smoke path proves the installed package import plus both entry surfaces:
+  `activity-report` and `python -m oaknational.python_repo_template`
 
 ## Commit workflow
 
@@ -69,7 +91,7 @@ uv run cz check --message "docs: explain the Commitizen workflow"
 
 When hydrating or extending another Python repo with this Practice:
 
-1. keep the canonical `uv run ...` gate surface truthful
+1. keep the canonical repo-local `uv run python -m ...` gate surface truthful
 2. use Python-native separators such as dashes rather than colon aliases
 3. preserve stronger existing local contracts where they already meet or exceed
    this stack

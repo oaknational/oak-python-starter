@@ -7,22 +7,27 @@ After each fix, **restart the quality gate sequence from the beginning**. This p
 ## Canonical Command
 
 ```bash
-uv run check-ci
+uv run python -m oaknational.python_repo_template.devtools check-ci
 ```
 
 For the local fix-and-verify aggregate, use:
 
 ```bash
-uv run check
+uv run python -m oaknational.python_repo_template.devtools check
 ```
 
 The repo also exposes:
 
 ```bash
-uv run clean
-uv run build
-uv run dev
+uv run python -m oaknational.python_repo_template.devtools clean
+uv run python -m oaknational.python_repo_template.devtools build
+uv run python -m oaknational.python_repo_template.devtools dev
+uv run deptry .
 ```
+
+Dependency hygiene runs through `uv run deptry .` and is included in both
+aggregate gate commands before `repo-audit`. It proves declared dependency
+hygiene, not vulnerability scanning.
 
 ## Rules
 
@@ -31,8 +36,9 @@ uv run dev
 3. **Restart on fix** — After fixing any issue, restart the sequence
 4. **No skipping** — Every gate must pass before proceeding to the next
 
-The non-mutating aggregate includes a build probe so packaging failures surface
-before closeout.
+The non-mutating aggregate includes both the dependency-hygiene pass and an
+installed-wheel smoke check in its build probe so drift and packaging failures
+surface before closeout.
 
 ## Success Criteria
 

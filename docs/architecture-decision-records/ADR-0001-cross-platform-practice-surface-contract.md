@@ -56,7 +56,9 @@ The repo adopts the following cross-platform Practice surface contract:
    content. GitHub reviewer wrappers, GitHub instruction wrappers, and Gemini
    command wrappers follow the same canonical-first rule. The landed hook layer
    follows the same pattern: policy in `.agent/hooks/`, shared runtime in
-   `tools/agent_hooks.py`, thin native activation only in platform config.
+   `tools/agent_hooks.py`, thin native activation only in platform config. The
+   live support state, including Gemini hook support, is recorded in the
+   operational matrix rather than inferred from symmetry.
 
 ## Consequences
 

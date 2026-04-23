@@ -64,6 +64,8 @@ split_strategy: "Keep behaviour doctrine here and move examples out if needed"
 - Unit, integration, and system tests must prove useful behaviour rather than
   merely execute lines.
 - Mocks should be simple fakes passed in as arguments.
+- Do not use monkeypatching or runtime patch helpers in tests; introduce
+  explicit seams instead.
 - Avoid global state changes in tests.
 - Do not skip tests.
 - Prefer deterministic fixtures, seeded inputs, and reproducible execution.

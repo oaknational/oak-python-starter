@@ -39,6 +39,14 @@ def make_http_error(url: str, status_code: int) -> requests.HTTPError:
     return requests.HTTPError(response=response)
 
 
+def make_redirect_response(url: str, location: str) -> requests.Response:
+    response = requests.Response()
+    response.status_code = 302
+    response.url = url
+    response.headers["Location"] = location
+    return response
+
+
 def test_validate_activity_frame_rejects_contract_shape_mismatches() -> None:
     with pytest.raises(subject.ActivityDataError, match="missing columns: notes"):
         subject.validate_activity_frame(
@@ -193,6 +201,14 @@ def test_load_activity_log_dispatches_by_suffix() -> None:
         subject.load_activity_log(Path("sample.txt"))
 
 
+def test_load_activity_log_wraps_local_loader_failures() -> None:
+    with pytest.raises(subject.ActivityDataError, match="Could not load activity data"):
+        subject.load_activity_log(
+            Path("missing.csv"),
+            csv_loader=lambda path: (_ for _ in ()).throw(FileNotFoundError(path)),
+        )
+
+
 def test_load_activity_log_dispatches_remote_sources_by_suffix() -> None:
     csv_frame = make_frame()
     parquet_frame = subject.validate_activity_frame(make_frame())
@@ -224,6 +240,19 @@ def test_load_activity_log_dispatches_remote_sources_by_suffix() -> None:
     assert loaded_parquet.equals(subject.validate_activity_frame(parquet_frame))
 
 
+def test_load_activity_log_rejects_remote_redirects() -> None:
+    def fake_get(url: str, *, timeout: int, allow_redirects: bool) -> requests.Response:
+        assert timeout == subject.REMOTE_TIMEOUT_SECONDS
+        assert allow_redirects is False
+        return make_redirect_response(url, "http://example.test/activity.csv")
+
+    with pytest.raises(subject.ActivityDataError, match="Could not load activity data"):
+        subject.load_activity_log(
+            "https://example.test/activity.csv",
+            remote_reader=lambda url: subject.default_remote_reader(url, http_get=fake_get),
+        )
+
+
 def test_derive_metadata_source_supports_local_and_https_inputs() -> None:
     assert subject.derive_metadata_source(Path("data/fixtures/activity_log.csv")) == Path(
         "data/fixtures/activity_log.metadata.yaml"
@@ -234,6 +263,22 @@ def test_derive_metadata_source_supports_local_and_https_inputs() -> None:
     assert subject.derive_metadata_source("https://example.test/reports/activity.parquet") == (
         "https://example.test/reports/activity.metadata.yaml"
     )
+
+
+def test_resolve_activity_source_treats_windows_drive_paths_as_local() -> None:
+    windows_drive_paths = [
+        "C:/temp/activity.csv",
+        r"C:\temp\activity.csv",
+    ]
+
+    for raw in windows_drive_paths:
+        source = subject.resolve_activity_source(raw)
+        assert source.is_remote is False
+        assert source.suffix == ".csv"
+
+    for raw in ("//attacker/share/activity.csv", r"\\attacker\share\activity.csv"):
+        with pytest.raises(subject.ActivityDataError, match="UNC activity sources"):
+            subject.resolve_activity_source(raw)
 
 
 def test_load_activity_metadata_parses_labels_and_targets() -> None:
@@ -311,4 +356,13 @@ def test_load_activity_metadata_rejects_unknown_keys_and_categories() -> None:
                     "  reading: 30",
                 ]
             ),
+        )
+
+
+def test_load_activity_metadata_rejects_invalid_yaml() -> None:
+    with pytest.raises(subject.ActivityDataError, match="valid YAML"):
+        subject.load_activity_metadata(
+            Path("activity.metadata.yaml"),
+            categories=make_categories(),
+            local_text_loader=lambda path: "category_targets: [",
         )

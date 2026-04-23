@@ -90,12 +90,12 @@ For non-trivial work, align review to the lifecycle:
 
 ```bash
 uv sync
-uv run clean
-uv run build
-uv run dev
-uv run check
-uv run check-ci
-uv run fix
-uv run test
-uv run coverage
+uv run python -m oaknational.python_repo_template.devtools clean
+uv run python -m oaknational.python_repo_template.devtools build
+uv run python -m oaknational.python_repo_template.devtools dev
+uv run python -m oaknational.python_repo_template.devtools check
+uv run python -m oaknational.python_repo_template.devtools check-ci
+uv run python -m oaknational.python_repo_template.devtools fix
+uv run python -m oaknational.python_repo_template.devtools test
+uv run python -m oaknational.python_repo_template.devtools coverage
 ```

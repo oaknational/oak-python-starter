@@ -16,22 +16,25 @@ todos:
     status: completed
   - id: wheel
     content: "Add an installed-wheel smoke check to the canonical build and check path."
-    status: pending
+    status: completed
   - id: registry
-    content: "Centralise gate-command truth and add dependency-hygiene enforcement."
-    status: pending
+    content: "Centralise gate-command truth."
+    status: completed
+  - id: dep-hygiene
+    content: "Add dependency-hygiene enforcement."
+    status: completed
   - id: gates
     content: "Run the canonical quality gates."
-    status: pending
+    status: completed
   - id: review
     content: "Run the relevant reviewer passes."
-    status: pending
+    status: completed
 ---
 
 # Pythonic Alignment, Demo Expansion, and Commitizen Adoption
 
 **Last Updated**: 2026-04-23  
-**Status**: 🔄 ACTIVE  
+**Status**: ✅ COMPLETE  
 **Scope**: Make the repo more idiomatic for Python developers by broadening the demo, tightening packaging truth, and strengthening enforcement without relaxing Oak's namespace, `uv`, Practice, or safety requirements.
 
 ## End Goal
@@ -78,8 +81,6 @@ clarity without displacing Oak's canonical contracts. In practice that means:
 - the repo uses `pre-commit`, and WS4 strengthens that existing hook surface
   by adding truthful `commit-msg` validation rather than introducing a
   parallel hook manager
-- `check-ci` proves the repo builds from source, but it does not yet prove the
-  built wheel installs and runs correctly in isolation.
 - WS3 has now landed: `pyright` scope and strictness are explicit in
   `pyproject.toml`, `py.typed` ships in both sdist and wheel artefacts, and
   repo audit now guards the typing contract so it cannot silently drift.
@@ -93,6 +94,21 @@ clarity without displacing Oak's canonical contracts. In practice that means:
   of preserving `oaknational/python_repo_template/*`. The wheel target now uses
   namespace-preserving `only-include` plus `sources`, and repo audit guards
   that packaging contract.
+- WS5 has now landed: canonical gate-command names and handler targets live in
+  `src/oaknational/python_repo_template/gate_registry.py`, repo audit reads the
+  same registry, and the canonical build paths now install the built wheel into
+  a temporary virtual environment outside the source tree.
+- that smoke path proves the installed package import plus both entry surfaces
+  `activity-report` and `python -m oaknational.python_repo_template` against a
+  copied activity-pack fixture, rather than trusting source-tree imports.
+- WS6 has now landed: `deptry` is part of the dev tooling set, `uv run deptry .`
+  is the direct dependency-hygiene command, and both aggregate checks run it
+  before `repo-audit` without expanding the public gate-command registry.
+- the `deptry` configuration stays intentionally small: it marks the Oak
+  namespace as first party and documents one `DEP002` exception for `pyarrow`,
+  which the demo exercises indirectly through pandas' Parquet backend.
+- the final close review pass found no additional code changes beyond the WS6
+  landing, and the repo finished with a passing `uv run check`.
 - the repo intentionally preserves Oak-specific constraints that are not open
   for dilution: namespace packaging, `uv` command truth, strict gates, and the
   Practice estate
@@ -105,7 +121,8 @@ clarity without displacing Oak's canonical contracts. In practice that means:
   plotting, YAML support, HTTP access, and Parquet I/O
 - `pre-commit` already present in the dev dependency group and active in the
   repo
-- a passing build probe already exists in the canonical gate sequence
+- canonical build and check paths now prove installed-wheel viability outside
+  the source tree
 
 ## Non-Goals
 

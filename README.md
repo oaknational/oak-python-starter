@@ -16,6 +16,14 @@ uses to define "Pythonic within Oak".
 The package ships `py.typed`, and the repo type-checks `src/`, `tests/`, and
 `tools/` under explicit strict `pyright` settings.
 
+The canonical repo-local build and `check-ci` flow also smoke-tests the built
+wheel in a temporary virtual environment outside the source tree, running the
+installed package import plus the `activity-report` and
+`python -m oaknational.python_repo_template` entry surfaces.
+
+Dependency hygiene runs through `uv run deptry .` and is included as a blocking
+step inside both aggregate gate commands. It is dependency hygiene, not vulnerability scanning.
+
 ## Agentic Engineering
 
 This repo is optimised for agentic engineering. Its Practice surfaces,
@@ -89,15 +97,19 @@ uv run activity-report report --input https://example.test/activity_log.csv
 
 ```bash
 uv sync
-uv run clean
-uv run build
-uv run dev
-uv run check
-uv run check-ci
-uv run fix
-uv run test
-uv run coverage
+uv run python -m oaknational.python_repo_template.devtools clean
+uv run python -m oaknational.python_repo_template.devtools build
+uv run python -m oaknational.python_repo_template.devtools dev
+uv run deptry .
+uv run python -m oaknational.python_repo_template.devtools check
+uv run python -m oaknational.python_repo_template.devtools check-ci
+uv run python -m oaknational.python_repo_template.devtools fix
+uv run python -m oaknational.python_repo_template.devtools test
+uv run python -m oaknational.python_repo_template.devtools coverage
 ```
+
+Those developer commands are source-checkout workflows. The installed wheel
+publishes only `activity-report` and `python -m oaknational.python_repo_template`.
 
 ## Commit Workflow
 

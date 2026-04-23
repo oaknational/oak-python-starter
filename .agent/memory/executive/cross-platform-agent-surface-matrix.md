@@ -11,4 +11,4 @@ across platforms.
 | skills | `.agent/skills/` | portable | portable | portable | portable | portable | wrapper parity |
 | commands | `.agent/commands/` | portable | portable | portable | portable | unsupported | wrapper parity |
 | subagents | `.agent/sub-agents/` | portable | portable | portable | portable | portable | wrapper parity |
-| hooks | `.agent/hooks/` | portable | unsupported | portable | unsupported | portable | hook runtime |
+| hooks | `.agent/hooks/` | portable | unsupported | portable | portable | portable | hook runtime |

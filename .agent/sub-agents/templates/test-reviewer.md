@@ -127,7 +127,7 @@ Update tests at the SAME level as the behaviour change FIRST:
 - [ ] Integration tests have only SIMPLE mocks
 - [ ] All mocks injected as parameters
 - [ ] No global state manipulation
-- [ ] No `os.environ` mutations or broad `monkeypatch` usage
+- [ ] No `os.environ` mutations or runtime patch helpers such as `monkeypatch`
 
 ### Test Value
 

@@ -54,18 +54,37 @@
   The wheel target now uses `only-include` plus `sources` to preserve
   `oaknational/python_repo_template/*`, and repo audit now guards that
   namespace-preserving contract.
-- The landing finished with a passing `uv run check`, so the repo is ready to
-  move directly into WS5 rather than another WS4 stabilisation pass.
+- WS5 is now landed: canonical gate-command truth lives in
+  `src/oaknational/python_repo_template/gate_registry.py`, `tools/repo_audit.py`
+  reads that same registry, and `uv run build`, `uv run check`, and
+  `uv run check-ci` now all prove installed-wheel viability.
+- The wheel smoke path builds the repaired
+  `oaknational.python_repo_template` wheel, installs it into a temporary
+  virtual environment outside the source tree, copies the seeded activity pack
+  into a temporary workspace, and proves the package import plus both
+  `activity-report` and `python -m oaknational.python_repo_template`.
+- The WS5 landing finished with passing `uv run build`, `uv run check-ci`, and
+  `uv run check`.
+- WS6 is now landed: `deptry` is in the dev dependency group, the direct
+  dependency-hygiene command is `uv run deptry .`, and both aggregate checks
+  run it before `repo-audit` without adding a new public gate command.
+- The `deptry` configuration stays deliberately small: `oaknational` is marked
+  as known first party, and `pyarrow` has one documented `DEP002` exception for
+  the indirect pandas Parquet backend path.
+- README, `docs/dev-tooling.md`, `.agent/commands/gates.md`, and the
+  start-right gate-sequence doc were updated together with repo audit and
+  tests, so the new dependency-hygiene contract is documented and enforced in
+  one landing.
+- The final session closed green with passing `uv run deptry .`, focused
+  tooling tests, and `uv run check`.
 
 ## Blockers / Low-Confidence Areas
 
-- Gate-command centralisation and dependency-hygiene enforcement should land in
-  a shape that stays small and readable rather than becoming a framework.
-- Installed-wheel verification still needs to be added to the canonical build
-  and check path so the repaired namespace-preserving wheel shape is proven as
-  an installed artefact, not only as a built file.
+- No active blockers remain at closeout.
+- Reopen only if a regression appears in the dependency-hygiene gate, the
+  installed-wheel proof, or the bounded demo contract.
 
 ## Next Safe Step
 
-- Start WS5 of the plan: add installed-wheel verification to the canonical
-  build and check path, then continue with gate-command centralisation.
+- No further work is planned for this thread. Treat it as closed unless new
+  owner direction or a regression requires a follow-up tranche.

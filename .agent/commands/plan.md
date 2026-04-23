@@ -67,18 +67,18 @@ name imaginary reviewers as required participants.
 ## Quality gates
 
 Plans must name the relevant validation commands. In this repo the canonical
-surface is `uv run ...`.
+source-checkout surface is `uv run python -m oaknational.python_repo_template.devtools ...`.
 
 Typical gates:
 
-- `uv run format`
-- `uv run lint`
-- `uv run typecheck`
-- `uv run test`
-- `uv run coverage`
-- `uv run repo-audit`
-- `uv run check`
-- `uv run check-ci`
+- `uv run python -m oaknational.python_repo_template.devtools format`
+- `uv run python -m oaknational.python_repo_template.devtools lint`
+- `uv run python -m oaknational.python_repo_template.devtools typecheck`
+- `uv run python -m oaknational.python_repo_template.devtools test`
+- `uv run python -m oaknational.python_repo_template.devtools coverage`
+- `uv run python -m oaknational.python_repo_template.devtools repo-audit`
+- `uv run python -m oaknational.python_repo_template.devtools check`
+- `uv run python -m oaknational.python_repo_template.devtools check-ci`
 
 ## Templates
 

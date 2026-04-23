@@ -19,7 +19,7 @@ Run the full quality gate sequence from repo root. If any gate
 fails, report it as a critical finding.
 
 ```bash
-uv run check-ci
+uv run python -m oaknational.python_repo_template.devtools check-ci
 ```
 
 ## Step 2: Triage Specialists

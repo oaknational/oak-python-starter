@@ -37,7 +37,7 @@ This layer keeps hook behaviour small, explicit, and deterministic:
 
 ## Boundaries
 
-- No auto-running `uv run check`
+- No auto-running `uv run python -m oaknational.python_repo_template.devtools check`
 - No retry loops or prompt rewriting
 - No platform-local hook scripts with substantive logic
 - No support claim for Codex based on non-canonical third-party material

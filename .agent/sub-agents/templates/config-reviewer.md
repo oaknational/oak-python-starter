@@ -91,7 +91,8 @@ Produce the structured output below.
 
 ### Quality Gate Alignment
 
-- [ ] All quality gates pass: `uv run check-ci`
+- [ ] All quality gates pass:
+  `uv run python -m oaknational.python_repo_template.devtools check-ci`
 - [ ] Coverage thresholds maintained or improved
 
 ## Output Format
