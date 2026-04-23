@@ -19,22 +19,23 @@ Run the full quality gate sequence from repo root. If any gate
 fails, report it as a critical finding.
 
 ```bash
-uv run check
+uv run check-ci
 ```
 
 ## Step 2: Triage Specialists
 
 Answer these questions to identify which specialists
-are needed (from the invoke-code-reviewers directive):
+are needed (from the executive reviewer catalogue at
+`.agent/memory/executive/invoke-code-reviewers.md`):
 
-1. Does this touch strategy logic, risk parameters, or position sizing? -> `architecture-reviewer`
-2. Does this change module boundaries or public APIs? -> `architecture-reviewer`
-3. Does this add or modify tests? -> `test-reviewer`
-4. Does this change tooling configs or quality gates? -> `config-reviewer`
-5. Does this touch credentials, API keys, or external auth? -> `security-reviewer`
+1. Does this change module boundaries, public APIs, or planning shape? -> `architecture-reviewer`
+2. Does this add or modify tests or proof structure? -> `test-reviewer`
+3. Does this change tooling configs, hooks, or quality gates? -> `config-reviewer`
+4. Does this touch credentials, secret handling, or trust boundaries? -> `security-reviewer`
+5. Is this a general whole-change pass? -> always invoke `code-reviewer`
 
-Always invoke `code-reviewer`. Only invoke other specialists
-when the triage questions indicate they are relevant.
+Always invoke `code-reviewer`. Only invoke other specialists when the triage
+questions indicate they are relevant.
 
 ## Step 3: Invoke Specialists
 

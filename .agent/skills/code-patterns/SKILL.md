@@ -2,14 +2,17 @@
 name: code-patterns
 classification: passive
 description: >-
-  Check .agent/memory/code-patterns/ for known solutions to recurring
-  design problems before inventing a new approach. Triggered when facing
-  type-safety issues, validation questions, or boundary design pressure.
+  Check the Core and repo-local pattern libraries for known solutions to
+  recurring design problems before inventing a new approach. Triggered when
+  facing type-safety issues, validation questions, or boundary design pressure.
 ---
 
 # Code Patterns
 
-When you identify a design problem -- especially type-safety issues, validation questions, or boundary design pressure -- check `.agent/memory/code-patterns/` for known solutions before inventing a new approach.
+When you identify a design problem -- especially type-safety issues,
+validation questions, or boundary design pressure -- check both
+`.agent/practice-core/patterns/` and `.agent/memory/active/patterns/`
+before inventing a new approach.
 
 ## When to Use
 
@@ -21,10 +24,13 @@ When you identify a design problem -- especially type-safety issues, validation 
 
 ## Steps
 
-1. Read `.agent/memory/code-patterns/README.md` to discover available patterns.
-2. Match the current problem against each pattern's `use_this_when` field.
-3. If a pattern matches, read its full file and apply the approach.
-4. If no pattern matches, proceed normally -- do not force a fit.
+1. Read `.agent/practice-core/patterns/README.md` to see whether a portable
+   general pattern already exists.
+2. Read `.agent/memory/active/patterns/README.md` to discover repo-local
+   patterns.
+3. Match the current problem against each pattern's description.
+4. If a pattern matches, read its full file and apply the approach.
+5. If no pattern matches, proceed normally -- do not force a fit.
 
 ## Important
 

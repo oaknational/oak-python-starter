@@ -1,0 +1,6 @@
+---
+description: register identity on thread join
+alwaysApply: true
+---
+
+Read and follow `.agent/rules/register-identity-on-thread-join.md`.

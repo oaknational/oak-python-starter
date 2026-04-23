@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-import python_repo_template.__main__ as subject
+import oaknational.python_repo_template.__main__ as subject
 
 
 def test_main_reports_fixture_summary(
@@ -16,7 +16,7 @@ def test_main_reports_fixture_summary(
         sys,
         "argv",
         [
-            "python -m python_repo_template",
+            "python -m oaknational.python_repo_template",
             "report",
             "--input",
             str(Path("data/fixtures/activity_log.csv")),

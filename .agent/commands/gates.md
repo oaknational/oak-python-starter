@@ -7,7 +7,21 @@ After each fix, **restart the quality gate sequence from the beginning**. This p
 ## Canonical Command
 
 ```bash
+uv run check-ci
+```
+
+For the local fix-and-verify aggregate, use:
+
+```bash
 uv run check
+```
+
+The repo also exposes:
+
+```bash
+uv run clean
+uv run build
+uv run dev
 ```
 
 ## Rules
@@ -16,6 +30,9 @@ uv run check
 2. **Fix, don't disable** — Never use `# noqa`, `# type: ignore`, or similar escapes
 3. **Restart on fix** — After fixing any issue, restart the sequence
 4. **No skipping** — Every gate must pass before proceeding to the next
+
+The non-mutating aggregate includes a build probe so packaging failures surface
+before closeout.
 
 ## Success Criteria
 

@@ -1,4 +1,5 @@
 # Runtime Infrastructure Current
 
-The current runtime baseline is the activity log validation, Parquet output, and
-report generation path.
+| Priority | Work | Status |
+| --- | --- | --- |
+| P0 | Preserve truthful validation, reporting, and repo-audit behaviour | 📋 Ready when needed |

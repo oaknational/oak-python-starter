@@ -26,7 +26,7 @@ the repo can keep, review, and trust.
 
 Treat the export as a recovery artefact, not as canonical source material.
 
-Read `.agent/memory/code-patterns/chatgpt-report-normalisation.md` before
+Read `.agent/memory/active/patterns/chatgpt-report-normalisation.md` before
 making structural decisions or choosing a rebuild strategy.
 
 ## Workflow

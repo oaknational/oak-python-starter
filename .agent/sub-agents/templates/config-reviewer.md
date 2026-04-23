@@ -91,7 +91,7 @@ Produce the structured output below.
 
 ### Quality Gate Alignment
 
-- [ ] All quality gates pass: `uv run check`
+- [ ] All quality gates pass: `uv run check-ci`
 - [ ] Coverage thresholds maintained or improved
 
 ## Output Format

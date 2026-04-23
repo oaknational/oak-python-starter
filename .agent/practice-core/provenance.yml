@@ -1,13 +1,44 @@
 files:
   practice.md:
-    - repo: python-repo-template
+    - repo: oaknational-python-repo-template
       date: 2026-04-21
       purpose: Seeded portable Practice blueprint for the template repo
+    - repo: oaknational-python-repo-template
+      date: 2026-04-23
+      purpose: Adopted the three-plane memory estate and split closeout loops
+    - repo: oaknational-python-repo-template
+      date: 2026-04-23
+      purpose: Added document-tier routing and full planning architecture
   practice-lineage.md:
-    - repo: python-repo-template
+    - repo: oaknational-python-repo-template
       date: 2026-04-21
       purpose: Seeded Practice propagation guidance for the template repo
+    - repo: oaknational-python-repo-template
+      date: 2026-04-23
+      purpose: Ratified the integration flow for full memory and feedback surfaces
+    - repo: oaknational-python-repo-template
+      date: 2026-04-23
+      purpose: Recorded exploration and document-tier routing in the lineage contract
   practice-bootstrap.md:
-    - repo: python-repo-template
+    - repo: oaknational-python-repo-template
       date: 2026-04-21
       purpose: Seeded bootstrap guidance for generic Python template hydration
+    - repo: oaknational-python-repo-template
+      date: 2026-04-23
+      purpose: Added canonical guidance for the three-plane memory and continuity hosts
+    - repo: oaknational-python-repo-template
+      date: 2026-04-23
+      purpose: Added Pythonic canonical quality-gate naming guidance without aliases
+    - repo: oaknational-python-repo-template
+      date: 2026-04-23
+      purpose: Added planning architecture, document tiers, and ecosystem-reference guidance
+  practice-verification.md:
+    - repo: oaknational-python-repo-template
+      date: 2026-04-23
+      purpose: Added structural and operational checks for the expanded Practice estate
+    - repo: oaknational-python-repo-template
+      date: 2026-04-23
+      purpose: Added verification for the Pythonic canonical quality-gate surface
+    - repo: oaknational-python-repo-template
+      date: 2026-04-23
+      purpose: Added verification for planning architecture, document tiers, and dev-tooling reference

@@ -15,12 +15,20 @@ Use British spelling, grammar, and date formats in repo-facing text.
 
 For planning work, read [metacognition.md](./metacognition.md) and reflect
 before locking an approach.
+Read [orientation.md](./orientation.md) when you need to route information to
+the correct layer or resolve authority questions.
 
 ## The Practice
 
 This repo uses the Practice as first-class infrastructure. For orientation, see
 [practice-core/index.md](../practice-core/index.md). For the local bridge, see
 [practice-index.md](../practice-index.md).
+
+This repo uses the full three-plane memory estate:
+
+- `active/` for the learning loop
+- `operational/` for continuity and session resume
+- `executive/` for stable organisational contracts
 
 ## First Question
 
@@ -45,7 +53,9 @@ Read and apply:
 
 - [principles.md](./principles.md)
 - [testing-strategy.md](./testing-strategy.md)
-- [invoke-code-reviewers.md](./invoke-code-reviewers.md)
+- [data-boundary-doctrine.md](./data-boundary-doctrine.md)
+- [evidence-methodology.md](./evidence-methodology.md)
+- [Invoke Code Reviewers](../memory/executive/invoke-code-reviewers.md)
 
 ## Use Reviewers
 
@@ -60,19 +70,32 @@ Available reviewers:
 - `security-reviewer`
 - `config-reviewer`
 
+For non-trivial work, align review to the lifecycle:
+
+- plan-time for framing and scope
+- mid-cycle for proofs, boundaries, or tooling
+- close for whole-change coherence
+
 ## Essential Links
 
 - [Vision](../VISION.md)
 - [Practice Index](../practice-index.md)
-- [Artefact Inventory](./artefact-inventory.md)
-- [Cross-Platform Surface Matrix](../reference/cross-platform-agent-surface-matrix.md)
+- [Artefact Inventory](../memory/executive/artefact-inventory.md)
+- [Cross-Platform Surface Matrix](../memory/executive/cross-platform-agent-surface-matrix.md)
+- [Repo Continuity](../memory/operational/repo-continuity.md)
+- [High-Level Plan](../plans/high-level-plan.md)
 - [Roadmap](../plans/roadmap.md)
 
 ## Development Commands
 
 ```bash
 uv sync
+uv run clean
+uv run build
+uv run dev
 uv run check
+uv run check-ci
+uv run fix
 uv run test
 uv run coverage
 ```

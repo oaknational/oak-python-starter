@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import re
+import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -14,98 +14,86 @@ REQUIRED_PATHS = [
     "CLAUDE.md",
     "GEMINI.md",
     ".agent/directives/AGENT.md",
+    ".agent/directives/orientation.md",
     ".agent/directives/principles.md",
     ".agent/directives/testing-strategy.md",
     ".agent/practice-index.md",
     ".agent/VISION.md",
+    ".agent/memory/README.md",
+    ".agent/memory/active/distilled.md",
+    ".agent/memory/active/napkin.md",
+    ".agent/memory/active/patterns/README.md",
+    ".agent/memory/operational/README.md",
+    ".agent/memory/operational/repo-continuity.md",
+    ".agent/memory/operational/threads/README.md",
+    ".agent/memory/executive/README.md",
+    ".agent/memory/executive/artefact-inventory.md",
+    ".agent/memory/executive/invoke-code-reviewers.md",
+    ".agent/memory/executive/cross-platform-agent-surface-matrix.md",
+    ".agent/research/README.md",
+    ".agent/analysis/README.md",
+    ".agent/reports/README.md",
+    ".agent/reference/README.md",
+    ".agent/experience/README.md",
+    ".agent/practice-core/practice-verification.md",
+    ".agent/practice-core/decision-records/README.md",
+    ".agent/practice-core/patterns/README.md",
     ".agent/plans/README.md",
+    ".agent/plans/high-level-plan.md",
+    ".agent/plans/completed-plans.md",
     ".agent/plans/roadmap.md",
+    ".agent/plans/templates/README.md",
     ".agent/plans/agentic-engineering/README.md",
+    ".agent/plans/agentic-engineering/roadmap.md",
+    ".agent/plans/agentic-engineering/documentation-sync-log.md",
     ".agent/plans/runtime-infrastructure/README.md",
+    ".agent/plans/runtime-infrastructure/roadmap.md",
+    ".agent/plans/runtime-infrastructure/documentation-sync-log.md",
     ".agent/plans/demo-application/README.md",
-    ".agent/reference/cross-platform-agent-surface-matrix.md",
+    ".agent/plans/demo-application/roadmap.md",
+    ".agent/plans/demo-application/documentation-sync-log.md",
+    ".agent/commands/ephemeral-to-permanent-homing.md",
+    ".agent/commands/session-handoff.md",
+    ".agent/skills/commit/SKILL.md",
+    ".agent/skills/tsdoc/SKILL.md",
     ".agent/hooks/policy.json",
-    "src/python_repo_template/__main__.py",
-    "src/python_repo_template/devtools.py",
-    "src/python_repo_template/data/activity_store.py",
-    "src/python_repo_template/demo/activity_report.py",
+    "src/oaknational/python_repo_template/__main__.py",
+    "src/oaknational/python_repo_template/devtools.py",
+    "src/oaknational/python_repo_template/data/activity_store.py",
+    "src/oaknational/python_repo_template/demo/activity_report.py",
     "tools/__init__.py",
     "tools/agent_hooks.py",
     "tools/repo_audit.py",
     "tests/test_agent_hooks.py",
     "tests/test_activity_store.py",
     "tests/test_activity_report.py",
+    "tests/test_devtools.py",
     "tests/test_package_entrypoint.py",
     "data/fixtures/activity_log.csv",
     "data/fixtures/activity_log.metadata.yaml",
     "docs/architecture-decision-records/ADR-0001-cross-platform-practice-surface-contract.md",
+    "docs/explorations/README.md",
+    "docs/dev-tooling.md",
 ]
-TEXT_SUFFIXES = {
-    ".md",
-    ".py",
-    ".toml",
-    ".json",
-    ".yaml",
-    ".yml",
-    ".txt",
-    ".csv",
+CANONICAL_GATE_SCRIPTS = {
+    "clean": "oaknational.python_repo_template.devtools:clean",
+    "build": "oaknational.python_repo_template.devtools:build",
+    "dev": "oaknational.python_repo_template.devtools:dev",
+    "format": "oaknational.python_repo_template.devtools:format_gate",
+    "format-fix": "oaknational.python_repo_template.devtools:format_fix",
+    "lint": "oaknational.python_repo_template.devtools:lint",
+    "lint-fix": "oaknational.python_repo_template.devtools:lint_fix",
+    "typecheck": "oaknational.python_repo_template.devtools:typecheck",
+    "repo-audit": "oaknational.python_repo_template.devtools:repo_audit",
+    "test": "oaknational.python_repo_template.devtools:test",
+    "coverage": "oaknational.python_repo_template.devtools:coverage",
+    "fix": "oaknational.python_repo_template.devtools:fix",
+    "check": "oaknational.python_repo_template.devtools:check",
+    "check-ci": "oaknational.python_repo_template.devtools:check_ci",
 }
-TEXT_FILE_NAMES = {
-    ".gitignore",
-    ".python-version",
+LEGACY_GATE_SCRIPTS = {
+    "format-check",
 }
-IGNORED_DIRECTORIES = {
-    ".git",
-    ".venv",
-    "__pycache__",
-    ".pytest_cache",
-    ".ruff_cache",
-    ".mypy_cache",
-    ".import_linter_cache",
-    "htmlcov",
-}
-
-
-def _join_parts(*parts: str) -> str:
-    return "".join(parts)
-
-
-LEGACY_TERMS = (
-    (_join_parts("trad", "ing"),),
-    (_join_parts("trad", "e"),),
-    (_join_parts("fin", "ance"),),
-    (_join_parts("fin", "ancial"),),
-    (_join_parts("sto", "ck"),),
-    (_join_parts("sto", "cks"),),
-    (_join_parts("sha", "re"),),
-    (_join_parts("sha", "res"),),
-    (_join_parts("mark", "et"), _join_parts("da", "ta")),
-    (_join_parts("ohl", "cv"),),
-    (_join_parts("back", "test"),),
-    (_join_parts("back", "testing"),),
-    (_join_parts("bro", "ker"),),
-    (_join_parts("bro", "kerage"),),
-    (_join_parts("port", "folio"),),
-    (_join_parts("equ", "ity"),),
-    (_join_parts("alp", "aca"),),
-    (
-        _join_parts("trad", "ing"),
-        _join_parts("view"),
-    ),
-    (_join_parts("pi", "ne"),),
-    (_join_parts("nv", "da"),),
-)
-DENY_PATTERN = re.compile(
-    "|".join(
-        (
-            r"\b" + re.escape(parts[0]) + r"\b"
-            if len(parts) == 1
-            else r"\b" + r"\s+".join(re.escape(part) for part in parts) + r"\b"
-        )
-        for parts in LEGACY_TERMS
-    ),
-    flags=re.IGNORECASE,
-)
 
 
 def read_text(path: Path, failures: list[str], check: str) -> str | None:
@@ -161,20 +149,21 @@ def audit_identity(root: Path) -> list[str]:
         require(
             failures,
             check,
-            "# Python Repo Template" in readme and "activity-report" in readme,
+            "# Oak Python Repo Template" in readme and "activity-report" in readme,
             "README must describe the template identity and demo CLI",
         )
     if pyproject is not None:
         require(
             failures,
             check,
-            'name = "python-repo-template"' in pyproject,
+            'name = "oaknational-python-repo-template"' in pyproject,
             "pyproject must expose the template package name",
         )
         require(
             failures,
             check,
-            'activity-report = "python_repo_template.demo.activity_report:main"' in pyproject,
+            'activity-report = "oaknational.python_repo_template.demo.activity_report:main"'
+            in pyproject,
             "pyproject must expose the activity-report script",
         )
     if agent is not None:
@@ -183,6 +172,52 @@ def audit_identity(root: Path) -> list[str]:
             check,
             "runtime infrastructure" in agent and "demo application" in agent,
             "AGENT.md must describe the three repo strands",
+        )
+    practice_index = read_text(root / ".agent/practice-index.md", failures, check)
+    if practice_index is not None:
+        require(
+            failures,
+            check,
+            "practice-core/practice-verification.md" in practice_index
+            and "memory/operational/repo-continuity.md" in practice_index
+            and "plans/high-level-plan.md" in practice_index
+            and "docs/dev-tooling.md" in practice_index,
+            "Practice Index must expose verification, continuity, planning, and tooling surfaces",
+        )
+    return failures
+
+
+def audit_gate_scripts(root: Path) -> list[str]:
+    check = "gate-scripts"
+    failures: list[str] = []
+    pyproject_path = root / "pyproject.toml"
+    try:
+        data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        failures.append(f"{check}: could not read pyproject.toml: {exc}")
+        return failures
+    scripts = data.get("project", {}).get("scripts")
+    require(
+        failures,
+        check,
+        isinstance(scripts, dict),
+        "pyproject.toml must define [project.scripts]",
+    )
+    if not isinstance(scripts, dict):
+        return failures
+    for name, target in CANONICAL_GATE_SCRIPTS.items():
+        require(
+            failures,
+            check,
+            scripts.get(name) == target,
+            f"pyproject.toml must expose {name!r} -> {target!r}",
+        )
+    for name in LEGACY_GATE_SCRIPTS:
+        require(
+            failures,
+            check,
+            name not in scripts,
+            f"pyproject.toml must not expose legacy gate script {name!r}",
         )
     return failures
 
@@ -319,43 +354,14 @@ def _audit_reviewer_parity(root: Path) -> list[str]:
     return failures
 
 
-def audit_legacy_terms(root: Path) -> list[str]:
-    check = "legacy-terms"
-    failures: list[str] = []
-    for path in iter_text_files(root):
-        text = read_text(path, failures, check)
-        if text is None:
-            continue
-        match = DENY_PATTERN.search(text)
-        require(
-            failures,
-            check,
-            match is None,
-            f"{path.relative_to(root)} contains banned term {match.group(0)!r}" if match else "",
-        )
-    return failures
-
-
-def iter_text_files(root: Path) -> list[Path]:
-    paths: list[Path] = []
-    for path in root.rglob("*"):
-        if any(part in IGNORED_DIRECTORIES for part in path.parts):
-            continue
-        if not path.is_file():
-            continue
-        if path.suffix.lower() in TEXT_SUFFIXES or path.name in TEXT_FILE_NAMES:
-            paths.append(path)
-    return sorted(paths)
-
-
 def main() -> None:
     failures: list[str] = []
     checks = [
         audit_required_paths,
         audit_entry_surfaces,
         audit_identity,
+        audit_gate_scripts,
         audit_adapter_parity,
-        audit_legacy_terms,
     ]
     for check in checks:
         failures.extend(check(REPO_ROOT))

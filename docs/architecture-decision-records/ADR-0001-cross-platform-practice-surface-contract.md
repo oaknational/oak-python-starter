@@ -34,7 +34,7 @@ The repo adopts the following cross-platform Practice surface contract:
    not parallel sources of policy or workflow logic.
 
 3. The live support contract is the operational matrix.
-   `.agent/reference/cross-platform-agent-surface-matrix.md` is the source of
+   `.agent/memory/executive/cross-platform-agent-surface-matrix.md` is the source of
    truth for supported and unsupported platform/surface pairs.
 
 4. Research notes explain; they do not decide.
@@ -69,9 +69,8 @@ The repo adopts the following cross-platform Practice surface contract:
 
 ## Permanent References
 
-- `.agent/reference/cross-platform-agent-surface-matrix.md`
+- `.agent/memory/executive/cross-platform-agent-surface-matrix.md`
 - `.agent/research/agentic-engineering/cross-platform-agent-infrastructure-research.md`
-- `.agent/practice-context/outgoing/portable-vs-native-agent-surfaces.md`
-- `.agent/memory/code-patterns/agentic-surface-separation.md`
-- `.agent/memory/code-patterns/operational-support-matrix.md`
+- `.agent/memory/active/patterns/agentic-surface-separation.md`
+- `.agent/memory/active/patterns/operational-support-matrix.md`
 - `.agent/plans/agentic-engineering/archive/cross-platform-practice-surface-refactor.plan.md`

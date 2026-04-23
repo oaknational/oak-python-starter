@@ -6,8 +6,11 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from python_repo_template.data.activity_store import ActivitySummary, validate_activity_frame
-from python_repo_template.demo import activity_report as subject
+from oaknational.python_repo_template.data.activity_store import (
+    ActivitySummary,
+    validate_activity_frame,
+)
+from oaknational.python_repo_template.demo import activity_report as subject
 
 
 def make_frame() -> pd.DataFrame:

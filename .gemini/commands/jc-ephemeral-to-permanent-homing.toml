@@ -1,0 +1,2 @@
+description = "Canonical homing method for ephemeral content"
+prompt = "Read and follow `.agent/commands/ephemeral-to-permanent-homing.md`."

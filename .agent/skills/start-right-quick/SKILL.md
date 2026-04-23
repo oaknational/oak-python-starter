@@ -19,14 +19,18 @@ Read and internalise before proceeding:
 | `.agent/directives/AGENT.md` | Operational entry point, project context |
 | `.agent/directives/principles.md` | Authoritative rules |
 | `.agent/directives/testing-strategy.md` | TDD expectations and test types |
+| `.agent/directives/orientation.md` | Layering and authority order |
 | `.agent/directives/metacognition.md` | Reflective thinking before planning |
 
 ## Memory
 
-Read the learning loop files:
+Read the three memory planes:
 
-1. `.agent/memory/distilled.md` (if exists) — curated high-signal patterns
-2. `.agent/memory/napkin.md` (if exists) — recent session context
+1. `.agent/memory/README.md` — memory contract and authority order
+2. `.agent/memory/active/distilled.md` (if exists) — curated high-signal patterns
+3. `.agent/memory/active/napkin.md` (if exists) — recent session context
+4. `.agent/memory/operational/repo-continuity.md` (if exists) — continuity state
+5. `.agent/plans/high-level-plan.md` — strategic cross-collection context
 
 ## Guiding Questions
 
@@ -67,18 +71,14 @@ Before choosing a lane, apply this order:
 1. Read all foundation documents
 2. Read memory files
 3. Check the Practice Box
-4. Review the relevant domain `current/README.md` and identify whether
+4. Review the relevant collection `current/README.md` and identify whether
    the session is bug-fix, unfinished completion, or genuinely new work
-5. If the current domain exposes unresolved completion work, open that
+5. If the current collection exposes unresolved completion work, open that
    plan before considering new feature or research work
-6. If the task is **strategy research**, open
-   `.agent/plans/strategy-research/current/README.md` and the most
-   relevant cited evaluation artefact and reference doc before proceeding
-7. If the task is **research infrastructure** (datasets, diagnostics,
-   inference, realism, parity), open
-   `.agent/plans/research-infrastructure/current/README.md` and the
-   cited reference or evaluation material before proceeding
-8. Review the current task list or plan (if any)
+6. If the task needs a deeper document tier, open the relevant `research/`,
+   `analysis/`, `reports/`, `reference/`, or `docs/explorations/` surface
+7. Review the current task list or plan (if any)
+8. If an active thread exists, open its next-session record before proceeding
 9. Discuss the first step with the user before proceeding
 
 ## Quality Gates
@@ -86,7 +86,8 @@ Before choosing a lane, apply this order:
 All quality gates are blocking. The gate sequence for this repo:
 
 ```
-format-check -> typecheck -> lint -> import-boundaries -> repo-audit -> tests -> coverage
+format -> typecheck -> lint -> repo-audit -> build -> tests -> coverage
 ```
 
-Entry point: `uv run check`
+Non-mutating gate entry point: `uv run check-ci`
+Local fix-and-verify aggregate: `uv run check`

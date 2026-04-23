@@ -1,7 +1,7 @@
 [project]
-name = "python-repo-template"
+name = "oaknational-python-repo-template"
 version = "0.1.0"
-description = "Reusable Python template with agent infrastructure, strict quality gates, and a demo CLI."
+description = "Reusable Oak Python template with agent infrastructure, strict quality gates, and a demo CLI."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
@@ -14,15 +14,21 @@ dependencies = [
 ]
 
 [project.scripts]
-lint = "python_repo_template.devtools:lint"
-format = "python_repo_template.devtools:format_code"
-format-check = "python_repo_template.devtools:format_check"
-typecheck = "python_repo_template.devtools:typecheck"
-repo-audit = "python_repo_template.devtools:repo_audit"
-test = "python_repo_template.devtools:test"
-coverage = "python_repo_template.devtools:coverage"
-check = "python_repo_template.devtools:check"
-activity-report = "python_repo_template.demo.activity_report:main"
+clean = "oaknational.python_repo_template.devtools:clean"
+build = "oaknational.python_repo_template.devtools:build"
+dev = "oaknational.python_repo_template.devtools:dev"
+lint = "oaknational.python_repo_template.devtools:lint"
+lint-fix = "oaknational.python_repo_template.devtools:lint_fix"
+format = "oaknational.python_repo_template.devtools:format_gate"
+format-fix = "oaknational.python_repo_template.devtools:format_fix"
+typecheck = "oaknational.python_repo_template.devtools:typecheck"
+repo-audit = "oaknational.python_repo_template.devtools:repo_audit"
+test = "oaknational.python_repo_template.devtools:test"
+coverage = "oaknational.python_repo_template.devtools:coverage"
+fix = "oaknational.python_repo_template.devtools:fix"
+check = "oaknational.python_repo_template.devtools:check"
+check-ci = "oaknational.python_repo_template.devtools:check_ci"
+activity-report = "oaknational.python_repo_template.demo.activity_report:main"
 
 [build-system]
 requires = ["hatchling>=1.25"]
@@ -44,7 +50,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/python_repo_template"]
+packages = ["src/oaknational/python_repo_template"]
 
 [tool.ruff]
 line-length = 100
@@ -62,8 +68,8 @@ addopts = "-v --tb=short"
 pythonpath = [".", "src"]
 
 [tool.coverage.run]
-source = ["python_repo_template"]
-omit = ["src/python_repo_template/devtools.py"]
+source = ["oaknational.python_repo_template"]
+omit = ["src/oaknational/python_repo_template/devtools.py"]
 
 [tool.coverage.report]
 show_missing = true
@@ -71,16 +77,19 @@ skip_covered = true
 fail_under = 70
 
 [tool.importlinter]
-root_package = "python_repo_template"
+root_package = "oaknational.python_repo_template"
 
 [[tool.importlinter.contracts]]
 name = "Data boundary code must not import demo surfaces"
 type = "forbidden"
-source_modules = ["python_repo_template.data"]
-forbidden_modules = ["python_repo_template.demo"]
+source_modules = ["oaknational.python_repo_template.data"]
+forbidden_modules = ["oaknational.python_repo_template.demo"]
 
 [[tool.importlinter.contracts]]
 name = "Product code must not import devtools"
 type = "forbidden"
-source_modules = ["python_repo_template.data", "python_repo_template.demo"]
-forbidden_modules = ["python_repo_template.devtools"]
+source_modules = [
+  "oaknational.python_repo_template.data",
+  "oaknational.python_repo_template.demo",
+]
+forbidden_modules = ["oaknational.python_repo_template.devtools"]

@@ -13,16 +13,17 @@ Extract actionable rules, patterns, and troubleshooting from
 the session napkin into a compact, curated reference. This
 skill complements the [napkin skill](../napkin/SKILL.md).
 
-**Trigger**: When `.agent/memory/napkin.md` exceeds ~500
+**Trigger**: When `.agent/memory/active/napkin.md` exceeds ~500
 lines, or when the user requests distillation.
 
 ## File Layout
 
 ```text
 .agent/memory/
-  distilled.md                    # Curated rulebook (read every session)
-  napkin.md                       # Current session log
-  archive/
+  active/
+    distilled.md                  # Curated rulebook (read every session)
+    napkin.md                     # Current session log
+    archive/
     napkin-YYYY-MM-DD.md          # Archived napkins (historical reference)
 ```
 
@@ -37,7 +38,7 @@ session.
 
 ### 2. Merge
 
-Compare extracted entries against existing `distilled.md`.
+Compare extracted entries against existing `active/distilled.md`.
 For each entry:
 
 - **New insight**: Add it to the appropriate section.
@@ -54,7 +55,7 @@ The primary mechanism for keeping `distilled.md` within size
 constraints is **extracting established concepts to permanent
 documentation** (directives, READMEs), then removing the
 entry. Permanent docs are discoverable without specialist
-knowledge; `distilled.md` is a specialist refinement flow and
+knowledge; `active/distilled.md` is a specialist refinement flow and
 should hold only what has NOT yet matured into settled practice.
 
 For each entry, ask: has this pattern become established enough
@@ -75,18 +76,18 @@ permanent documentation — no duplication across the two tiers.
 Move the outgoing napkin to the archive:
 
 ```bash
-cp .agent/memory/napkin.md \
-   .agent/memory/archive/napkin-YYYY-MM-DD.md
+cp .agent/memory/active/napkin.md \
+   .agent/memory/active/archive/napkin-YYYY-MM-DD.md
 ```
 
 Use the current date for the filename.
 
 ### 5. Start Fresh
 
-Create a new `.agent/memory/napkin.md` with a session heading
+Create a new `.agent/memory/active/napkin.md` with a session heading
 documenting the distillation itself.
 
-## distilled.md Structure
+## active/distilled.md Structure
 
 Target: under 200 lines of high-signal content. Every entry
 earns its place by being actionable.
@@ -108,7 +109,7 @@ find what you need quickly.
 
 ## Quality Criteria
 
-A good `distilled.md` entry is:
+A good `active/distilled.md` entry is:
 
 - **Specific**: "Inject chart output through a callable in CLI tests"
   not "charts are awkward"
@@ -118,7 +119,7 @@ A good `distilled.md` entry is:
   from reading the code
 - **Terse**: one to two lines maximum per entry
 
-A good `distilled.md` overall is:
+A good `active/distilled.md` overall is:
 
 - Under 200 lines
 - Zero redundancy with permanent documentation

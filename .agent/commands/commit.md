@@ -1,51 +1,33 @@
 # Commit Current Work
 
-Create a well-formed commit for the current changes.
+Create a deliberate, well-formed commit for the current changes.
 
 ## Process
 
-1. **Check status**: Run `git status` to see all changes
-2. **Review diff**: Run `git diff` to understand what's being committed
-3. **Verify quality gates**: Confirm gates have passed (or run them now)
-4. **Stage selectively**: Add relevant files — do NOT blindly `git add .`
-   - Never stage `.env`, credentials, or data files
-   - Review each file being staged
-5. **Formulate message**: Use a clear commit message focused on rationale
-6. **Commit**: Execute the commit
-7. **Verify**: Run `git status` to confirm success
+1. Check status with `git status`.
+2. Review the staged and unstaged diff.
+3. Confirm the relevant quality gates have passed, or run them now.
+4. Stage selectively. Never use `git add .` blindly.
+5. Write a conventional commit message focused on the rationale.
+6. Commit without bypassing hooks.
+7. Confirm the worktree is in the expected post-commit state.
 
-## Commit Message Format
+## Commit message format
 
 ```text
-type(scope): concise description
+type(scope): concise summary
 
-Optional body explaining why, not what.
+Optional body explaining why this change exists.
 ```
 
-Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`
+Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`,
+`perf`.
 
-## Safety Rules
+## Safety rules
 
-**Do NOT modify git history or discard changes.** Prohibited operations:
+- do not use `--no-verify`
+- do not rewrite history unless the user explicitly asks
+- do not discard unrelated changes
+- fix hook failures at source instead of bypassing them
 
-- `git stash` — can lose uncommitted work
-- `git reset` — can discard commits or changes
-- `git checkout -- <file>` — discards uncommitted changes
-- `git clean` — deletes untracked files
-- `git rebase` — rewrites history
-- `--no-verify` — bypasses git hooks
-- `--force` / `-f` on push — overwrites remote history
-
-If any of these would be helpful, **MUST discuss with the user first**.
-
-**Additional prohibitions**:
-
-- **Never** force push to main/master
-- **Never** amend commits already pushed to remote
-- If pre-commit hooks fail, fix the issue properly — no shortcuts
-
-## If Issues Arise
-
-Fix them **properly**. No shortcuts, no disabling checks, no bypassing hooks.
-
-Reference: `.agent/directives/principles.md`, `.agent/directives/testing-strategy.md`
+Use `.agent/skills/commit/SKILL.md` when you need the fuller commit ritual.

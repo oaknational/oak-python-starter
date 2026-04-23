@@ -2,48 +2,85 @@
 
 ## Before Writing
 
-1. **Design gate**: Has the design intent been explored and confirmed
-   with the project owner? If the scope is ambiguous or the approach
-   has multiple valid paths, run `jc-metacognition` first to explore
-   intent, constraints, and tensions before committing to a plan
-   structure. Ask one question at a time; prefer multiple-choice
-   options when possible; propose 2–3 approaches with strengths and
-   drawbacks.
-   Do not skip this step for non-trivial work.
-
-2. Read the directives:
+1. Read:
    - `.agent/directives/principles.md`
    - `.agent/directives/testing-strategy.md`
+   - `.agent/directives/orientation.md`
+   - `.agent/directives/data-boundary-doctrine.md`
+   - `.agent/directives/metacognition.md` for non-trivial work
+2. Re-ground on the relevant collection:
+   - `.agent/plans/high-level-plan.md`
+   - the collection `README.md`
+   - `current/README.md` before writing a new next-up plan
+   - `active/README.md` before changing in-flight execution
+3. Ask the First Question:
+   - could it be simpler without compromising quality?
 
-3. If the user has not provided enough detail, ask specific
-   questions. Do not guess scope, intent, or acceptance criteria.
+## Required plan shape
 
-## Plan Requirements
+Every non-trivial plan must state:
 
-Every plan MUST have:
+1. **End goal** — the user-impact or repo-impact outcome
+2. **Mechanism** — why the proposed means reach that end
+3. **Means** — the concrete tasks or phases
+4. **Acceptance criteria** — specific, checkable, deterministic where possible
+5. **Risk assessment** — what could go wrong and how we reduce it
+6. **Foundation alignment** — relevant directives, rules, ADRs, or PDRs
+7. **Non-goals** — explicit YAGNI boundaries
 
-1. **TDD phase structure** — RED (tests first, must fail), GREEN
-   (minimal implementation), REFACTOR (docs, cleanup). Research and
-   evaluation plans still use this structure: RED scaffolds the decision and
-   evidence shape, GREEN gathers and compares evidence, REFACTOR tightens the
-   recommendation and canon.
-2. **Quality gates** after each phase
-3. **Acceptance criteria** for every task — specific, checkable,
-   with deterministic validation commands
-4. **Risk assessment** — what could go wrong and how to mitigate
-5. **Foundation alignment** — explicit references to principles.md
-   and testing-strategy.md
-6. **Non-goals** — what we are explicitly NOT doing (YAGNI)
-7. **Standalone next-up entry** — any plan marked current, next-up, or
-   session-entry must contain enough context to start fresh without hidden
-   memory: current-state snapshot, entry checklist, deliverable destination,
-   decision contract where applicable, and closure criteria
+Use unambiguous verbs. Do not write "update", "sync", or "propagate" when the
+real action is "rewrite", "copy verbatim", "reconcile", or "promote".
 
-## Plan Location
+## Planning architecture
 
-Place plans in `.agent/plans/<domain>/<lifecycle>/` using the canonical structure (see `.agent/plans/README.md`). Cursor-specific plan files (with frontmatter todos) may exist in `.cursor/plans/` for platform tracking but the canonical copy always lives in `.agent/plans/`.
+Canonical plans live in `.agent/plans/`.
 
-## First Question
+- `high-level-plan.md` is the strategic cross-collection index
+- collection `README.md` files are hubs and read-order surfaces
+- `active/` holds in-progress execution
+- `current/` holds queued next-up work
+- `future/` holds later or adjacent work
+- `completed-plans.md` indexes archived completions
+- `.agent/plans/templates/` holds reusable templates and components
 
-Before every decision in the plan: **could it be simpler
-without compromising quality?**
+## Build-vs-buy gate
+
+If the plan proposes building a reusable capability, wrapper, tool, service, or
+non-trivial abstraction, include a build-vs-buy attestation:
+
+- what was searched
+- what was found
+- why building was preferred, or why an existing option was adopted
+
+## Reviewer phase alignment
+
+For non-trivial work, schedule review at the lifecycle moment where it is
+cheapest to act:
+
+- plan-time: architecture and assumption checks
+- mid-cycle: test, config, security, or boundary checks as the work changes
+- close: whole-change coherence and documentation fit
+
+Use the installed reviewer roster and any local specialists that exist. Do not
+name imaginary reviewers as required participants.
+
+## Quality gates
+
+Plans must name the relevant validation commands. In this repo the canonical
+surface is `uv run ...`.
+
+Typical gates:
+
+- `uv run format`
+- `uv run lint`
+- `uv run typecheck`
+- `uv run test`
+- `uv run coverage`
+- `uv run repo-audit`
+- `uv run check`
+- `uv run check-ci`
+
+## Templates
+
+Use the templates under `.agent/plans/templates/` rather than inventing a new
+shape when a template already fits.

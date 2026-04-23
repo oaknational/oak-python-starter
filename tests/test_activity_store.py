@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from python_repo_template.data import activity_store as subject
+from oaknational.python_repo_template.data import activity_store as subject
 
 
 def make_frame() -> pd.DataFrame:

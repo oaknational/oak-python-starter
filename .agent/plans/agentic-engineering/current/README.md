@@ -1,10 +1,8 @@
 # Agentic Engineering Current
 
-The current baseline is the cross-platform Practice surface shipped with this
-template.
+Queued next-up work for this collection starts from the landed Practice
+baseline.
 
-There is no active agentic-engineering tranche beyond that baseline right now.
-
-Most recent completed tranche:
-
-- [Native Repo Hand-off and Canonical Polish](../archive/native-repo-handoff-and-canonical-polish.md)
+| Priority | Work | Status |
+| --- | --- | --- |
+| P0 | Keep the planning, memory, and adapter estate truthful as the template evolves | 📋 Ready when needed |
