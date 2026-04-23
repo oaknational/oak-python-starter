@@ -1,5 +1,103 @@
 # Napkin
 
+## Session: 2026-04-23 — Pythonic Alignment Planning
+
+### What Was Done
+
+- Wrote a bounded runtime plan for making the repo more Pythonic without
+  colliding with Oak requirements.
+- Expanded that plan after architecture review and owner direction so the demo
+  now needs to justify the full runtime dependency set rather than trimming it.
+- Added installed-wheel verification, `py.typed`, explicit strict typing,
+  gate-command centralisation, and dependency hygiene to the implementation
+  scope.
+- Chose `matplotlib` adoption and `commitizen` enforcement as central pieces of
+  the Pythonic pass rather than standalone clean-ups.
+- Kept the plan anchored to non-negotiable local constraints: `oaknational.*`
+  packaging, `uv run ...`, strict gates, and Practice-first repo governance.
+- Converted WS1 from a broad intention into a concrete contract: one bounded
+  "activity pack" made of activity data, a same-stem YAML sidecar, an optional
+  chart artefact, and optional HTTPS retrieval with explicit no-sprawl
+  guardrails.
+- Landed WS2 against that contract: the demo now loads local or HTTPS activity
+  inputs, auto-discovers or overrides same-stem YAML sidecars, renders
+  metadata-aware summaries with target deltas, and uses `matplotlib` rather
+  than bespoke PNG bytes for chart output.
+- Updated the shipped fixture and README so the richer activity-pack contract
+  is visible in the seeded repo state, not just in tests and plan prose.
+- Landed WS3: the package now ships `py.typed`, `pyproject.toml` states the
+  strict `pyright` scope explicitly for `src/`, `tests/`, and `tools/`, and
+  repo audit now guards that typing contract.
+- Tightened the remaining strict-pyright fallout in repo-owned tooling without
+  widening the demo's `Any` boundaries, and verified that the remote/YAML/chart
+  paths stayed green under the stricter contract.
+- Verified both built artefact shapes directly: the source distribution and the
+  wheel now both contain `py.typed`, with the wheel fixed via an explicit Hatch
+  `force-include` mapping.
+- Finished the WS2 landing with a passing `uv run check`, including strict
+  pyright, import-linter, build, tests, and coverage.
+- Closed the session with a new `pythonic-alignment` operational thread so the
+  next implementation pass does not blur into the already-landed
+  `practice-foundation-upgrade` baseline.
+
+### Patterns to Remember
+
+- In this template, "more Pythonic" is only a valid direction when it removes
+  bespoke local shape or makes the declared surface more truthful without
+  weakening Oak truth surfaces.
+- If the owner wants a richer template rather than a leaner one, dependency
+  truthfulness should come from a more realistic bounded demo, not automatic
+  package trimming.
+- When a change touches both runtime idiom and workflow enforcement, one bounded
+  plan with explicit cross-strand touchpoints is cleaner than parallel partial
+  plans.
+- When broadening a seeded demo to justify dependencies, prefer enriching
+  already-canonical artefacts such as sidecar metadata, prepared caches, and
+  report outputs rather than inventing a second config or service layer.
+- `requests` stays truthful in a template only when the HTTP role remains
+  equivalent to bounded asset retrieval, not a proto-integration framework.
+- If a third-party plotting API is dynamically typed, keep the `Any` boundary
+  narrow and local to the adapter rather than letting unknowns leak through the
+  rest of the demo code.
+- When Hatch wheel packaging is driven by `packages = [...]`, verify `py.typed`
+  in the built wheel directly; the marker may need an explicit wheel
+  `force-include` mapping even when it is present in the source tree and sdist.
+- When a richer seeded fixture changes the observable default output, update the
+  package-entry smoke tests in the same landing so the repo-level contract
+  stays aligned with the shipped example.
+
+## Session: 2026-04-23 — WS4 Commitizen and Packaging Truth
+
+### What Was Done
+
+- Added `commitizen` to the dev dependency group and configured it in
+  `pyproject.toml` for Conventional Commits with the `uv` version provider.
+- Extended `.pre-commit-config.yaml` so `pre-commit install` now installs
+  `pre-commit`, `pre-push`, and `commit-msg`, with `commit-msg` validating the
+  real message file through `uv run cz check --allow-abort --commit-msg-file`.
+- Updated README, `docs/dev-tooling.md`, and the canonical commit workflow docs
+  so the truthful usage path is `uv run cz commit` and `uv run cz check`.
+- Added repo-audit coverage for the Commitizen workflow contract so the dev
+  dependency, hook installation shape, and docs do not silently drift.
+- While verifying WS4, caught a wheel-packaging regression: Hatch's
+  `packages = [...]` configuration was collapsing the shipped path to
+  `python_repo_template/*`, which broke installed `uv run check` entrypoints.
+- Fixed that regression by switching the wheel target to namespace-preserving
+  `only-include` plus `sources`, added repo-audit coverage for that packaging
+  contract, and finished with a passing `uv run check`.
+
+### Patterns to Remember
+
+- Hatch's `packages = [...]` option collapses the shipped path to the final
+  component; for namespaced packages, prefer `only-include` plus `sources`
+  when you need to preserve the namespace directory in the built wheel.
+- If a hook is meant to validate the real commit message, wire it through
+  `commit-msg` with the actual message-file path, and make `pre-commit install`
+  truthful with `default_install_hook_types` so the hook is installed by
+  default.
+- When a tooling change touches both docs and enforcement, add a small audit
+  contract in the same landing or the docs will drift back to aspiration.
+
 ## Session: 2026-04-23 — Oak Namespace Packaging
 
 ### What Was Done

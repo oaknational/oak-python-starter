@@ -22,12 +22,13 @@ Use this skill when preparing a commit.
 2. Review `git diff --staged` and any related unstaged changes.
 3. Ensure the relevant gates are green.
 4. Stage only the files the commit message truthfully describes.
-5. Use conventional commit format.
+5. Prefer `uv run cz commit`, or validate a manual message with `uv run cz check`.
 6. Commit without bypassing hooks.
 
 ## Local constraints
 
 - This repo does not use aliases or compatibility layers for gate names.
 - Prefer the canonical `uv run ...` surfaces when you need to re-run checks.
+- Prefer `uv run cz ...` for commit creation and validation.
 - If the change updates durable doctrine, include those docs in the same
   commit.

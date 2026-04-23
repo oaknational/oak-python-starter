@@ -14,8 +14,15 @@ Its package identity follows the Oak Python convention:
 - Python version management: `.python-version`
 - formatter and linter: `ruff`
 - type checking: `pyright`
+- commit workflow: `commitizen`
 - tests: `pytest`
 - repo-state audit: `uv run repo-audit`
+
+## Typing contract
+
+- the distribution ships `py.typed`
+- `pyright` runs in explicit strict mode
+- the checked repo-owned surface is `src/`, `tests/`, and `tools/`
 
 ## Canonical command surface
 
@@ -33,6 +40,30 @@ Its package identity follows the Oak Python convention:
 - `uv run fix`
 - `uv run check`
 - `uv run check-ci`
+
+## Commit workflow
+
+Install the repo hooks with:
+
+```bash
+uv run pre-commit install
+```
+
+The repo config installs `pre-commit`, `pre-push`, and `commit-msg` by
+default, so Commitizen validation runs on real commit messages rather than as a
+separate advisory command.
+
+Create a conventional commit with:
+
+```bash
+uv run cz commit
+```
+
+Validate a message manually with:
+
+```bash
+uv run cz check --message "docs: explain the Commitizen workflow"
+```
 
 ## Hydration guidance
 

@@ -26,5 +26,6 @@ def test_main_reports_fixture_summary(
     assert subject.main() == 0
 
     captured = capsys.readouterr()
+    assert "Profile: activity-log" in captured.out
     assert "Total entries: 4" in captured.out
-    assert "Busiest category: focus" in captured.out
+    assert "Busiest category: Deep focus" in captured.out

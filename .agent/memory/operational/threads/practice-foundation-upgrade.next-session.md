@@ -14,7 +14,8 @@
 ## Current Objective
 
 - Treat this thread as complete baseline work and require a new explicit thread
-  before taking in any further source-Practice scope.
+  before taking in any further source-Practice scope. This is now a closed
+  baseline-reference thread rather than the branch-primary execution thread.
 
 ## Current State
 
@@ -35,6 +36,7 @@
 - Deep session-handoff and consolidate-docs closeout has refreshed continuity,
   distilled memory, and experience.
 - `uv run check` and `uv run check-ci` pass after the integration.
+- Active work has now moved to the separate `pythonic-alignment` thread.
 
 ## Blockers / Low-Confidence Areas
 

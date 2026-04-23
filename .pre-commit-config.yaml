@@ -1,3 +1,8 @@
+default_install_hook_types:
+  - pre-commit
+  - pre-push
+  - commit-msg
+
 repos:
   - repo: local
     hooks:
@@ -7,3 +12,8 @@ repos:
         language: system
         stages: [pre-commit, pre-push]
         pass_filenames: false
+      - id: commitizen-commit-msg
+        name: commit message (commitizen)
+        entry: uv run cz check --allow-abort --commit-msg-file
+        language: system
+        stages: [commit-msg]

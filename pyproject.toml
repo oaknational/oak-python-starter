@@ -37,6 +37,10 @@ build-backend = "hatchling.build"
 [tool.uv]
 package = true
 
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "uv"
+
 [dependency-groups]
 dev = [
   "pytest>=9.0.0",
@@ -44,13 +48,18 @@ dev = [
   "pyright>=1.1.0",
   "ruff>=0.14.0",
   "pre-commit>=4.0.0",
+  "commitizen>=4.10.0",
   "import-linter>=2.0.0",
   "pandas-stubs>=2.3.2.250926",
   "types-requests>=2.32.4.20250913",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/oaknational/python_repo_template"]
+only-include = ["src/oaknational/python_repo_template"]
+sources = ["src"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/oaknational/python_repo_template/py.typed" = "oaknational/python_repo_template/py.typed"
 
 [tool.ruff]
 line-length = 100
@@ -61,6 +70,11 @@ select = ["E", "F", "I", "B", "UP"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.pyright]
+include = ["src", "tests", "tools"]
+pythonVersion = "3.14"
+typeCheckingMode = "strict"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

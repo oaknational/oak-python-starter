@@ -18,3 +18,11 @@
 - For Oak Python packages, use a dash-separated distribution name such as
   `oaknational-some-package`, a dotted import path such as
   `oaknational.some_package`, and a namespace layout under `src/oaknational/`.
+- When pytest injects the source tree onto `pythonpath`, pair source-tree tests
+  with an installed-wheel smoke check so packaging truth is still proven.
+- If the owner wants a richer template rather than a leaner one, make the demo
+  justify the declared dependency surface instead of trimming dependencies to a
+  placeholder example.
+- When Hatch wheel packaging is scoped with `packages = [...]`, verify that
+  `py.typed` lands in the built wheel; if it does not, add an explicit wheel
+  `force-include` mapping rather than assuming the source-tree marker is enough.

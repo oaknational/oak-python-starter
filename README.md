@@ -7,11 +7,14 @@
 - cross-platform agent infrastructure in `.agent/`, `.cursor/`, `.claude/`,
   `.gemini/`, `.github/`, `.agents/`, and `.codex/`
 - a small demo CLI, `activity-report`, that exercises validation, file I/O,
-  reporting, plotting, and repo audits
+  reporting, plotting, YAML sidecars, bounded HTTPS retrieval, and repo audits
 
 Install the distribution as `oaknational-python-repo-template` and import it as
 `oaknational.python_repo_template`. That is the baseline convention this repo
 uses to define "Pythonic within Oak".
+
+The package ships `py.typed`, and the repo type-checks `src/`, `tests/`, and
+`tools/` under explicit strict `pyright` settings.
 
 ## Agentic Engineering
 
@@ -36,6 +39,10 @@ The seeded example works with a simple activity log contract:
 - `minutes` — positive integer
 - `notes` — optional text
 
+The richer activity-pack demo also supports an optional same-stem YAML sidecar,
+for example `activity_log.metadata.yaml`, for descriptive metadata, category
+display labels, and simple per-category target minutes.
+
 Prepare validated Parquet output:
 
 ```bash
@@ -48,6 +55,14 @@ Print a report:
 
 ```bash
 uv run activity-report report --input data/fixtures/activity_log.csv
+```
+
+Override the auto-discovered metadata sidecar:
+
+```bash
+uv run activity-report report \
+  --input data/fixtures/activity_log.csv \
+  --metadata data/fixtures/activity_log.metadata.yaml
 ```
 
 Run the same report via the package module entry point:
@@ -64,6 +79,12 @@ uv run activity-report report \
   --chart activity-summary.png
 ```
 
+Report directly from a bounded HTTPS input:
+
+```bash
+uv run activity-report report --input https://example.test/activity_log.csv
+```
+
 ## Development Commands
 
 ```bash
@@ -76,6 +97,29 @@ uv run check-ci
 uv run fix
 uv run test
 uv run coverage
+```
+
+## Commit Workflow
+
+Install the repo hooks after cloning:
+
+```bash
+uv run pre-commit install
+```
+
+That installs the repo's `pre-commit`, `pre-push`, and `commit-msg` hooks from
+`.pre-commit-config.yaml`.
+
+Create a conventional commit with Commitizen:
+
+```bash
+uv run cz commit
+```
+
+Check a commit message manually:
+
+```bash
+uv run cz check --message "feat: add truthful commit-msg enforcement"
 ```
 
 ## Practice Surface

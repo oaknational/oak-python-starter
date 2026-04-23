@@ -16,6 +16,7 @@ POLICY_PATH = REPO_ROOT / ".agent/hooks/policy.json"
 
 Platform = Literal["cursor", "claude", "gemini", "github"]
 Event = Literal["session-start", "pre-tool"]
+JsonObject = dict[str, object]
 
 
 @dataclass(frozen=True)
@@ -84,6 +85,7 @@ def load_policy(path: Path = POLICY_PATH) -> HookPolicy:
 def normalise_hook_context(platform: Platform, event: Event, payload: object) -> HookContext:
     """Normalise platform-native hook payloads into one repo-level shape."""
 
+    payload_mapping = _as_mapping(payload)
     if not isinstance(payload, dict):
         return HookContext(
             platform=platform,
@@ -94,7 +96,7 @@ def normalise_hook_context(platform: Platform, event: Event, payload: object) ->
     if event == "session-start":
         session_source = None
         if platform == "gemini":
-            session_source = _as_str(payload.get("source"))
+            session_source = _as_str(payload_mapping.get("source"))
         return HookContext(
             platform=platform,
             event=event,
@@ -103,23 +105,23 @@ def normalise_hook_context(platform: Platform, event: Event, payload: object) ->
         )
     shell_command = None
     if platform == "cursor":
-        tool_name = _as_str(payload.get("tool_name"))
-        tool_input = _as_mapping(payload.get("tool_input"))
+        tool_name = _as_str(payload_mapping.get("tool_name"))
+        tool_input = _as_mapping(payload_mapping.get("tool_input"))
         if tool_name == "Shell":
             shell_command = _as_str(tool_input.get("command"))
     elif platform == "claude":
-        tool_name = _as_str(payload.get("tool_name"))
-        tool_input = _as_mapping(payload.get("tool_input"))
+        tool_name = _as_str(payload_mapping.get("tool_name"))
+        tool_input = _as_mapping(payload_mapping.get("tool_input"))
         if tool_name == "Bash":
             shell_command = _as_str(tool_input.get("command"))
     elif platform == "gemini":
-        tool_name = _as_str(payload.get("tool_name"))
-        tool_input = _as_mapping(payload.get("tool_input"))
+        tool_name = _as_str(payload_mapping.get("tool_name"))
+        tool_input = _as_mapping(payload_mapping.get("tool_input"))
         if tool_name == "run_shell_command":
             shell_command = _as_str(tool_input.get("command"))
     elif platform == "github":
-        tool_name = _as_str(payload.get("toolName"))
-        tool_args = _parse_tool_args(payload.get("toolArgs"))
+        tool_name = _as_str(payload_mapping.get("toolName"))
+        tool_args = _parse_tool_args(payload_mapping.get("toolArgs"))
         if tool_name == "bash":
             shell_command = _as_str(tool_args.get("command"))
     return HookContext(
@@ -243,10 +245,14 @@ def main() -> None:
     raise SystemExit(emission.exit_code)
 
 
-def _as_mapping(value: object) -> dict[str, object]:
-    if isinstance(value, dict):
-        return value
-    return {}
+def _as_mapping(value: object) -> JsonObject:
+    if not isinstance(value, dict):
+        return {}
+    mapping: JsonObject = {}
+    for key, item in value.items():
+        if isinstance(key, str):
+            mapping[key] = item
+    return mapping
 
 
 def _as_str(value: object) -> str | None:
@@ -255,16 +261,16 @@ def _as_str(value: object) -> str | None:
     return None
 
 
-def _parse_tool_args(value: object) -> dict[str, object]:
+def _parse_tool_args(value: object) -> JsonObject:
     if isinstance(value, dict):
-        return value
+        return _as_mapping(value)
     if isinstance(value, str):
         try:
             parsed = json.loads(value)
         except json.JSONDecodeError:
             return {}
         if isinstance(parsed, dict):
-            return parsed
+            return _as_mapping(parsed)
     return {}
 
 
