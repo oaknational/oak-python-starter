@@ -10,7 +10,7 @@ dependencies = [
   "pyarrow>=21.0.0",
   "pyyaml>=6.0.3",
   "matplotlib>=3.10.8",
-  "requests>=2.32.0",
+  "requests>=2.33.0",
 ]
 
 [project.scripts]
