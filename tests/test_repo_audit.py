@@ -102,7 +102,12 @@ activity-report = "oaknational.python_repo_template.demo.activity_report:main"
   "check",
   "check-ci",
 ]
+
+[secret_scanning]
+gitleaks_version = "v8.30.1"
 """.strip()
+
+GITLEAKS_VERSION = "v8.30.1"
 
 CHECK_CI_SEQUENCE = (
     "format -> typecheck -> lint -> markdownlint -> import-linter -> "
@@ -129,6 +134,58 @@ def _write_gate_contract(root: Path) -> None:
 
 def _write_repo_audit_contract(root: Path) -> None:
     _write(root / "tools" / "repo_audit_contract.toml", REPO_AUDIT_CONTRACT)
+
+
+def _gitleaks_pre_commit_config(rev: str = GITLEAKS_VERSION) -> str:
+    return f"""
+repos:
+  - repo: local
+    hooks:
+      - id: quality-gates
+        entry: uv run python -m oaknational.python_repo_template.devtools check-ci
+        language: system
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: {rev}
+    hooks:
+      - id: gitleaks
+"""
+
+
+def _gitleaks_ci_workflow(version: str = GITLEAKS_VERSION) -> str:
+    # Mirror the real workflow: the archive name is derived from the version, so
+    # a mismatched version leaves no copy of the pinned version anywhere in the
+    # run block and the lockstep check fires honestly.
+    archive = f"gitleaks_{version.lstrip('v')}_linux_x64.tar.gz"
+    return f"""
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          GITLEAKS_VERSION={version}
+          curl -sSLo gitleaks.tar.gz \\
+            https://github.com/gitleaks/gitleaks/releases/download/{version}/{archive}
+          gitleaks dir .
+"""
+
+
+def _write_valid_secret_scanning(root: Path) -> None:
+    _write_repo_audit_contract(root)
+    _write(root / ".gitleaks.toml", "[extend]\nuseDefault = true")
+    _write(root / ".pre-commit-config.yaml", _gitleaks_pre_commit_config())
+    _write(root / ".github" / "workflows" / "ci.yml", _gitleaks_ci_workflow())
+    _write(
+        root / "README.md",
+        "Secret scanning runs gitleaks; install via github.com/gitleaks/gitleaks#installing.",
+    )
+    _write(
+        root / "docs" / "dev-tooling.md", "Secret scanning: gitleaks scans the tree for secrets."
+    )
 
 
 def _gate_scripts_toml(
@@ -810,6 +867,117 @@ jobs:
     assert "must run the CI gate sequence" in joined
     assert "must trigger on push" not in joined
     assert "must trigger on pull_request" not in joined
+
+
+def test_audit_secret_scanning_accepts_pinned_lockstep_surfaces(tmp_path: Path) -> None:
+    _write_valid_secret_scanning(tmp_path)
+
+    assert subject.audit_secret_scanning(tmp_path) == []
+
+
+def test_audit_secret_scanning_requires_the_gitleaks_config(tmp_path: Path) -> None:
+    _write_valid_secret_scanning(tmp_path)
+    (tmp_path / ".gitleaks.toml").unlink()
+
+    joined = "\n".join(subject.audit_secret_scanning(tmp_path))
+
+    assert ".gitleaks.toml must exist" in joined
+
+
+def test_audit_secret_scanning_requires_extending_the_default_ruleset(tmp_path: Path) -> None:
+    _write_valid_secret_scanning(tmp_path)
+    _write(tmp_path / ".gitleaks.toml", '[allowlist]\ndescription = "local only"')
+
+    joined = "\n".join(subject.audit_secret_scanning(tmp_path))
+
+    assert "must extend the default ruleset" in joined
+
+
+def test_audit_secret_scanning_requires_the_pre_commit_rev_to_match(tmp_path: Path) -> None:
+    _write_valid_secret_scanning(tmp_path)
+    _write(tmp_path / ".pre-commit-config.yaml", _gitleaks_pre_commit_config(rev="v8.0.0"))
+
+    joined = "\n".join(subject.audit_secret_scanning(tmp_path))
+
+    assert "must pin the gitleaks mirror rev" in joined
+
+
+def test_audit_secret_scanning_requires_the_pre_commit_mirror_to_exist(tmp_path: Path) -> None:
+    _write_valid_secret_scanning(tmp_path)
+    _write(
+        tmp_path / ".pre-commit-config.yaml",
+        """
+repos:
+  - repo: local
+    hooks:
+      - id: quality-gates
+        entry: uv run python -m oaknational.python_repo_template.devtools check-ci
+        language: system
+""",
+    )
+
+    joined = "\n".join(subject.audit_secret_scanning(tmp_path))
+
+    assert "must include the gitleaks mirror repo" in joined
+
+
+def test_audit_secret_scanning_requires_the_ci_version_to_match(tmp_path: Path) -> None:
+    _write_valid_secret_scanning(tmp_path)
+    _write(tmp_path / ".github" / "workflows" / "ci.yml", _gitleaks_ci_workflow(version="v8.0.0"))
+
+    joined = "\n".join(subject.audit_secret_scanning(tmp_path))
+
+    assert "must run gitleaks pinned to" in joined
+
+
+def test_audit_secret_scanning_requires_readme_documentation(tmp_path: Path) -> None:
+    _write_valid_secret_scanning(tmp_path)
+    _write(tmp_path / "README.md", "No secret-scanning mention here.")
+
+    joined = "\n".join(subject.audit_secret_scanning(tmp_path))
+
+    assert "README must document the gitleaks secret-scanning gate" in joined
+    assert "docs/dev-tooling.md must document" not in joined
+
+
+def test_audit_secret_scanning_requires_the_official_install_link(tmp_path: Path) -> None:
+    _write_valid_secret_scanning(tmp_path)
+    _write(tmp_path / "README.md", "Secret scanning runs gitleaks as a pinned pre-commit hook.")
+
+    joined = "\n".join(subject.audit_secret_scanning(tmp_path))
+
+    assert "must link to the official gitleaks install instructions" in joined
+
+
+def test_audit_secret_scanning_requires_dev_tooling_documentation(tmp_path: Path) -> None:
+    _write_valid_secret_scanning(tmp_path)
+    _write(tmp_path / "docs" / "dev-tooling.md", "No mention here.")
+
+    joined = "\n".join(subject.audit_secret_scanning(tmp_path))
+
+    assert "docs/dev-tooling.md must document the gitleaks secret-scanning gate" in joined
+    assert "README must document" not in joined
+
+
+def test_audit_secret_scanning_requires_a_pinned_contract_version(tmp_path: Path) -> None:
+    _write_valid_secret_scanning(tmp_path)
+    _write(tmp_path / "tools" / "repo_audit_contract.toml", "legacy_public_commands = []")
+
+    joined = "\n".join(subject.audit_secret_scanning(tmp_path))
+
+    assert "must pin [secret_scanning].gitleaks_version" in joined
+
+
+def test_audit_secret_scanning_rejects_a_version_without_the_tag_prefix(tmp_path: Path) -> None:
+    _write_valid_secret_scanning(tmp_path)
+    _write(
+        tmp_path / "tools" / "repo_audit_contract.toml",
+        '[secret_scanning]\ngitleaks_version = "8.30.1"',
+    )
+
+    joined = "\n".join(subject.audit_secret_scanning(tmp_path))
+
+    assert "must pin [secret_scanning].gitleaks_version to a gitleaks tag" in joined
 
 
 def test_audit_hook_contract_requires_canonical_policy_and_gemini_support(tmp_path: Path) -> None:

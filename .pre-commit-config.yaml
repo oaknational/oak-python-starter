@@ -17,3 +17,13 @@ repos:
         entry: uv run cz check --allow-abort --commit-msg-file
         language: system
         stages: [commit-msg]
+  # Secret scanning lives outside check-ci: gitleaks is a Go binary, not a uv
+  # package, so the venv cannot carry it. pre-commit installs it via its golang
+  # support, needing no manual install. The rev is pinned in lockstep with the
+  # CI install (see tools/repo_audit_contract.toml; audit_secret_scanning checks
+  # both match). Bump all three together.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        name: gitleaks (secret scan)
