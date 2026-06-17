@@ -1,5 +1,5 @@
 ---
-name: jc-go
+name: oak-go
 description: >-
   Re-ground and structure execution with ACTION/REVIEW/GROUNDING cadence.
 ---

@@ -1,5 +1,5 @@
 ---
-name: jc-metacognition
+name: oak-metacognition
 description: >-
   Reflective thinking — read and apply the metacognition directive.
 ---

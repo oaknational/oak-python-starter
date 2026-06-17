@@ -1,35 +1,31 @@
 # Repo Continuity
 
-**Last refreshed**: 2026-04-23 — the source-Practice transfer remains the
-closed baseline. `pythonic-alignment` and `review-findings-closeout` are now
-closed reference threads, their runtime plans are archived, and the blocker
-fixes, direct proof, repeated canonical validation reruns, and final
-whole-repo reviewer sweep are complete on the repaired diff landed in
-`268f04f`.
+**Last refreshed**: 2026-06-17 — a deep multi-lens review landed, Phase 1 of the
+template-fitness remediation shipped (licence + distribution metadata, and the
+deterministic data boundary), and the command-adapter prefix was rebranded
+`jc-` → `oak-`. Phase 2 is queued.
 
 ## Active Threads
 
-- None. The runtime closeout thread is complete and now lives as a closed
-  reference:
-  [`threads/review-findings-closeout.next-session.md`](threads/review-findings-closeout.next-session.md)
+- **template-fitness-remediation** — Phase 2 queued (CI workflow, coverage
+  honesty, chart accessibility). See
+  [`threads/template-fitness-remediation.next-session.md`](threads/template-fitness-remediation.next-session.md).
 - Closed references:
-  [`threads/pythonic-alignment.next-session.md`](threads/pythonic-alignment.next-session.md)
+  [`threads/review-findings-closeout.next-session.md`](threads/review-findings-closeout.next-session.md),
+  [`threads/pythonic-alignment.next-session.md`](threads/pythonic-alignment.next-session.md),
   and
   [`threads/practice-foundation-upgrade.next-session.md`](threads/practice-foundation-upgrade.next-session.md)
 
 ## Branch-Primary Lane State
 
-- No live branch-primary runtime thread remains after the closeout.
-- Most recent closed threads:
-  [`threads/review-findings-closeout.next-session.md`](threads/review-findings-closeout.next-session.md),
-  [`threads/pythonic-alignment.next-session.md`](threads/pythonic-alignment.next-session.md)
-  and
-  [`threads/practice-foundation-upgrade.next-session.md`](threads/practice-foundation-upgrade.next-session.md)
+- Active lane: template-fitness remediation (runtime-infrastructure). Phase 1
+  landed via PRs #7 (review report + plan), #8 (F1 licence/metadata + F2
+  boundary), and #9 (`jc-` → `oak-` adapter rename). Phase 2 not yet started.
 
 ## Current Session Focus
 
-- No live runtime closeout or consolidation work remains. The repo is at the
-  post-closeout steady state after commit `268f04f`.
+- 2026-06-17: deep review, Phase 1, and the adapter rename landed on `main`.
+  The next session continues with Phase 2 (start with the CI workflow).
 
 ## Repo-Wide Invariants / Non-Goals
 
@@ -38,32 +34,28 @@ whole-repo reviewer sweep are complete on the repaired diff landed in
   source repo assumes Node-specific mechanics.
 - Do not import source-repo historical residue that breaks this repo's audit or
   identity.
-- Treat the approved 2026-04-23 transfer scope as closed; further
-  source-Practice intake needs a new explicit owner decision.
 - Keep `oaknational.*`, strict gates, and Practice governance as fixed
-  constraints while making the runtime surface more Pythonic.
+  constraints.
+- Judge work by excellence (what the template should model), not mere
+  convention; UK/British spelling everywhere in repo-facing text.
+- Land work through feature branches and PRs.
 
 ## Next Safe Step
 
-- Start a new owner-directed thread only if new work is requested; this
-  blocker-only runtime closeout is complete.
+- Begin Phase 2: open a feature branch for the CI workflow (F4), then coverage
+  honesty (F3) and chart accessibility (F8). Details in the thread record and
+  the active plan.
+
+## Open Side-Tasks
+
+- 6 Dependabot dependency PRs are open and unmerged (pre-existing). Triage when
+  convenient; their existence means basic supply-chain monitoring is in place
+  (a refinement to the review's F5 framing).
 
 ## Deep Consolidation Status
 
-- Incoming Practice material has been integrated and the Practice Box is clear.
-- Deep session-handoff and consolidate-docs closeout has been run on the landed
-  state.
-- No additional deep consolidation work is currently due from this planning
-  session.
-- The `clean` command now skips virtualenv-owned cache trees; that regression
-  was caught and fixed in the same standardisation pass.
-- The imported planning and doctrine surfaces were verified under the repo
-  audit after language and source-local residue were generalised away.
-- README, testing doctrine, distilled memory, and experience were refreshed to
-  reflect the final steady state.
-- The completed runtime plans are now archived and recorded in
-  `completed-plans.md`.
-- The active napkin has been rotated after the closeout so the next session
-  starts from a fresh active-memory surface.
-- The `practice-foundation-upgrade` thread remains as the closed baseline
-  reference for the landed Practice transfer.
+- The 2026-06-17 session captured its learning into the napkin, a new
+  `template-fitness-remediation` thread record, an experience note, the active
+  plan, and the executive/continuity surfaces.
+- A full `consolidate-docs` graduation pass is optional and not yet due.
+- The earlier 2026-04-23 source-Practice transfer remains the closed baseline.
