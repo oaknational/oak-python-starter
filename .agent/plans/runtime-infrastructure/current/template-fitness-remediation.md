@@ -113,7 +113,7 @@ Three ordered phases. Phase 1 removes the two true blockers (you cannot base a r
 
 ## Deferred Backlog (real, not pressing)
 
-- **Commands → skills migration** (12 commands + `jc-*` adapters + `_audit_command_parity`); the ecosystem repo has already migrated. Future agentic-engineering work.
+- **Commands → skills migration** (12 commands + `oak-*` adapters + `_audit_command_parity`); the ecosystem repo has already migrated. Future agentic-engineering work.
 - SSOT erosion: dead `gate_registry.repo_local_command_targets()`; duplicated pyright config; triplicated TOML helpers; `gate_steps` bare `KeyError` → helpful error.
 - `repo_audit.py` down-scoping; an ADR recording the deliberate bleeding-edge stack.
 - Minor correctness: int64 saturation, Parquet date message, wheel mtime tiebreak, double validation, double test run, `dev` cwd-dependence, non-atomic writes.

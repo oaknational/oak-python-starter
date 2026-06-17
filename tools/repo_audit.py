@@ -1568,10 +1568,10 @@ def _audit_command_parity(root: Path) -> list[str]:
     canonical = {path.stem for path in (root / ".agent/commands").glob("*.md") if path.is_file()}
     for name in canonical:
         adapters = [
-            (root / ".agents/skills" / f"jc-{name}" / "SKILL.md", 12),
-            (root / ".claude/commands" / f"jc-{name}.md", 10),
-            (root / ".cursor/commands" / f"jc-{name}.md", 10),
-            (root / ".gemini/commands" / f"jc-{name}.toml", 8),
+            (root / ".agents/skills" / f"oak-{name}" / "SKILL.md", 12),
+            (root / ".claude/commands" / f"oak-{name}.md", 10),
+            (root / ".cursor/commands" / f"oak-{name}.md", 10),
+            (root / ".gemini/commands" / f"oak-{name}.toml", 8),
         ]
         for path, max_nonempty_lines in adapters:
             require(

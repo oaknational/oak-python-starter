@@ -1,5 +1,5 @@
 ---
-name: jc-gates
+name: oak-gates
 description: >-
   Run quality gates and fix all issues. All failures are blocking.
 ---

@@ -862,19 +862,19 @@ def test_audit_adapter_parity_requires_thin_wrappers(tmp_path: Path) -> None:
 
     _write(tmp_path / ".agent" / "commands" / "example.md", "# Example")
     _write(
-        tmp_path / ".agents" / "skills" / "jc-example" / "SKILL.md",
+        tmp_path / ".agents" / "skills" / "oak-example" / "SKILL.md",
         "Read and follow `.agent/commands/example.md`.",
     )
     _write(
-        tmp_path / ".claude" / "commands" / "jc-example.md",
+        tmp_path / ".claude" / "commands" / "oak-example.md",
         "Read and follow `.agent/commands/example.md`.",
     )
     _write(
-        tmp_path / ".cursor" / "commands" / "jc-example.md",
+        tmp_path / ".cursor" / "commands" / "oak-example.md",
         "Read and follow @.agent/commands/example.md",
     )
     _write(
-        tmp_path / ".gemini" / "commands" / "jc-example.toml",
+        tmp_path / ".gemini" / "commands" / "oak-example.toml",
         'prompt = "Read and follow `.agent/commands/example.md`."',
     )
 
@@ -917,7 +917,7 @@ def test_audit_adapter_parity_requires_thin_wrappers(tmp_path: Path) -> None:
     assert subject.audit_adapter_parity(tmp_path) == []
 
     _write(
-        tmp_path / ".cursor" / "commands" / "jc-example.md",
+        tmp_path / ".cursor" / "commands" / "oak-example.md",
         """
 Read and follow @.agent/commands/example.md
 line 1

@@ -1,5 +1,5 @@
 ---
-name: jc-start-right-quick
+name: oak-start-right-quick
 description: >-
   Quick grounding at session start — read directives, memory, and check practice box.
 ---
