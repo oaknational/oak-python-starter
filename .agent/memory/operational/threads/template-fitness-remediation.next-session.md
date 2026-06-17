@@ -68,7 +68,11 @@ gate-expansion thread for the CodeQL/`update-branch` merge mechanics.
    darken `PALETTE` colour `#d08d46` to clear 3:1 non-text contrast (it is
    2.77:1 on white) and give the target marker a contrasting halo (it is
    ~1.55:1 against blue bars) (SC 1.4.11). Add a test asserting the sidecar is
-   written. Exact contrast figures are in the review report.
+   written. **Required reading before starting F8**:
+   [`reports/2026-06-17-python-repo-deep-review.md`](../../../reports/2026-06-17-python-repo-deep-review.md)
+   — it holds the full `PALETTE`, both background values, and the marker base
+   colour; the figures above are only a summary. Acceptance is ≥3:1 for every
+   palette colour and the marker against both backgrounds.
 
 Phase 3 (rename guide, trust-boundary note + size cap, guardrail
 simplify-and-fail-close) and the deferred backlog are detailed in the plan.
