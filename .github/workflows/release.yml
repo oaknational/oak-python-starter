@@ -1,0 +1,162 @@
+name: Release
+
+# Release automation via the release-PR pattern, so the committed version in
+# pyproject.toml can advance under the protected `main` ruleset (no direct push,
+# no bypass token). Two phases, selected by whether the committed version already
+# has a matching tag:
+#   - prepare: committed version IS tagged -> compute the next version from
+#     Conventional Commits (Commitizen custom bump map) and open/refresh a
+#     "release" PR that bumps pyproject + CHANGELOG. Breaking changes stand down
+#     for a manual major.
+#   - publish: committed version is NOT tagged (a release PR just merged) ->
+#     tag it, build, and create the GitHub Release with the wheel + sdist.
+# Major releases are manual: run this workflow via "Run workflow" with
+# increment = MAJOR.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: "Release increment to prepare (use MAJOR for a deliberate major release)"
+        type: choice
+        options: [MAJOR, MINOR, PATCH]
+        default: MAJOR
+        required: true
+
+# Least privilege by default; the job widens to what it needs.
+permissions:
+  contents: read
+
+# Serialise releases on a ref; never cancel a release mid-flight.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out full history and tags
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Sync the locked environment
+        run: uv sync --locked
+
+      - name: Configure the bot git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine the release phase
+        id: phase
+        run: |
+          set -euo pipefail
+          version=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/v${version}" >/dev/null; then
+            phase=prepare
+          else
+            phase=publish
+          fi
+          echo "phase=${phase}" >> "$GITHUB_OUTPUT"
+          echo "Committed version v${version} -> phase ${phase}"
+
+      # --- PUBLISH: the committed version has no tag, so a release PR just merged.
+      - name: Tag and publish the GitHub Release
+        if: steps.phase.outputs.phase == 'publish'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.phase.outputs.version }}
+        run: |
+          set -euo pipefail
+          tag="v${VERSION}"
+          git tag -a "${tag}" -m "${tag}"
+          git push origin "${tag}"
+          uv build
+          notes="$(mktemp)"
+          if uv run cz changelog --dry-run "${VERSION}" > "${notes}" 2>/dev/null && [ -s "${notes}" ]; then
+            gh release create "${tag}" --title "${tag}" --notes-file "${notes}" ./dist/*
+          else
+            gh release create "${tag}" --title "${tag}" --generate-notes ./dist/*
+          fi
+
+      - name: Note an ignored manual dispatch
+        if: steps.phase.outputs.phase == 'publish' && github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ steps.phase.outputs.version }}
+        run: |
+          echo "::warning::A manual release was requested, but committed version v${VERSION} is not yet tagged, so the pending release was published instead. Re-run after it completes to prepare the next release."
+
+      # --- PREPARE: the committed version is tagged, so look for the next release.
+      - name: Compute the next release and bump the files
+        id: prepare
+        if: steps.phase.outputs.phase == 'prepare'
+        env:
+          PREV_VERSION: ${{ steps.phase.outputs.version }}
+          INCREMENT: ${{ inputs.increment }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          prev="v${PREV_VERSION}"
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            set +e
+            uv run cz bump --files-only --changelog --yes --increment "${INCREMENT}"
+            rc=$?
+            set -e
+            if [ "${rc}" -ne 0 ]; then echo "manual bump failed (${rc})"; exit "${rc}"; fi
+          else
+            range="${prev}..HEAD"
+            if git log "${range}" --pretty=%B | grep -qiE '^([a-z]+(\([^)]+\))?!:|BREAKING[ -]CHANGE)'; then
+              echo "::warning::Breaking change detected since ${prev}. A major release must be cut manually via Run workflow (increment = MAJOR); auto-release stood down."
+              echo "prepared=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            set +e
+            uv run cz bump --files-only --changelog --yes
+            rc=$?
+            set -e
+            if [ "${rc}" -eq 21 ]; then
+              echo "No releasable commits since ${prev}."
+              echo "prepared=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "${rc}" -ne 0 ]; then echo "cz bump failed (${rc})"; exit "${rc}"; fi
+          fi
+          next=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          if [ -z "${next}" ]; then echo "could not read the bumped version"; exit 1; fi
+          echo "version=${next}" >> "$GITHUB_OUTPUT"
+          echo "prepared=true" >> "$GITHUB_OUTPUT"
+
+      # SHA-pin this third-party action in the queued supply-chain PR (it runs
+      # with the job's contents/pull-requests write token).
+      - name: Open or refresh the release PR
+        if: steps.phase.outputs.phase == 'prepare' && steps.prepare.outputs.prepared == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: release/next
+          base: main
+          title: "chore(release): v${{ steps.prepare.outputs.version }}"
+          commit-message: "chore(release): v${{ steps.prepare.outputs.version }}"
+          labels: release
+          body: |
+            Automated release PR. Merging this cuts release **v${{ steps.prepare.outputs.version }}**.
+
+            It lands the version bump in `pyproject.toml`, `uv.lock`, and
+            `CHANGELOG.md`; the Release workflow then tags `v${{ steps.prepare.outputs.version }}`
+            and publishes the GitHub Release with the built wheel + sdist.
+
+            Note: this PR is opened with the default token, so CI does not run on
+            it automatically.

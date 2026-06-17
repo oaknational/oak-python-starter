@@ -652,6 +652,79 @@ def audit_ci_workflow(root: Path) -> list[str]:
     return failures
 
 
+def audit_release_workflow(root: Path) -> list[str]:
+    check = "release-workflow"
+    failures: list[str] = []
+    workflow = _load_yaml(root / ".github" / "workflows" / "release.yml", failures, check)
+    if workflow is not None:
+        if isinstance(workflow, dict):
+            mapping = cast(dict[object, object], workflow)
+            triggers = _workflow_triggers(mapping)
+            found = sorted(triggers)
+            require(
+                failures,
+                check,
+                "push" in triggers,
+                f".github/workflows/release.yml must trigger on push to main (found: {found})",
+            )
+            require(
+                failures,
+                check,
+                "workflow_dispatch" in triggers,
+                (
+                    ".github/workflows/release.yml must offer workflow_dispatch for manual "
+                    "major releases"
+                ),
+            )
+            require(
+                failures,
+                check,
+                any("cz bump" in command for command in _workflow_run_commands(mapping)),
+                ".github/workflows/release.yml must run `cz bump` to compute the next version",
+            )
+        else:
+            require(
+                failures,
+                check,
+                False,
+                ".github/workflows/release.yml must define a top-level mapping",
+            )
+
+    data = _load_toml(root / "pyproject.toml", failures, check)
+    if data is not None:
+        tool = _object_mapping(data.get("tool"))
+        commitizen = _object_mapping(tool.get("commitizen")) if tool is not None else None
+        bump_map = _string_mapping(commitizen.get("bump_map")) if commitizen is not None else None
+        require(
+            failures,
+            check,
+            bump_map is not None
+            and bump_map.get("^feat") == "MINOR"
+            and bump_map.get("^fix") == "MINOR",
+            "pyproject [tool.commitizen].bump_map must map feat and fix to MINOR",
+        )
+        require(
+            failures,
+            check,
+            bump_map is not None and bump_map.get("^.+") == "PATCH",
+            (
+                "pyproject [tool.commitizen].bump_map must map other commit types to PATCH "
+                "via a '^.+' catch-all"
+            ),
+        )
+        require(
+            failures,
+            check,
+            bump_map is not None and "MAJOR" not in bump_map.values(),
+            (
+                "pyproject [tool.commitizen].bump_map must not auto-bump MAJOR "
+                "(major releases are manual)"
+            ),
+        )
+
+    return failures
+
+
 def audit_secret_scanning(root: Path) -> list[str]:
     check = "secret-scanning"
     failures: list[str] = []
@@ -1886,6 +1959,7 @@ DEFAULT_AUDIT_CHECKS: tuple[AuditFunction, ...] = (
     audit_identity,
     audit_distribution_metadata,
     audit_ci_workflow,
+    audit_release_workflow,
     audit_secret_scanning,
     audit_gate_scripts,
     audit_packaging_contract,

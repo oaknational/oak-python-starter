@@ -157,6 +157,30 @@ Check a commit message manually:
 uv run cz check --message "feat: add truthful commit-msg enforcement"
 ```
 
+## Releases
+
+Releases are automated from Conventional Commits, with the version kept
+**committed** in `pyproject.toml`. Because `main` is protected, the bump flows
+through a one-click **release PR**:
+
+1. Merging changes to `main` makes the Release workflow open or refresh a
+   `chore(release): vX.Y.Z` PR that bumps `pyproject.toml`, `uv.lock`, and
+   `CHANGELOG.md`.
+2. Merging that release PR tags `vX.Y.Z` and publishes a GitHub Release with the
+   built wheel + sdist attached.
+
+The bump level is computed by Commitizen with this repo's policy:
+
+| Commit type(s) | Bump |
+| --- | --- |
+| `feat`, `fix` | minor |
+| everything else (`chore`, `docs`, `perf`, `refactor`, `build`, `ci`, …) | patch |
+| `!` / `BREAKING CHANGE` | no auto-release — a **major** is required |
+
+**Major versions are manual.** A breaking change makes the automation stand
+down; cut the major deliberately via the Release workflow's *Run workflow*
+button (`increment = MAJOR`). Releases publish to GitHub Releases only (no PyPI).
+
 ## Practice Surface
 
 - Agent entry point: `.agent/directives/AGENT.md`
