@@ -1,0 +1,25 @@
+# gitleaks configuration for the Oak Python repo template.
+#
+# Doctrine: what gets allowlisted is a governance decision, not a convenience.
+# Inherit the upstream default rule set in full and add only repo-specific
+# deltas. Every allowlist entry MUST carry a comment justifying why it is safe
+# to ignore; the default is to add nothing and instead fix or remove the
+# offending value. (Mirrors the commented-ignore-file doctrine used elsewhere
+# in this repo, e.g. Markdown linting.)
+
+[extend]
+useDefault = true
+
+# No repo-specific exemptions yet. gitleaks rejects an empty allowlist, so the
+# block stays absent until a genuine exemption exists. When one does, add it
+# here with a comment explaining the source and why it is not a real secret —
+# every entry must contain at least one concrete check (paths/regexes/etc.):
+#
+#   [allowlist]
+#   description = "Repo-specific secret-scanning allowlist."
+#   paths = [
+#     '''tests/fixtures/fake_token\.txt''',  # intentional non-secret test fixture
+#   ]
+#   regexes = [
+#     '''EXAMPLE_[A-Z0-9]{16}''',  # documented placeholder used in docs only
+#   ]

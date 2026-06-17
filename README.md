@@ -26,6 +26,12 @@ installed package import plus the `activity-report` and
 Dependency hygiene runs through `uv run deptry .` and is included as a blocking
 step inside both aggregate gate commands. It is dependency hygiene, not vulnerability scanning.
 
+Secret scanning uses `gitleaks`. Because `gitleaks` is a Go binary rather than a
+`uv` package, it runs alongside `check-ci` rather than inside it (so `uv sync`
+stays sufficient for the gate sequence): a pinned pre-commit hook locally and a
+pinned `secret-scan` job in CI, kept in lockstep by the `repo-audit`
+`secret-scanning` check. The allowlist lives in `.gitleaks.toml`.
+
 ## Agentic Engineering
 
 This repo is optimised for agentic engineering. Its Practice surfaces,
@@ -94,6 +100,21 @@ Report directly from a bounded HTTPS input:
 ```bash
 uv run activity-report report --input https://example.test/activity_log.csv
 ```
+
+## Prerequisites
+
+Most tooling is managed through `uv`, so the usual setup is `uv sync` followed by
+`uv run pre-commit install`. Two tools are binaries rather than Python packages,
+so `uv sync` does not install them:
+
+- **[uv](https://docs.astral.sh/uv/getting-started/installation/)** — the
+  toolchain every command below runs through; install it first.
+- **[gitleaks](https://github.com/gitleaks/gitleaks#installing-gitleaks)** — the
+  secret scanner. The pre-commit hook installs it automatically (pre-commit
+  provisions its own Go toolchain), so no manual step is normally needed. Install
+  it directly via the official instructions only if you want to run `gitleaks`
+  outside pre-commit, or if the automatic install is unavailable in your
+  environment.
 
 ## Development Commands
 

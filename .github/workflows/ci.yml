@@ -40,3 +40,42 @@ jobs:
 
       - name: Run the full CI gate sequence
         run: uv run python -m oaknational.python_repo_template.devtools check-ci
+
+  # Secret scanning runs alongside (not inside) check-ci: gitleaks is a Go
+  # binary, not a uv package, so the venv cannot carry it and `uv sync` stays
+  # sufficient for the gate sequence. We install the pinned binary directly and
+  # verify its checksum rather than using gitleaks-action (which needs a
+  # GITLEAKS_LICENSE for org repos and stops working when Node 20 runners are
+  # retired). The version is pinned in lockstep with the pre-commit mirror via
+  # tools/repo_audit_contract.toml; audit_secret_scanning enforces the match.
+  secret-scan:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-latest
+    # Least privilege, stated explicitly so a future top-level change cannot
+    # silently widen this job's token.
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install the pinned gitleaks binary
+        run: |
+          set -euo pipefail
+          # Single literal version; the archive name is derived from it so a
+          # partial bump fails loudly at the checksum step rather than silently
+          # fetching a stale or wrong asset.
+          GITLEAKS_VERSION=v8.30.1
+          GITLEAKS_SHA256=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+          ARCHIVE="gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+          curl -sSfL -o "$ARCHIVE" \
+            "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/${ARCHIVE}"
+          echo "${GITLEAKS_SHA256}  ${ARCHIVE}" | sha256sum --check --strict
+          tar -xzf "$ARCHIVE" gitleaks
+          sudo install gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      # Scans the checked-out working tree (not full git history); see the
+      # secret-scanning section of docs/dev-tooling.md for the scope boundary.
+      - name: Scan the working tree for secrets
+        run: gitleaks dir . --config=.gitleaks.toml --redact --no-banner --exit-code=1

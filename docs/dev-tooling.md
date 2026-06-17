@@ -68,6 +68,30 @@ Its package identity follows the Oak Python convention:
   is relaxed to siblings-only, so structural rules such as `MD040` stay on
 - `check` and `check-ci` both run the markdown lint after the Ruff lint
 
+## Secret scanning
+
+- `gitleaks` performs secret scanning: it looks for committed credentials,
+  tokens, and keys
+- it runs *alongside* `check-ci`, not inside it: `gitleaks` is a Go binary, not
+  a `uv` package, so the venv cannot carry it and `uv sync` stays sufficient for
+  the gate sequence
+- locally it runs as a pinned pre-commit hook (the official
+  `github.com/gitleaks/gitleaks` mirror); `uv run pre-commit install` wires it in
+  and pre-commit installs the binary for you via its Go support — no manual step
+- in CI a dedicated `secret-scan` job installs the same pinned binary (with a
+  verified checksum) and runs `gitleaks dir .`
+- the allowlist lives in `.gitleaks.toml`, which extends the upstream default
+  rule set (`useDefault = true`); every exemption must justify itself in a
+  comment, mirroring the commented-ignore-file doctrine used for Markdown linting
+- the version is pinned once in `tools/repo_audit_contract.toml` and kept in
+  lockstep across the pre-commit mirror and CI by the `secret-scanning`
+  `repo-audit` check; bump all three together
+- scope boundary: CI scans the checked-out working tree (`gitleaks dir .`) and
+  the pre-commit hook scans staged changes — neither walks the full git history,
+  so a secret committed and later removed in an earlier commit is not caught.
+  History scanning (`gitleaks git` with a full-depth checkout) is a deliberate
+  later enhancement, not part of this gate
+
 ## Packaging proof
 
 - `uv run python -m oaknational.python_repo_template.devtools build` builds the

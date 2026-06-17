@@ -652,6 +652,112 @@ def audit_ci_workflow(root: Path) -> list[str]:
     return failures
 
 
+def audit_secret_scanning(root: Path) -> list[str]:
+    check = "secret-scanning"
+    failures: list[str] = []
+    contract = _load_repo_audit_contract(root, failures, check)
+    if contract is None:
+        return failures
+    secret_scanning = _object_mapping(contract.get("secret_scanning"))
+    pinned_version = (
+        secret_scanning.get("gitleaks_version") if secret_scanning is not None else None
+    )
+    require(
+        failures,
+        check,
+        isinstance(pinned_version, str) and pinned_version.startswith("v"),
+        "repo_audit_contract.toml must pin [secret_scanning].gitleaks_version to a gitleaks tag",
+    )
+    if not isinstance(pinned_version, str):
+        return failures
+
+    config_path = root / ".gitleaks.toml"
+    require(
+        failures,
+        check,
+        config_path.exists(),
+        ".gitleaks.toml must exist to govern the secret-scanning allowlist",
+    )
+    if config_path.exists():
+        config_data = _load_toml(config_path, failures, check)
+        extend = _object_mapping(config_data.get("extend")) if config_data is not None else None
+        require(
+            failures,
+            check,
+            extend is not None and extend.get("useDefault") is True,
+            ".gitleaks.toml must extend the default ruleset with useDefault = true",
+        )
+
+    pre_commit = _load_yaml(root / ".pre-commit-config.yaml", failures, check)
+    pre_commit_mapping = _object_mapping(pre_commit)
+    repos = (
+        _object_list(pre_commit_mapping.get("repos")) if pre_commit_mapping is not None else None
+    )
+    gitleaks_repo = None
+    for repo_entry in repos or []:
+        repo_url = repo_entry.get("repo")
+        if isinstance(repo_url, str) and repo_url.rstrip("/").endswith("gitleaks/gitleaks"):
+            gitleaks_repo = repo_entry
+            break
+    require(
+        failures,
+        check,
+        gitleaks_repo is not None,
+        ".pre-commit-config.yaml must include the gitleaks mirror repo",
+    )
+    if gitleaks_repo is not None:
+        require(
+            failures,
+            check,
+            gitleaks_repo.get("rev") == pinned_version,
+            (
+                ".pre-commit-config.yaml must pin the gitleaks mirror rev to "
+                f"{pinned_version} (matching repo_audit_contract.toml)"
+            ),
+        )
+
+    workflow = _load_yaml(root / ".github" / "workflows" / "ci.yml", failures, check)
+    if isinstance(workflow, dict):
+        run_commands = _workflow_run_commands(cast(dict[object, object], workflow))
+        require(
+            failures,
+            check,
+            any("gitleaks" in command and pinned_version in command for command in run_commands),
+            (
+                ".github/workflows/ci.yml must run gitleaks pinned to "
+                f"{pinned_version} (matching the pre-commit mirror)"
+            ),
+        )
+
+    readme = read_text(root / "README.md", failures, check)
+    if readme is not None:
+        require(
+            failures,
+            check,
+            "gitleaks" in readme.lower() and "secret scanning" in readme.lower(),
+            "README must document the gitleaks secret-scanning gate",
+        )
+        require(
+            failures,
+            check,
+            "github.com/gitleaks/gitleaks" in readme,
+            (
+                "README prerequisites must link to the official gitleaks install "
+                "instructions (github.com/gitleaks/gitleaks)"
+            ),
+        )
+    tooling_doc = read_text(root / "docs/dev-tooling.md", failures, check)
+    if tooling_doc is not None:
+        require(
+            failures,
+            check,
+            "gitleaks" in tooling_doc.lower() and "secret scanning" in tooling_doc.lower(),
+            "docs/dev-tooling.md must document the gitleaks secret-scanning gate",
+        )
+
+    return failures
+
+
 def audit_gate_scripts(root: Path) -> list[str]:
     check = "gate-scripts"
     failures: list[str] = []
@@ -1780,6 +1886,7 @@ DEFAULT_AUDIT_CHECKS: tuple[AuditFunction, ...] = (
     audit_identity,
     audit_distribution_metadata,
     audit_ci_workflow,
+    audit_secret_scanning,
     audit_gate_scripts,
     audit_packaging_contract,
     audit_typing_contract,
