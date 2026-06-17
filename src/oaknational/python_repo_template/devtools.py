@@ -369,6 +369,14 @@ def typecheck(args: Sequence[str] | None = None) -> None:
     raise SystemExit(run_command(["pyright", *_command_args(args)]))
 
 
+def markdownlint(args: Sequence[str] | None = None) -> None:
+    _run_or_exit(["pymarkdown", "scan", "-r", "--respect-gitignore", ".", *_command_args(args)])
+
+
+def markdownlint_fix(args: Sequence[str] | None = None) -> None:
+    _run_or_exit(["pymarkdown", "fix", "-r", "--respect-gitignore", ".", *_command_args(args)])
+
+
 def repo_audit(args: Sequence[str] | None = None) -> None:
     _run_or_exit([sys.executable, "tools/repo_audit.py", *_command_args(args)])
 
@@ -398,6 +406,8 @@ def _step_runners(
         "typecheck": ["pyright"],
         "lint": ["ruff", "check", *PYTHON_TARGETS, "--ignore-noqa"],
         "lint-fix": ["ruff", "check", *PYTHON_TARGETS, "--fix", "--ignore-noqa"],
+        "markdownlint": ["pymarkdown", "scan", "-r", "--respect-gitignore", "."],
+        "markdownlint-fix": ["pymarkdown", "fix", "-r", "--respect-gitignore", "."],
         "import-linter": ["lint-imports"],
         "dependency-hygiene": ["deptry", "."],
         "repo-audit": [python_executable, "tools/repo_audit.py"],

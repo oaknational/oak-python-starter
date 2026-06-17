@@ -20,6 +20,8 @@ build = "build"
 dev = "dev"
 lint = "lint"
 lint-fix = "lint_fix"
+markdownlint = "markdownlint"
+markdownlint-fix = "markdownlint_fix"
 format = "format_gate"
 format-fix = "format_fix"
 typecheck = "typecheck"
@@ -31,15 +33,17 @@ check = "check"
 check-ci = "check_ci"
 
 [gate_sequences]
-fix = ["format-fix", "lint-fix", "format-fix", "import-linter"]
+fix = ["format-fix", "lint-fix", "format-fix", "markdownlint-fix", "import-linter"]
 check = [
   "format-fix",
   "lint-fix",
   "format-fix",
+  "markdownlint-fix",
   "import-linter",
   "format",
   "typecheck",
   "lint",
+  "markdownlint",
   "dependency-hygiene",
   "repo-audit",
   "build",
@@ -50,6 +54,7 @@ check-ci = [
   "format",
   "typecheck",
   "lint",
+  "markdownlint",
   "import-linter",
   "dependency-hygiene",
   "repo-audit",
@@ -87,6 +92,8 @@ activity-report = "oaknational.python_repo_template.demo.activity_report:main"
   "format-fix",
   "lint",
   "lint-fix",
+  "markdownlint",
+  "markdownlint-fix",
   "typecheck",
   "repo-audit",
   "test",
@@ -98,8 +105,8 @@ activity-report = "oaknational.python_repo_template.demo.activity_report:main"
 """.strip()
 
 CHECK_CI_SEQUENCE = (
-    "format -> typecheck -> lint -> import-linter -> dependency-hygiene -> "
-    "repo-audit -> build -> test -> coverage"
+    "format -> typecheck -> lint -> markdownlint -> import-linter -> "
+    "dependency-hygiene -> repo-audit -> build -> test -> coverage"
 )
 
 

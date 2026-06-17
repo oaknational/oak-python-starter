@@ -104,10 +104,10 @@ For each finding, provide a specific, actionable fix — not generic advice.
 
 ## Key Principles
 
-1. **Prioritise exploitability and impact**
-2. **Fail fast without leaking sensitive data**
-3. **Secure defaults over optional safeguards**
-4. **Concrete fixes over generic warnings**
+1. Prioritise exploitability and impact
+2. Fail fast without leaking sensitive data
+3. Secure defaults over optional safeguards
+4. Concrete fixes over generic warnings
 
 ---
 
