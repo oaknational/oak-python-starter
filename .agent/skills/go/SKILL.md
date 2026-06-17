@@ -20,8 +20,10 @@ Read ALL of this document, then carry out the [Action](#action).
 Read `.agent/directives/AGENT.md` and follow all instructions. Read
 `.agent/directives/principles.md` and reflect on the rules.
 
-Read `.agent/memory/distilled.md` and `.agent/memory/napkin.md` (if
-they exist) to absorb context from prior sessions.
+Read `.agent/memory/README.md`, `.agent/memory/active/distilled.md`,
+`.agent/memory/active/napkin.md`, and
+`.agent/memory/operational/repo-continuity.md` (if they exist) to
+absorb context from prior sessions.
 
 If your current task is driven by a plan, read the relevant domain
 `current/README.md` first, then the plan before executing the next
@@ -73,7 +75,8 @@ If the task is demo application work, read
   This consists of:
   1. Stepping back and reflecting on the action
   2. Checking alignment with the plan and rules
-  3. **Invoking the appropriate sub-agent(s)** per the `invoke-code-reviewers` directive
+  3. Checking whether the action changed continuity or active-memory surfaces
+  4. **Invoking the appropriate sub-agent(s)** per the reviewer catalogue in executive memory
 - Make sure your todo list includes running the quality gates. These
   items should be prefixed with `QUALITY-GATE:` and happen reasonably
   often.

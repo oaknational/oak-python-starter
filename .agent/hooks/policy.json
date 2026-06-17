@@ -1,6 +1,6 @@
 {
   "session_start_message": "Read .agent/commands/start-right-quick.md before substantive work.",
-  "quality_gate_message": "If Python or tooling files change, run uv run check before you stop.",
+  "quality_gate_message": "If Python or tooling files change, run uv run python -m oaknational.python_repo_template.devtools check before you stop.",
   "blocked_shell_patterns": [
     {
       "pattern": "(^|\\s)git\\s+stash(\\s|$)",
@@ -27,8 +27,50 @@
       "reason": "--no-verify is prohibited here because it bypasses git hooks."
     },
     {
-      "pattern": "(^|\\s)git\\s+push\\b[^\\n]*\\s(--force|-f)(\\s|$)",
+      "pattern": "(^|\\s)git\\s+push\\b[^\\n]*\\s(--force(?:-with-lease)?|-f)(\\s|$)",
       "reason": "Force push is prohibited here because it overwrites remote history."
     }
-  ]
+  ],
+  "blocked_hook_bypass_flags": [
+    {
+      "token": "--no-pre-commit",
+      "reason": "--no-pre-commit is prohibited here because it bypasses pre-commit hooks."
+    }
+  ],
+  "blocked_hook_bypass_env_vars": [
+    {
+      "name": "HUSKY",
+      "value": "0",
+      "reason": "HUSKY=0 is prohibited here because it disables git hooks."
+    },
+    {
+      "name": "SKIP_HOOKS",
+      "value": "1",
+      "reason": "SKIP_HOOKS=1 is prohibited here because it disables git hooks."
+    }
+  ],
+  "blocked_git_config_overrides": [
+    {
+      "name": "core.hooksPath",
+      "reason": "core.hooksPath overrides are prohibited here because they bypass repo git hooks."
+    }
+  ],
+  "blocked_hook_bypass_env_var_prefixes": [
+    {
+      "prefix": "GIT_CONFIG_",
+      "reason": "GIT_CONFIG_* is prohibited here because it can hide hook bypasses or force pushes."
+    }
+  ],
+  "blocked_git_config_prefixes": [
+    {
+      "prefix": "alias.",
+      "reason": "Git alias overrides are prohibited here because they can hide hook bypasses or force pushes."
+    }
+  ],
+  "blocked_pre_commit_skip_ids": [
+    "quality-gates",
+    "commitizen-commit-msg"
+  ],
+  "blocked_pre_commit_skip_reason": "SKIP is prohibited here when it bypasses the repo's quality-gates or commitizen-commit-msg hooks.",
+  "blocked_dynamic_git_config_reason": "Dynamic git config is prohibited here for git commit and git push because it can hide hook bypasses or force pushes."
 }

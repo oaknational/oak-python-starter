@@ -1,0 +1,91 @@
+# Thread: pythonic-alignment
+
+## Participating Agent Identities
+
+| agent_name | platform | model | session_id_prefix | role | first_session | last_session |
+| --- | --- | --- | --- | --- | --- | --- |
+| Codex | codex | gpt-5 | unknown | executor | 2026-04-23 | 2026-04-23 |
+
+## Owning Plans
+
+- [`../../../plans/runtime-infrastructure/archive/pythonic-alignment-and-commitizen-adoption.md`](../../../plans/runtime-infrastructure/archive/pythonic-alignment-and-commitizen-adoption.md)
+
+## Current Objective
+
+- Closed. The bounded Pythonic alignment pass landed and now lives as an
+  archived runtime reference rather than a live execution thread.
+
+## Current State
+
+- The plan for Pythonic alignment, demo expansion, and Commitizen adoption is
+  now archived as a closed runtime reference rather than queued in the current
+  lane.
+- Architecture review has already challenged the framing and confirmed the
+  highest-value Pythonic moves are package truthfulness, installed-surface
+  verification, strict typing, and tooling coherence rather than broad repo
+  restructuring.
+- Owner direction changed the dependency-truthfulness decision: the repo should
+  use a richer bounded demo to justify the installed dependency set rather than
+  trimming the set down to the current smaller example.
+- WS1 is now explicit in the plan: the richer demo is a bounded "activity
+  pack" made of one activity log, one same-stem YAML sidecar, optional HTTPS
+  retrieval, and deterministic chart output, with a concrete truthful role for
+  each direct runtime dependency.
+- WS2 is now landed: `activity-report` accepts bounded HTTPS inputs through the
+  existing `--input` flag, auto-discovers or overrides same-stem YAML sidecars
+  through `--metadata`, renders metadata-aware summaries, and generates charts
+  through `matplotlib` rather than bespoke PNG byte code.
+- The shipped metadata fixture and README now demonstrate labels, target
+  minutes, and the bounded activity-pack story directly.
+- WS3 is now landed: the package ships `py.typed`, `pyproject.toml` makes
+  `pyright` scope and strict mode explicit, the wheel target force-includes the
+  typing marker, and repo audit enforces that typing contract.
+- The widened demo and repo-owned tooling still pass under strict pyright, and
+  both the wheel and sdist were verified to contain `py.typed`.
+- WS4 is now landed: `commitizen` is in the dev dependency group,
+  `pre-commit install` now installs `commit-msg` alongside `pre-commit` and
+  `pre-push`, and the hook validates the actual commit-message file via
+  `uv run cz check --allow-abort --commit-msg-file`.
+- README, `docs/dev-tooling.md`, and the canonical commit workflow doc now
+  expose the truthful `uv run cz commit` / `uv run cz check` path.
+- While landing WS4, a packaging regression surfaced: Hatch's `packages = [...]`
+  wheel setting collapsed the shipped path to `python_repo_template/*`.
+  The wheel target now uses `only-include` plus `sources` to preserve
+  `oaknational/python_repo_template/*`, and repo audit now guards that
+  namespace-preserving contract.
+- WS5 is now landed: canonical gate-command truth lives in
+  `src/oaknational/python_repo_template/gate_registry.py`, `tools/repo_audit.py`
+  reads that same registry, and `uv run build`, `uv run check`, and
+  `uv run check-ci` now all prove installed-wheel viability.
+- The wheel smoke path builds the repaired
+  `oaknational.python_repo_template` wheel, installs it into a temporary
+  virtual environment outside the source tree, copies the seeded activity pack
+  into a temporary workspace, and proves the package import plus both
+  `activity-report` and `python -m oaknational.python_repo_template`.
+- The WS5 landing finished with passing `uv run build`, `uv run check-ci`, and
+  `uv run check`.
+- WS6 is now landed: `deptry` is in the dev dependency group, the direct
+  dependency-hygiene command is `uv run deptry .`, and both aggregate checks
+  run it before `repo-audit` without adding a new public gate command.
+- The `deptry` configuration stays deliberately small: `oaknational` is marked
+  as known first party, and `pyarrow` has one documented `DEP002` exception for
+  the indirect pandas Parquet backend path.
+- README, `docs/dev-tooling.md`, `.agent/commands/gates.md`, and the
+  start-right gate-sequence doc were updated together with repo audit and
+  tests, so the new dependency-hygiene contract is documented and enforced in
+  one landing.
+- The final session closed green with passing `uv run deptry .`, focused
+  tooling tests, and `uv run check`.
+- The broader runtime closeout later landed in `268f04f`, leaving this thread
+  as a closed reference with no live follow-up.
+
+## Blockers / Low-Confidence Areas
+
+- No active blockers remain at closeout.
+- Reopen only if a regression appears in the dependency-hygiene gate, the
+  installed-wheel proof, or the bounded demo contract.
+
+## Next Safe Step
+
+- No further work is planned for this thread. Treat it as closed unless new
+  owner direction or a regression requires a follow-up tranche.

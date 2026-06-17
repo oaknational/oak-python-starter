@@ -1,0 +1,6 @@
+---
+description: capture executive-memory drift
+alwaysApply: true
+---
+
+Read and follow `.agent/rules/executive-memory-drift-capture.md`.

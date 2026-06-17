@@ -1,36 +1,51 @@
 # The Practice
 
-The Practice is a system of principles, guardrails, skills, and a self-teaching learning loop -- working together to ensure quality, reverse entropy, and support innovation.
+The Practice is the repo's operating system for high-quality human and agent
+work: principles, directives, commands, skills, review habits, and learning
+loops working together.
 
-This directory is the Practice Core, the self-contained heart of the system. The Core is transferable to other repos, see below. The Core integrates into a specific repo via a stable link to the `practice-index.md` file.
+This directory is the portable Practice Core. It is a bounded package of files
+plus required directories:
 
-The Practice is the integrated local application of the Core within a specific repo, and the Core-informed quality gates, rules, commands, optional reviewer/domain-expert agents, skills, and other artefacts that are used to enforce the principles and guardrails.
+- the trinity: `practice.md`, `practice-lineage.md`, `practice-bootstrap.md`
+- the verification surface: `practice-verification.md`
+- the entry points: this `README.md` and `index.md`
+- the change log: `CHANGELOG.md`
+- provenance: `provenance.yml`
+- the governance directory: `decision-records/`
+- the portable pattern directory: `patterns/`
+- the Practice Box: `incoming/`
 
-When a repo supports multiple agent platforms, keep the portable Core concise
-and record supported versus unsupported local surface mappings in a local
-reference such as `.agent/reference/cross-platform-agent-surface-matrix.md`.
+The Core integrates into a specific repo through one local bridge file:
+`../practice-index.md`. That file does not travel. It points from the portable
+Core to the host repo's live artefacts.
 
-The Practice will naturally evolve over time; using it will cause it to adapt to suit the context of its current repo.
+One optional peer directory may accompany the Core:
+`.agent/practice-context/`. It carries ephemeral exchange context.
+`incoming/` there is transient and should be cleared after integration.
+`outgoing/` is lightweight support material only; durable governance and
+portable patterns belong in this Core.
 
-In order for the improvements to the Practice to be shared, the Core has a simple mechanism for integrating learnings from other repos. The `practice-core` directory from the sharing repo is copied into the `practice-core/incoming` directory of the receiving repo; the instructions for integrating what is useful and leaving the rest are integral to the Core — just ask your agent to do it.
-
-This was inspired by the concept of [genetic plasmid exchange](https://en.wikipedia.org/wiki/Bacterial_conjugation), intra-generational evolution -- this is memetic capability exchange. In essence, the Core is the memotype, the Practice is the applied phenotype.
-
-> **Note**: The Core is stack- and ecosystem-agnostic: the principles are universal, the templates use TypeScript/Node.js as concrete examples but can be adapted to any toolset or language, and are expected to evolve over time in new contexts.
+The Practice evolves through use, but it must be adapted truthfully to the
+host ecosystem. The templates are universal; the concrete commands and runtime
+contracts are local.
 
 ## For Humans
 
-### Bringing the Practice to a New Repo
+To hydrate the Practice into a new repo:
 
-To bring the Practice to a new repo, transfer the Practice Core: three core blueprints (the "plasmid trinity"), two entry points (this README and an agent-facing index), and a changelog. It may be accompanied by an optional `.agent/practice-context/` directory, but that directory is not part of the Core. `outgoing/` is sender-maintained support material; copy relevant files into the receiving repo's `incoming/`, use them during integration, then clear `incoming/`. To hydrate it into a new repository:
+1. Create `.agent/practice-core/`.
+2. Drop in the full Core package and required directories.
+3. Check `.agent/practice-context/README.md` and any received context if that
+   peer directory is present.
+4. Ask your agent to read the Core, explain what it means, and adapt it to the
+   repo's actual language, tooling, and norms.
 
-1. Create a directory: `.agent/practice-core/` (or `practice_core` if you prefer underscores).
-2. Drop these files into it.
-3. Check `.agent/practice-context/README.md` and `incoming/` if they exist.
-4. Ask your agent to read and understand all the files in the directory, explain what it is all about, and tell you what should happen next.
-
-The agent will survey your repo's existing tooling, standards, and norms, then adapt the Practice to fit -- the Practice enables excellence; it does not replace what you already have. See [practice-lineage.md](practice-lineage.md) for the full story of how the Practice propagates and evolves.
+The Practice should raise the repo's standards without erasing what is already
+working well. See [practice-lineage.md](practice-lineage.md) for the evolution
+rules and integration flow.
 
 ## For Agents
 
-Follow [index.md](index.md). It will orient you to the full Practice system and handle any situation you find yourself in -- day-to-day work, cold-start hydration, incoming plasmids, or files that have landed in the wrong place.
+Follow [index.md](index.md). It covers day-to-day use, first-time hydration,
+and incoming Practice integration.

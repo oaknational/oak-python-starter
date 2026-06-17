@@ -34,7 +34,7 @@ The repo adopts the following cross-platform Practice surface contract:
    not parallel sources of policy or workflow logic.
 
 3. The live support contract is the operational matrix.
-   `.agent/reference/cross-platform-agent-surface-matrix.md` is the source of
+   `.agent/memory/executive/cross-platform-agent-surface-matrix.md` is the source of
    truth for supported and unsupported platform/surface pairs.
 
 4. Research notes explain; they do not decide.
@@ -44,7 +44,7 @@ The repo adopts the following cross-platform Practice surface contract:
 
 5. `.agents/` is intentionally narrow.
    In this repo, `.agents/skills/*/SKILL.md` is the portable skill layer and
-   `.agents/skills/jc-*/SKILL.md` is the portable command-workflow layer for
+   `.agents/skills/oak-*/SKILL.md` is the portable command-workflow layer for
    Codex. `.agents/` is not treated as a blanket mirror of all artefact types.
 
 6. Unsupported states must be explicit.
@@ -56,7 +56,9 @@ The repo adopts the following cross-platform Practice surface contract:
    content. GitHub reviewer wrappers, GitHub instruction wrappers, and Gemini
    command wrappers follow the same canonical-first rule. The landed hook layer
    follows the same pattern: policy in `.agent/hooks/`, shared runtime in
-   `tools/agent_hooks.py`, thin native activation only in platform config.
+   `tools/agent_hooks.py`, thin native activation only in platform config. The
+   live support state, including Gemini hook support, is recorded in the
+   operational matrix rather than inferred from symmetry.
 
 ## Consequences
 
@@ -69,9 +71,8 @@ The repo adopts the following cross-platform Practice surface contract:
 
 ## Permanent References
 
-- `.agent/reference/cross-platform-agent-surface-matrix.md`
+- `.agent/memory/executive/cross-platform-agent-surface-matrix.md`
 - `.agent/research/agentic-engineering/cross-platform-agent-infrastructure-research.md`
-- `.agent/practice-context/outgoing/portable-vs-native-agent-surfaces.md`
-- `.agent/memory/code-patterns/agentic-surface-separation.md`
-- `.agent/memory/code-patterns/operational-support-matrix.md`
+- `.agent/memory/active/patterns/agentic-surface-separation.md`
+- `.agent/memory/active/patterns/operational-support-matrix.md`
 - `.agent/plans/agentic-engineering/archive/cross-platform-practice-surface-refactor.plan.md`

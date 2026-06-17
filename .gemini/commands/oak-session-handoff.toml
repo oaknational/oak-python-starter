@@ -1,0 +1,2 @@
+description = "Refresh continuity and capture session learning"
+prompt = "Read and follow `.agent/commands/session-handoff.md`."
