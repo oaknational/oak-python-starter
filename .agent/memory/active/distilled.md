@@ -50,3 +50,18 @@
 - If docs are validated against a command contract, prove the documented names
   exist in the runtime truth source, not just that the docs contain the right
   strings.
+- Adding a quality gate touches seven coupled surfaces in lockstep: the dev
+  dependency + `[tool.X]` config, the `devtools` handler + `_step_runners` entry,
+  the `gate_contract.toml` command and sequences, the `repo_audit_contract`
+  documentation list, `docs/dev-tooling.md`, the exact check-ci sequence string
+  in `start-right-quick/SKILL.md` (audited verbatim), and the gate tests.
+- `main` is governed by a repository ruleset (PR + CodeQL `code_quality`
+  required; direct push blocked). CodeQL default setup does not trigger on PR
+  reopen — use `gh pr update-branch` (server-side merge, avoids the hook-blocked
+  force-push) to trigger it, then squash-merge to flatten the update commit.
+- Verify each PR genuinely green (run the real `check-ci`, not just CodeQL)
+  before merging — Dependabot branches do not run the project suite until updated.
+- For PyMarkdown on a frontmatter-bearing estate, enable the front-matter
+  extension (else a closing `---` reads as a setext heading) and never blind-run
+  `pymarkdown fix`: it renumbers ordered lists, so disable MD029 where docs use
+  continuous numbering as stable IDs.

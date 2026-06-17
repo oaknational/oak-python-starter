@@ -13,8 +13,10 @@
 
 ## Current Objective
 
-Carry the template-fitness remediation through **Phase 2** (honest exemplars):
-the CI workflow, coverage honesty, and chart accessibility. Phase 1 is landed.
+Finish Phase 2 of the template-fitness remediation. **F4 (CI workflow) is now
+landed and merged.** Remaining: **F3** (coverage honesty) and **F8** (chart
+accessibility), then the F5/F6/F7 adoptability set. A parallel
+quality-gate-surface-expansion workstream runs alongside (own thread).
 
 ## What Landed This Session (2026-06-17)
 
@@ -38,23 +40,29 @@ the CI workflow, coverage honesty, and chart accessibility. Phase 1 is landed.
   verified to carry `License-Expression: MIT`, the packaged `LICENCE`, and the
   `Typing :: Typed` classifier.
 
-## Next Session — Start Here (Phase 2)
+## What Landed (2026-06-17, later session)
 
-Suggested order F4 → F3 → F8. Each as its own feature branch + PR; UK spelling;
-gates green; rebase-merge for linear history.
+- **F4 — CI workflow (PR #11, merged).** `.github/workflows/ci.yml` runs
+  `check-ci` on push + pull_request (Python 3.14, uv, least-privilege
+  permissions, concurrency cancel, pinned actions, `cache-dependency-glob`).
+  New `audit_ci_workflow` pins the contract. CI verified green on a real runner.
+- The 6 Dependabot vulnerability PRs were verified green (full `check-ci` +
+  CodeQL) and merged; Dependabot now has 0 open PRs.
+- Reviewer agents and a Markdown gate also landed (see the
+  quality-gate-surface-expansion thread).
 
-1. **F4 — CI workflow.** Add `.github/workflows/ci.yml` running
-   `uv run python -m oaknational.python_repo_template.devtools check-ci` on
-   `push` + `pull_request`, Python 3.14, with `uv` setup. This is the first
-   thing that exercises the installed-wheel smoke check for real (today every
-   `devtools` test injects fakes, so it is only stubbed). Optionally add a
-   `repo_audit` check that the workflow exists and invokes `check-ci`.
-2. **F3 — coverage honesty.** Raise `fail_under` in `[tool.coverage.report]`
+## Next Session — Start Here (F3 → F8)
+
+Each as its own feature branch + PR; UK spelling; gates green. Note: merges
+require a PR through the repo ruleset (CodeQL `code_quality` check); see the
+gate-expansion thread for the CodeQL/`update-branch` merge mechanics.
+
+1. **F3 — coverage honesty.** Raise `fail_under` in `[tool.coverage.report]`
    from 70 toward the achieved ~88 (e.g. 85). Decide on the `devtools.py` omit
    (document the rationale inline if kept). Add `audit_coverage_contract` to
    `repo_audit` pinning the threshold floor and the exact omit-list so neither
    can silently weaken (the repo's own governance-claim-needs-a-scanner rule).
-3. **F8 — chart accessibility (organisation WCAG 2.2 AA mandate).** In
+2. **F8 — chart accessibility (organisation WCAG 2.2 AA mandate).** In
    `default_chart_writer` (`demo/activity_report.py`): when `--chart` is given,
    also write a sibling text alternative from `render_summary` (SC 1.1.1);
    darken `PALETTE` colour `#d08d46` to clear 3:1 non-text contrast (it is

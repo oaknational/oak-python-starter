@@ -13,7 +13,7 @@ todos:
     status: pending
   - id: ci-workflow
     content: "F4 — add a CI workflow that runs check-ci on push and PR."
-    status: pending
+    status: completed
   - id: accessible-output
     content: "F8 — emit a text alternative for the chart and lift failing contrasts."
     status: pending
@@ -37,9 +37,17 @@ todos:
   CSV boundary + int64-range guard + tests. The built wheel was verified to
   carry the licence and classifiers.
 - ✅ Command-adapter prefix renamed `jc-` → `oak-` (PR #9).
-- ⏭ **Phase 2 is next**: F4 CI workflow, F3 coverage honesty, F8 chart
-  accessibility. Start-here detail lives in the thread record:
+- ✅ **F4 landed** (PR #11, merged): `.github/workflows/ci.yml` runs `check-ci`
+  on push and pull_request; `audit_ci_workflow` pins the contract. CI is now
+  live and green on `main`.
+- ✅ The 6 open Dependabot vulnerability bumps were verified green and merged
+  (requests, urllib3, idna, pillow, pygments, pytest), partially addressing the
+  F5 supply-chain concern. Dependabot now has 0 open PRs.
+- ⏭ **Remaining**: F3 coverage honesty, F8 chart accessibility, and the F5/F6/F7
+  adoptability set. Start-here detail lives in the thread record:
   [`template-fitness-remediation.next-session.md`](../../../memory/operational/threads/template-fitness-remediation.next-session.md).
+- A parallel workstream now tracks new gate types:
+  [`quality-gate-surface-expansion.md`](quality-gate-surface-expansion.md).
 
 ## End Goal
 

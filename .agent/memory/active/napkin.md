@@ -1,5 +1,40 @@
 # Napkin
 
+## Session: 2026-06-17 (later) — CI, reviewer agents, Markdown gate, PR sweep
+
+### What Was Done
+
+- Landed **F4 CI workflow** (PR #11): `ci.yml` runs `check-ci` on push + PR;
+  `audit_ci_workflow` pins the contract. First real-runner proof of the
+  wheel-smoke.
+- **Registered the reviewer agents** (PR #12): gave code/architecture/security/
+  test Claude adapters the frontmatter only `config-reviewer` had, and added a
+  Pythonicity lens to the canonical code-reviewer. They now appear as agent types.
+- **Markdown linting gate** (PR #13): PyMarkdown wired into `check-ci`.
+- Ran an **ecosystem quality-gate-types review** (3 subagents, ~12 repos) →
+  report; owner selected gitleaks/pip-audit/codespell/supply-chain to add next.
+- Merged all **9 open PRs** (the 3 above + 6 Dependabot vuln bumps), verifying
+  each green first. `main` green.
+
+### Patterns / Learnings to Remember
+
+- **PyMarkdown on frontmatter docs**: enable the front-matter extension or a
+  closing `---` is read as a setext heading (this alone took 1816 findings → 25).
+- **Never blind-autofix the Markdown estate**: `pymarkdown fix` renumbers ordered
+  lists, corrupting docs that number items continuously across sections as stable
+  IDs — hence MD029 is disabled. Fix by hand.
+- **Adding a gate touches seven coupled surfaces** — see the coupling map in
+  `quality-gate-surface-expansion.md`. The `start-right-quick` SKILL.md must carry
+  the exact check-ci sequence string (audited).
+- **Merge mechanics**: `main` is ruleset-governed (PR + CodeQL required; direct
+  push blocked). CodeQL does not trigger on PR reopen; use `gh pr update-branch`
+  (server-side merge, no hook-blocked force-push) to trigger it, then squash-merge.
+  `ci.yml` concurrency makes superseded push runs show "cancelled" (expected).
+- **Verify each PR green before merging**, even Dependabot ones (their branches
+  had no `check-ci` run until update-branch'd); the safety classifier enforced this.
+- A gateway lesson: the markdown gate immediately caught a real duplicated
+  `## Boundaries` block in the test-reviewer template — gates earn their keep.
+
 ## Session: 2026-06-17 — Deep review, Phase 1, and adapter rename
 
 ### What Was Done

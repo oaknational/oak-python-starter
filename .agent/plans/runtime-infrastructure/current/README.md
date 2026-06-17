@@ -1,11 +1,15 @@
 # Runtime Infrastructure Current
 
-Open plan:
+Open plans:
 
-- [Template Fitness Remediation](template-fitness-remediation.md) — 🟡 PLANNING
-  (2026-06-17). Fixes the fundamental blockers to this repo serving as a
-  demonstration, teaching aid, and template basis. Sourced from the
+- [Template Fitness Remediation](template-fitness-remediation.md) — 🔄 IN PROGRESS
+  (2026-06-17). F1/F2/F4 landed; F3 coverage honesty and F8 chart accessibility
+  remain. Sourced from the
   [Deep-Dive Review 2026-06-17](../../../reports/2026-06-17-python-repo-deep-review.md).
+- [Quality-Gate Surface Expansion](quality-gate-surface-expansion.md) — 🔄 IN
+  PROGRESS (2026-06-17). Reviewer agents and the Markdown gate landed; gitleaks,
+  pip-audit, codespell, and supply-chain config queued. Sourced from the
+  [Oak quality-gate types review](../../../reports/2026-06-17-oak-quality-gate-types-review.md).
 
 Closed references:
 
