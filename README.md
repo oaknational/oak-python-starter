@@ -1,6 +1,7 @@
 # Oak Python Repo Template
 
 [![CI](https://github.com/oaknational/oak-python-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/oaknational/oak-python-starter/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/oaknational/oak-python-starter?label=release)](https://github.com/oaknational/oak-python-starter/releases/latest)
 
 `oaknational-python-repo-template` is a reusable Oak Python starter with:
 
