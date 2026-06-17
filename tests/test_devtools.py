@@ -29,6 +29,17 @@ def test_clean_removes_repo_cache_without_touching_virtualenv_cache(tmp_path: Pa
     assert venv_cache.exists()
 
 
+def test_clean_removes_the_cobertura_coverage_report(tmp_path: Path) -> None:
+    coverage_report = tmp_path / "coverage.xml"
+    coverage_report.write_text("<coverage/>", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as exc_info:
+        subject.clean([], repo_root=tmp_path)
+
+    assert exc_info.value.code == 0
+    assert not coverage_report.exists()
+
+
 def test_run_uses_target_script_directly_for_absolute_commands(tmp_path: Path) -> None:
     absolute_script = tmp_path / "activity-report"
     absolute_script.write_text("#!/usr/bin/env python3\n", encoding="utf-8")

@@ -112,6 +112,9 @@ pythonpath = [".", "src"]
 [tool.coverage.run]
 source = ["oaknational.python_repo_template"]
 omit = ["src/oaknational/python_repo_template/devtools.py"]
+# Emit repo-relative paths so the Cobertura report maps onto repository files in
+# GitHub Code Quality and stays reproducible across machines and CI runners.
+relative_files = true
 
 [tool.coverage.report]
 show_missing = true
