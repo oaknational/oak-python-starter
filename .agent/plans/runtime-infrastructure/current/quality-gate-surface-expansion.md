@@ -78,6 +78,25 @@ A subprocess-only tool (invoked by command, never imported) may need a
 `deptry` `DEP002` ignore — but verify first: a dev-group tool did not trip it
 this session.
 
+## Authoring a repo_audit check
+
+F3's `audit_coverage_contract` and the supply-chain workflow-pinned self-check
+both add a new `repo_audit` check. The pattern in `tools/repo_audit.py`:
+
+1. Write `audit_<name>(root: Path) -> list[str]` returning failure strings; use
+   the existing `require()`, `read_text()`, and `_load_*` loaders, and the
+   `cast(dict[object, object], value)` + per-element `isinstance` idiom for
+   parsed TOML/JSON/YAML (never a bare cast as a type-checker silencer).
+2. Register it in the `DEFAULT_AUDIT_CHECKS` tuple.
+3. Add a focused test in `tests/test_repo_audit.py` using `tmp_path` fixtures:
+   one positive case and independent negative cases (one failure axis each),
+   asserting the exact messages.
+4. If the check enforces a doc or command contract, pin the values in
+   `tools/repo_audit_contract.toml` rather than hard-coding them in the auditor.
+
+`audit_ci_workflow` (this session) and `audit_distribution_metadata` are clean
+worked examples.
+
 ## Acceptance (per gate)
 
 - Tool wired into `check-ci`; `devtools <gate>` and `<gate>-fix` (if relevant)

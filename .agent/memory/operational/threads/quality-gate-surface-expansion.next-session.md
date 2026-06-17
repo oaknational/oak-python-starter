@@ -36,7 +36,11 @@ gate-machinery coupling map in the plan (seven surfaces per gate).
 
 1. **gitleaks** — secret scanning; pre-commit + `check-ci`; a `.gitleaks.toml`
    allowlist with a documented doctrine (copy the ecosystem's commented-allowlist
-   pattern).
+   pattern). **Note**: gitleaks is a Go binary, not a `uv` package, so it breaks
+   step 1 of the coupling map (no dev dependency). Decide its install path: the
+   `gitleaks` pre-commit mirror for local hooks, and a pinned `gitleaks/gitleaks-action`
+   (or the binary) for CI; the `check-ci` step must decide whether to require the
+   binary on PATH or skip-if-absent (the ecosystem uses a docker fallback).
 2. **pip-audit** — dependency-vulnerability scan (uv-aware, e.g. `uv export`
    piped to `pip-audit`), complementing deptry hygiene. Update the README line
    that says deptry "is dependency hygiene, not vulnerability scanning".
@@ -58,6 +62,14 @@ gate-machinery coupling map in the plan (seven surfaces per gate).
     CodeQL + CI. Then **squash-merge** to flatten the update-branch merge commit.
   - `ci.yml` has a `concurrency` group with `cancel-in-progress`, so superseded
     push runs on `main` show as "cancelled" — that is expected, not a failure.
+  - **Only the CodeQL `code_quality` check is ruleset-required — the `ci.yml`
+    "Quality gates" run is NOT.** A PR can therefore merge (and `main` can go
+    red) even if Quality gates fails. Always confirm Quality gates green before
+    merging, and verify gate-affecting PRs locally first. **Recommended
+    hardening**: add "Quality gates" to the ruleset's required status checks so
+    CI actually gates merges (owner/repo-settings action).
+  - Literal merge: `gh pr merge <n> --squash --delete-branch` (use `--rebase`
+    when the branch is a single commit with no update-branch merge commit).
 - **Bandit is not needed as a separate gate** — ruff's `S` (flake8-bandit)
   ruleset covers most Python SAST.
 - **Never blind-autofix the Markdown estate.** `pymarkdown fix` renumbers

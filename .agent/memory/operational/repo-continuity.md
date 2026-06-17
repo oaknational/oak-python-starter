@@ -26,6 +26,8 @@ verified green and merged. All 9 open PRs landed; `main` is green. Phase 2
   (#11), reviewer agents (#12), Markdown gate (#13), and 6 Dependabot vulnerability
   bumps (#1–#6: requests, urllib3, idna, pillow, pygments, pytest).
 - `main` is green (remote `CI [push]` success + local `check-ci`). 0 open PRs.
+- Current metrics (2026-06-17): **82 tests, 88.10% coverage**. Coverage
+  `fail_under` is still 70 pending F3 (raise toward ~85).
 
 ## Current Session Focus
 
@@ -45,6 +47,10 @@ verified green and merged. All 9 open PRs landed; `main` is green. Phase 2
   constraints.
 - Judge work by excellence (what the template should model), not mere
   convention; UK/British spelling everywhere in repo-facing text.
+- Repo naming (a known drift F7 will reconcile): working dir
+  `python-repo-template`, distribution `oaknational-python-repo-template`, but
+  the GitHub remote and `[project.urls]` slug is `oaknational/oak-python-starter`
+  — use that slug for `gh`/remote operations.
 - Land work through feature branches and PRs. `main` is governed by a
   **repository ruleset**: a PR is required and a CodeQL `code_quality` check must
   pass; direct pushes are blocked. Merge mechanics (CodeQL trigger via
@@ -62,7 +68,9 @@ verified green and merged. All 9 open PRs landed; `main` is green. Phase 2
 - Dependabot now has **0 open PRs** (the 6 vulnerability bumps were merged this
   session), so the F5 supply-chain concern is partially addressed; committing a
   `dependabot.yml` and pinning action SHAs remains queued in the gate-expansion
-  plan.
+  plan. Note: the push warned of 11 vulnerability alerts (4 high, 6 moderate,
+  1 low) before the merges; the 6 bumps do **not** provably clear all 11 —
+  re-check the Dependabot/security-alert count, do not assume it is zero.
 
 ## Deep Consolidation Status
 
