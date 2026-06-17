@@ -22,6 +22,11 @@ jobs:
   check:
     name: Quality gates
     runs-on: ubuntu-latest
+    # Override the top-level read-only default: this job also uploads coverage to
+    # GitHub Code Quality, which needs code-quality:write.
+    permissions:
+      contents: read
+      code-quality: write
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -40,6 +45,27 @@ jobs:
 
       - name: Run the full CI gate sequence
         run: uv run python -m oaknational.python_repo_template.devtools check-ci
+
+      # Derive a Cobertura report from the coverage data the check-ci `coverage`
+      # gate already wrote (no second test run), then publish it to GitHub Code
+      # Quality so coverage shows on pull requests. Both steps are gated to
+      # non-fork events: a forked PR's token cannot write coverage, so there is
+      # nothing to generate for it either.
+      - name: Generate the Cobertura coverage report
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: uv run coverage xml
+
+      - name: Upload coverage to GitHub Code Quality
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/upload-code-coverage@v1
+        with:
+          file: coverage.xml
+          language: Python
+          label: code-coverage/pytest
+          # Best-effort while GitHub Code Quality is a preview the org must enable:
+          # a failed upload must not turn the gate run red. Remove this once the
+          # feature is GA and enabled for the organisation.
+          fail-on-error: false
 
   # Secret scanning runs alongside (not inside) check-ci: gitleaks is a Go
   # binary, not a uv package, so the venv cannot carry it and `uv sync` stays

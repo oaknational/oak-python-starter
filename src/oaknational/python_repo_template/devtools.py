@@ -285,6 +285,9 @@ def _clean_paths(repo_root: Path) -> list[str]:
     for path in sorted(repo_root.glob(".coverage*")):
         if path.is_file() and _remove_path(path):
             removed.append(str(path.relative_to(repo_root)))
+    for path in sorted(repo_root.glob("coverage.xml")):
+        if path.is_file() and _remove_path(path):
+            removed.append(str(path.relative_to(repo_root)))
     for path in sorted(repo_root.glob("*.egg-info")):
         if _remove_path(path):
             removed.append(str(path.relative_to(repo_root)))

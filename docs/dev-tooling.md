@@ -103,6 +103,21 @@ Its package identity follows the Oak Python convention:
 - the smoke path proves the installed package import plus both entry surfaces:
   `activity-report` and `python -m oaknational.python_repo_template`
 
+## Coverage reporting
+
+- the `coverage` gate runs `pytest` under `coverage.py`; locally it prints the
+  `term-missing` report and fails under the threshold in `[tool.coverage.report]`
+- CI additionally derives a Cobertura report from the same run with the
+  `coverage xml` subcommand — the `coverage` gate's `pytest --cov` run writes the
+  `.coverage` data file, and `coverage xml` reads it (no second test run) — then
+  uploads it to GitHub Code Quality via `actions/upload-code-coverage`, so
+  coverage shows on pull requests
+- `coverage.xml` and the `.coverage*` data files are git-ignored, and
+  `devtools clean` removes them
+- GitHub Code Quality is a preview that must be enabled for the organisation; the
+  upload runs with `fail-on-error: false` so it never turns the gate run red
+  before then
+
 ## Commit workflow
 
 Install the repo hooks with:
