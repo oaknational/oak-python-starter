@@ -10,6 +10,10 @@ Open plans:
   PROGRESS (2026-06-17). Reviewer agents and the Markdown gate landed; gitleaks,
   pip-audit, codespell, and supply-chain config queued. Sourced from the
   [Oak quality-gate types review](../../../reports/2026-06-17-oak-quality-gate-types-review.md).
+- [Release Automation](release-automation.md) — 🟡 PLANNING (2026-06-17).
+  Automate versioned GitHub Releases with a committed version via the release-PR
+  pattern (release-please) under the protected `main` ruleset. Sourced from this
+  session's release-automation design (plan-time architecture review completed).
 
 Closed references:
 
