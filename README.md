@@ -1,5 +1,7 @@
 # Oak Python Repo Template
 
+[![CI](https://github.com/oaknational/oak-python-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/oaknational/oak-python-starter/actions/workflows/ci.yml)
+
 `oaknational-python-repo-template` is a reusable Oak Python starter with:
 
 - a canonical `src/` package layout
