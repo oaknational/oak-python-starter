@@ -12,9 +12,27 @@ dependencies = [
   "matplotlib>=3.10.8",
   "requests>=2.32.0",
 ]
+license = "MIT"
+license-files = ["LICENCE"]
+authors = [{ name = "Oak National Academy" }]
+keywords = ["oak", "template", "starter", "agentic-engineering", "quality-gates"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Libraries :: Application Frameworks",
+  "Typing :: Typed",
+]
 
 [project.scripts]
 activity-report = "oaknational.python_repo_template.demo.activity_report:main"
+
+[project.urls]
+Homepage = "https://github.com/oaknational/oak-python-starter"
+Repository = "https://github.com/oaknational/oak-python-starter"
+Issues = "https://github.com/oaknational/oak-python-starter/issues"
 
 [build-system]
 requires = ["hatchling>=1.25"]

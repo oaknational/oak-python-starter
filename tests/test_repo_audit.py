@@ -530,6 +530,7 @@ format -> typecheck -> lint -> dependency-hygiene -> repo-audit -> build -> test
         subject.audit_packaging_contract,
         subject.audit_typing_contract,
         subject.audit_commit_workflow,
+        subject.audit_distribution_metadata,
     ],
 )
 def test_audit_functions_report_invalid_toml(
@@ -663,6 +664,48 @@ docs/dev-tooling.md
     failures = subject.audit_identity(tmp_path)
 
     assert "README must describe the template identity and demo CLI" in "\n".join(failures)
+
+
+def test_audit_distribution_metadata_requires_licence_and_metadata(tmp_path: Path) -> None:
+    _write(
+        tmp_path / "pyproject.toml",
+        """
+[project]
+name = "oaknational-python-repo-template"
+license = "MIT"
+license-files = ["LICENCE"]
+authors = [{ name = "Oak National Academy" }]
+classifiers = [
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
+
+[project.urls]
+Repository = "https://github.com/oaknational/oak-python-starter"
+""",
+    )
+    _write(tmp_path / "LICENCE", "MIT License\n\nCopyright (c) 2026 Oak National Academy")
+    _write(tmp_path / "SECURITY.md", "# Security Policy\n\nReport a vulnerability responsibly.")
+
+    assert subject.audit_distribution_metadata(tmp_path) == []
+
+    _write(
+        tmp_path / "pyproject.toml",
+        """
+[project]
+name = "oaknational-python-repo-template"
+""",
+    )
+
+    failures = subject.audit_distribution_metadata(tmp_path)
+    joined = "\n".join(failures)
+
+    assert 'must declare license = "MIT"' in joined
+    assert "must list LICENCE in license-files" in joined
+    assert "must declare at least one author" in joined
+    assert "must include the Python 3.14 classifier" in joined
+    assert "must include 'Typing :: Typed'" in joined
+    assert "must declare a Repository URL" in joined
 
 
 def test_audit_hook_contract_requires_canonical_policy_and_gemini_support(tmp_path: Path) -> None:
