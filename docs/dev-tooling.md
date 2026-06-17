@@ -147,9 +147,11 @@ uv run cz check --message "docs: explain the Commitizen workflow"
 - automated by `.github/workflows/release.yml` using the **release-PR pattern**,
   so the committed `pyproject.toml` version advances under the protected `main`
   ruleset with no direct push and no bypass token
-- `Commitizen` computes the bump from Conventional Commits via the custom
-  `bump_map` in `[tool.commitizen]`: `feat`/`fix` → minor, everything else →
-  patch, and breaking markers are **not** auto-mapped to major
+- the bump policy is `feat`/`fix` → minor, everything else → patch, and breaking
+  markers are **not** auto-mapped to major; it lives in `[tool.commitizen].bump_map`
+  but, because `cz_conventional_commits` ignores that map, `tools/release_increment.py`
+  reads it and computes the increment, which the workflow applies via
+  `cz bump --increment`
 - on a push to `main` the workflow either *prepares* (opens/refreshes a
   `chore(release)` PR that bumps `pyproject.toml`, `uv.lock`, and `CHANGELOG.md`)
   or *publishes* (when the committed version has no tag yet — i.e. a release PR

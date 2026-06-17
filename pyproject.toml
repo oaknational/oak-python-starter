@@ -48,11 +48,15 @@ tag_format = "v$version"
 update_changelog_on_bump = true
 # Custom bump policy: feat/fix -> MINOR, everything else -> PATCH. Breaking
 # markers are intentionally NOT mapped to MAJOR — major releases are cut manually
-# (the release workflow detects breaking markers and stands down). The catch-all
-# "^.+" must stay last so feat/fix match first. See docs/dev-tooling.md and
+# (the release workflow stands down on a breaking marker). The catch-all "^.+"
+# must stay last so feat/fix match first.
+#
+# NOTE: cz_conventional_commits hardcodes its own bump map and ignores this one,
+# so tools/release_increment.py reads this map and computes the increment for the
+# release workflow (`cz bump --increment ...`). This stays the single policy
+# source. See docs/dev-tooling.md and
 # .agent/plans/runtime-infrastructure/current/release-automation.md.
 bump_map = { "^feat" = "MINOR", "^fix" = "MINOR", "^.+" = "PATCH" }
-# Same policy while on 0.x (used by Commitizen for the pre-1.0 series).
 bump_map_major_version_zero = { "^feat" = "MINOR", "^fix" = "MINOR", "^.+" = "PATCH" }
 
 [dependency-groups]

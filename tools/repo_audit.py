@@ -680,11 +680,22 @@ def audit_release_workflow(root: Path) -> list[str]:
                     "major releases"
                 ),
             )
+            run_commands = _workflow_run_commands(mapping)
             require(
                 failures,
                 check,
-                any("cz bump" in command for command in _workflow_run_commands(mapping)),
-                ".github/workflows/release.yml must run `cz bump` to compute the next version",
+                any("cz bump" in command for command in run_commands),
+                ".github/workflows/release.yml must run `cz bump` to apply the version bump",
+            )
+            require(
+                failures,
+                check,
+                any("release_increment" in command for command in run_commands),
+                (
+                    ".github/workflows/release.yml must compute the increment via "
+                    "tools/release_increment.py (cz_conventional_commits ignores "
+                    "the custom bump_map)"
+                ),
             )
         else:
             require(

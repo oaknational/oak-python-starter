@@ -872,14 +872,22 @@ jobs:
 _VALID_BUMP_MAP = 'bump_map = { "^feat" = "MINOR", "^fix" = "MINOR", "^.+" = "PATCH" }'
 
 
-def _release_workflow_yaml(*, triggers: str = "both", with_cz_bump: bool = True) -> str:
+def _release_workflow_yaml(
+    *, triggers: str = "both", with_cz_bump: bool = True, with_increment_tool: bool = True
+) -> str:
     on_block = {
         "both": "on:\n  push:\n    branches: [main]\n  workflow_dispatch:\n",
         "push-only": "on:\n  push:\n    branches: [main]\n",
         "dispatch-only": "on:\n  workflow_dispatch:\n",
     }[triggers]
-    step = (
-        "      - run: uv run cz bump --files-only --changelog --yes\n"
+    steps = ""
+    if with_increment_tool:
+        steps += (
+            "      - run: git log --pretty=format:'%B%x00' "
+            "| uv run python tools/release_increment.py\n"
+        )
+    steps += (
+        "      - run: uv run cz bump --increment PATCH --files-only --yes\n"
         if with_cz_bump
         else "      - run: uv build\n"
     )
@@ -887,7 +895,7 @@ def _release_workflow_yaml(*, triggers: str = "both", with_cz_bump: bool = True)
         "name: Release\n"
         + on_block
         + "jobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n"
-        + step
+        + steps
     )
 
 
@@ -955,6 +963,14 @@ def test_audit_release_workflow_requires_a_cz_bump_step(tmp_path: Path) -> None:
     joined = "\n".join(subject.audit_release_workflow(tmp_path))
 
     assert "must run `cz bump`" in joined
+
+
+def test_audit_release_workflow_requires_the_increment_tool(tmp_path: Path) -> None:
+    _write_release_world(tmp_path, workflow=_release_workflow_yaml(with_increment_tool=False))
+
+    joined = "\n".join(subject.audit_release_workflow(tmp_path))
+
+    assert "must compute the increment via tools/release_increment.py" in joined
 
 
 def test_audit_release_workflow_requires_feat_and_fix_to_be_minor(tmp_path: Path) -> None:
