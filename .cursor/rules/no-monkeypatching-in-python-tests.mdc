@@ -1,0 +1,6 @@
+---
+description: no monkeypatching in python tests
+alwaysApply: true
+---
+
+Read and follow `.agent/rules/no-monkeypatching-in-python-tests.md`.

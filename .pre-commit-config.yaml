@@ -1,9 +1,19 @@
+default_install_hook_types:
+  - pre-commit
+  - pre-push
+  - commit-msg
+
 repos:
   - repo: local
     hooks:
       - id: quality-gates
-        name: quality gates (format-check -> typecheck -> lint -> import-linter -> test -> coverage)
-        entry: uv run check
+        name: quality gates (check-ci)
+        entry: uv run python -m oaknational.python_repo_template.devtools check-ci
         language: system
         stages: [pre-commit, pre-push]
         pass_filenames: false
+      - id: commitizen-commit-msg
+        name: commit message (commitizen)
+        entry: uv run cz check --allow-abort --commit-msg-file
+        language: system
+        stages: [commit-msg]

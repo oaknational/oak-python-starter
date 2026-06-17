@@ -41,6 +41,17 @@ Thin wrappers that delegate to templates. Located in:
 - `.claude/agents/*.md` — Claude sub-agent definitions
 - `.agents/skills/` — Cross-platform Codex discovery
 
+## Template Consistency Checklist
+
+Before changing reviewer templates or wrappers:
+
+- make the required reading explicit
+- keep the shared identity declaration present
+- keep governance references current
+- avoid naming reviewers the repo has not actually installed
+- route reviewers by abstraction layer, not just file scope
+- keep wrappers thin and template-first
+
 ## Adding a New Reviewer
 
 1. Identify which existing components apply and whether new components are needed

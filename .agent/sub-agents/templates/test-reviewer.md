@@ -127,7 +127,7 @@ Update tests at the SAME level as the behaviour change FIRST:
 - [ ] Integration tests have only SIMPLE mocks
 - [ ] All mocks injected as parameters
 - [ ] No global state manipulation
-- [ ] No `os.environ` mutations or broad `monkeypatch` usage
+- [ ] No `os.environ` mutations or runtime patch helpers such as `monkeypatch`
 
 ### Test Value
 
@@ -185,14 +185,6 @@ This agent reviews test quality and TDD compliance. It does NOT:
 3. **Inject, don't stub** — Dependencies as parameters, not global manipulation
 4. **Each test proves ONE thing** — About product code, not test code
 5. **No skipped tests** — Fix it or delete it
-
-## Boundaries
-
-This agent reviews test quality and TDD compliance. It does NOT:
-
-- Refactor product code (that is `code-reviewer`)
-- Review architectural compliance (that is `architecture-reviewer`)
-- Modify any files (observe and report only)
 
 When findings cross scope, escalate per the reviewer-team component.
 

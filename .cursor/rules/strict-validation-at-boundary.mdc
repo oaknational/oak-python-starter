@@ -1,0 +1,6 @@
+---
+description: follow strict-validation-at-boundary
+alwaysApply: true
+---
+
+Read and follow ".agent/rules/strict-validation-at-boundary.md".

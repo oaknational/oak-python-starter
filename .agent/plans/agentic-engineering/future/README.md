@@ -1,4 +1,7 @@
 # Agentic Engineering Future
 
-Future work may expand reviewer capabilities, hook coverage, or adapter
-automation.
+Potential future work includes:
+
+- broader reviewer capability families
+- deeper hook automation
+- more governance scanners where repeated drift proves they are warranted

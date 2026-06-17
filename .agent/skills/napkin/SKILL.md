@@ -2,11 +2,10 @@
 name: napkin
 classification: passive
 description: >-
-  Maintain a per-repo napkin file at .agent/memory/napkin.md that tracks
-  mistakes, corrections, and what works. Always active, every session,
-  unconditionally. Read distilled.md and napkin.md before doing anything.
-  Write to the napkin continuously as you work. Log your own mistakes,
-  not just user corrections.
+  Maintain a per-repo napkin file at .agent/memory/active/napkin.md that
+  tracks mistakes, corrections, surprises, and what works. Always active,
+  every session, unconditionally. Read distilled.md and napkin.md before
+  doing anything. Write to the napkin continuously as you work.
 ---
 
 # Napkin
@@ -21,15 +20,15 @@ update it continuously as you work.
 
 First thing, every session — read both files before doing anything:
 
-1. **`.agent/memory/distilled.md`** — Curated rules, patterns,
+1. **`.agent/memory/active/distilled.md`** — Curated rules, patterns,
    and troubleshooting. This is the high-signal reference.
    Internalise and apply silently.
-2. **`.agent/memory/napkin.md`** — Recent session log. Scan for
+2. **`.agent/memory/active/napkin.md`** — Recent session log. Scan for
    context from the most recent sessions.
 
 If neither file exists, create `napkin.md` at
-`.agent/memory/napkin.md` with a session heading and start
-logging. The [distillation skill](../distillation/SKILL.md)
+`.agent/memory/active/napkin.md` with a session heading and start
+logging. The [consolidation command](../../commands/consolidate-docs.md)
 handles creating `distilled.md` at rotation time.
 
 ## Continuous Updates
@@ -44,6 +43,8 @@ end. Write to it whenever you learn something worth recording:
   the same as user corrections — maybe more.
 - **You try something and it fails.** Log the approach and why.
 - **You try something and it works well.** Log the pattern.
+- **Something surprises you.** Capture the expectation failure while it is
+  still fresh.
 - **You re-read the napkin mid-task** because you are about to
   do something you have gotten wrong before. Good. Do this.
 
@@ -58,6 +59,8 @@ next session:
   differently.
 - **Tool/environment surprises**: things about this repo, its
   tooling, or its patterns that you did not expect.
+- **Positive surprises**: cases where a simpler or stronger approach
+  worked better than expected.
 - **Preferences**: how the user likes things done.
 - **What worked**: approaches that succeeded, especially
   non-obvious ones.
@@ -65,6 +68,20 @@ next session:
 Be specific. "Made an error" is useless. "Assumed the API
 returns a list but it returns a paginated object with `.items`"
 is actionable.
+
+## Surprise Format
+
+When something surprises you, capture it like this:
+
+```markdown
+### Surprise
+
+- **Expected**: what you thought would happen
+- **Actual**: what actually happened
+- **Why expectation failed**: what was wrong or incomplete
+- **Behaviour change**: what to do differently next time
+- **Source plane**: `active` | `operational` | `executive` (optional)
+```
 
 ## Napkin Structure
 
@@ -85,7 +102,7 @@ Add `### Mistakes Made` or `### Fixes` subsections as needed.
 ## Rotation
 
 When the napkin exceeds ~500 lines, follow the
-[distillation skill](../distillation/SKILL.md) to extract
+[consolidation command](../../commands/consolidate-docs.md) to extract
 high-signal content into `distilled.md`, archive the napkin,
 and start fresh.
 

@@ -1,0 +1,42 @@
+name: CI
+
+# Run the same blocking gate sequence in CI that contributors run locally, so
+# the remote signal and the local signal can never disagree. The workflow calls
+# the single `check-ci` command surface verbatim rather than re-encoding the
+# gate steps in YAML.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: the gates only read the checked-out tree.
+permissions:
+  contents: read
+
+# Supersede in-flight runs for the same ref so pushes do not pile up.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Quality gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Provision the pinned Python toolchain
+        run: uv python install
+
+      - name: Sync the locked environment
+        run: uv sync --locked
+
+      - name: Run the full CI gate sequence
+        run: uv run python -m oaknational.python_repo_template.devtools check-ci

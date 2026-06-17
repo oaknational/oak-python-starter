@@ -1,4 +1,5 @@
 # Demo Application Current
 
-The seeded example is `activity-report`, which validates simple CSV input,
-writes Parquet, prints summaries, and can emit a chart.
+| Priority | Work | Status |
+| --- | --- | --- |
+| P0 | Keep `activity-report` healthy as the template's executable example | 📋 Ready when needed |

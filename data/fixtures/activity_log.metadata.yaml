@@ -11,3 +11,11 @@ fields:
     type: positive-integer
   - name: notes
     type: optional-string
+category_labels:
+  focus: Deep focus
+  learning: Reading
+  exercise: Exercise
+category_targets:
+  focus: 90
+  learning: 45
+  exercise: 30
