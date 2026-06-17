@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: gitleaks
     content: "Add a gitleaks secret-scanning gate (pre-commit + check-ci) with a documented allowlist."
-    status: pending
+    status: completed
   - id: pip-audit
     content: "Add a pip-audit dependency-vulnerability gate (uv-aware), complementing deptry hygiene."
     status: pending
@@ -39,8 +39,16 @@ a good teaching example, wired into the single `check-ci` command surface.
 
 - DONE: reviewer agents registered + Pythonicity lens (PR #12, merged).
 - DONE: Markdown linting gate via PyMarkdown (PR #13, merged).
-- Owner selected the remaining set: gitleaks, pip-audit, codespell, supply-chain
-  config. Each its own PR, branched off the current `main`.
+- DONE: gitleaks secret-scanning gate (PR #16, merged). Design 2 — enforced
+  *alongside* check-ci (gitleaks is a Go binary, not a uv package, so check-ci
+  stays pure-uv): pinned pre-commit mirror + pinned `secret-scan` CI job
+  (checksum-verified binary install; gitleaks-action rejected — org licence +
+  Node 20 EOL). New `audit_secret_scanning` keeps the pre-commit rev, CI version,
+  and `[secret_scanning]` contract version in lockstep; `.gitleaks.toml` uses
+  `useDefault=true` with a commented allowlist. Added a README Prerequisites
+  section (auditor-enforced official install link). All three CI checks green.
+- Remaining set: pip-audit, codespell, supply-chain config. Each its own PR,
+  branched off the current `main`.
 
 ## Sequencing notes
 
