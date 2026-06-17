@@ -1,5 +1,7 @@
 # Oak Python Repo Template
 
+[![CI](https://github.com/oaknational/oak-python-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/oaknational/oak-python-starter/actions/workflows/ci.yml)
+
 `oaknational-python-repo-template` is a reusable Oak Python starter with:
 
 - a canonical `src/` package layout
@@ -148,3 +150,10 @@ uv run cz check --message "feat: add truthful commit-msg enforcement"
 - `tests/` — behaviour-first tests
 - `tools/repo_audit.py` — tracked-file audit for repo identity and adapter
   integrity
+
+## Licence
+
+Released under the [MIT licence](LICENCE), copyright Oak National Academy.
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting and the credentials
+policy.

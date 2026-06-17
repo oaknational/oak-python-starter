@@ -1,5 +1,5 @@
 ---
-name: jc-start-right-thorough
+name: oak-start-right-thorough
 description: >-
   Thorough grounding — full directive read, metacognition, and execution outline.
 ---

@@ -242,6 +242,7 @@ def test_build_rejects_passthrough_args() -> None:
                 "format",
                 "typecheck",
                 "lint",
+                "markdownlint",
                 "import-linter",
                 "dependency-hygiene",
                 "repo-audit",
@@ -256,10 +257,12 @@ def test_build_rejects_passthrough_args() -> None:
                 "format-fix",
                 "lint-fix",
                 "format-fix",
+                "markdownlint-fix",
                 "import-linter",
                 "format",
                 "typecheck",
                 "lint",
+                "markdownlint",
                 "dependency-hygiene",
                 "repo-audit",
                 "build",
@@ -289,6 +292,10 @@ def test_aggregate_gates_include_dependency_hygiene(
     assert [name for name, _runner in captured_steps] == expected_names
     assert ("dependency-hygiene", ["deptry", "."]) in captured_steps
     assert ("repo-audit", ["/tmp/test-python", "tools/repo_audit.py"]) in captured_steps
+    assert (
+        "markdownlint",
+        ["pymarkdown", "scan", "-r", "--respect-gitignore", "."],
+    ) in captured_steps
 
 
 def test_fix_gate_steps_follow_the_canonical_contract() -> None:
@@ -298,6 +305,7 @@ def test_fix_gate_steps_follow_the_canonical_contract() -> None:
         "format-fix",
         "lint-fix",
         "format-fix",
+        "markdownlint-fix",
         "import-linter",
     ]
 
@@ -308,8 +316,8 @@ def test_main_reports_usage_without_a_repo_local_command() -> None:
 
     expected_message = (
         "Usage: uv run python -m oaknational.python_repo_template.devtools "
-        "<clean|build|dev|lint|lint-fix|format|format-fix|typecheck|repo-audit|"
-        "test|coverage|fix|check|check-ci> [args...]"
+        "<clean|build|dev|lint|lint-fix|markdownlint|markdownlint-fix|format|"
+        "format-fix|typecheck|repo-audit|test|coverage|fix|check|check-ci> [args...]"
     )
     assert str(exc_info.value) == expected_message
 

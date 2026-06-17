@@ -20,6 +20,8 @@ build = "build"
 dev = "dev"
 lint = "lint"
 lint-fix = "lint_fix"
+markdownlint = "markdownlint"
+markdownlint-fix = "markdownlint_fix"
 format = "format_gate"
 format-fix = "format_fix"
 typecheck = "typecheck"
@@ -31,15 +33,17 @@ check = "check"
 check-ci = "check_ci"
 
 [gate_sequences]
-fix = ["format-fix", "lint-fix", "format-fix", "import-linter"]
+fix = ["format-fix", "lint-fix", "format-fix", "markdownlint-fix", "import-linter"]
 check = [
   "format-fix",
   "lint-fix",
   "format-fix",
+  "markdownlint-fix",
   "import-linter",
   "format",
   "typecheck",
   "lint",
+  "markdownlint",
   "dependency-hygiene",
   "repo-audit",
   "build",
@@ -50,6 +54,7 @@ check-ci = [
   "format",
   "typecheck",
   "lint",
+  "markdownlint",
   "import-linter",
   "dependency-hygiene",
   "repo-audit",
@@ -87,6 +92,8 @@ activity-report = "oaknational.python_repo_template.demo.activity_report:main"
   "format-fix",
   "lint",
   "lint-fix",
+  "markdownlint",
+  "markdownlint-fix",
   "typecheck",
   "repo-audit",
   "test",
@@ -98,8 +105,8 @@ activity-report = "oaknational.python_repo_template.demo.activity_report:main"
 """.strip()
 
 CHECK_CI_SEQUENCE = (
-    "format -> typecheck -> lint -> import-linter -> dependency-hygiene -> "
-    "repo-audit -> build -> test -> coverage"
+    "format -> typecheck -> lint -> markdownlint -> import-linter -> "
+    "dependency-hygiene -> repo-audit -> build -> test -> coverage"
 )
 
 
@@ -530,6 +537,7 @@ format -> typecheck -> lint -> dependency-hygiene -> repo-audit -> build -> test
         subject.audit_packaging_contract,
         subject.audit_typing_contract,
         subject.audit_commit_workflow,
+        subject.audit_distribution_metadata,
     ],
 )
 def test_audit_functions_report_invalid_toml(
@@ -663,6 +671,145 @@ docs/dev-tooling.md
     failures = subject.audit_identity(tmp_path)
 
     assert "README must describe the template identity and demo CLI" in "\n".join(failures)
+
+
+def test_audit_distribution_metadata_requires_licence_and_metadata(tmp_path: Path) -> None:
+    _write(
+        tmp_path / "pyproject.toml",
+        """
+[project]
+name = "oaknational-python-repo-template"
+license = "MIT"
+license-files = ["LICENCE"]
+authors = [{ name = "Oak National Academy" }]
+classifiers = [
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
+
+[project.urls]
+Repository = "https://github.com/oaknational/oak-python-starter"
+""",
+    )
+    _write(tmp_path / "LICENCE", "MIT License\n\nCopyright (c) 2026 Oak National Academy")
+    _write(tmp_path / "SECURITY.md", "# Security Policy\n\nReport a vulnerability responsibly.")
+
+    assert subject.audit_distribution_metadata(tmp_path) == []
+
+    _write(
+        tmp_path / "pyproject.toml",
+        """
+[project]
+name = "oaknational-python-repo-template"
+""",
+    )
+
+    failures = subject.audit_distribution_metadata(tmp_path)
+    joined = "\n".join(failures)
+
+    assert 'must declare license = "MIT"' in joined
+    assert "must list LICENCE in license-files" in joined
+    assert "must declare at least one author" in joined
+    assert "must include the Python 3.14 classifier" in joined
+    assert "must include 'Typing :: Typed'" in joined
+    assert "must declare a Repository URL" in joined
+
+
+def test_audit_ci_workflow_accepts_bare_and_quoted_on_keys(tmp_path: Path) -> None:
+    workflow_path = tmp_path / ".github" / "workflows" / "ci.yml"
+
+    # Bare `on:` — PyYAML parses the key as the boolean True (the fallback branch).
+    _write(
+        workflow_path,
+        """
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run python -m oaknational.python_repo_template.devtools check-ci
+""",
+    )
+
+    assert subject.audit_ci_workflow(tmp_path) == []
+
+    # Quoted "on": — survives as the string key, exercising the other branch.
+    _write(
+        workflow_path,
+        """
+name: CI
+"on":
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: uv run python -m oaknational.python_repo_template.devtools check-ci
+""",
+    )
+
+    assert subject.audit_ci_workflow(tmp_path) == []
+
+
+def test_audit_ci_workflow_reports_missing_triggers_independently(tmp_path: Path) -> None:
+    workflow_path = tmp_path / ".github" / "workflows" / "ci.yml"
+
+    # Wrong triggers, but the gate command is present: only the trigger checks fire.
+    _write(
+        workflow_path,
+        """
+name: CI
+on:
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: uv run python -m oaknational.python_repo_template.devtools check-ci
+""",
+    )
+
+    joined = "\n".join(subject.audit_ci_workflow(tmp_path))
+
+    assert "must trigger on push" in joined
+    assert "must trigger on pull_request" in joined
+    assert "must run the CI gate sequence" not in joined
+
+
+def test_audit_ci_workflow_reports_missing_gate_command_independently(tmp_path: Path) -> None:
+    workflow_path = tmp_path / ".github" / "workflows" / "ci.yml"
+
+    # Correct triggers, but no gate command: only the command check fires.
+    _write(
+        workflow_path,
+        """
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "no gates here"
+""",
+    )
+
+    joined = "\n".join(subject.audit_ci_workflow(tmp_path))
+
+    assert "must run the CI gate sequence" in joined
+    assert "must trigger on push" not in joined
+    assert "must trigger on pull_request" not in joined
 
 
 def test_audit_hook_contract_requires_canonical_policy_and_gemini_support(tmp_path: Path) -> None:
@@ -819,19 +966,19 @@ def test_audit_adapter_parity_requires_thin_wrappers(tmp_path: Path) -> None:
 
     _write(tmp_path / ".agent" / "commands" / "example.md", "# Example")
     _write(
-        tmp_path / ".agents" / "skills" / "jc-example" / "SKILL.md",
+        tmp_path / ".agents" / "skills" / "oak-example" / "SKILL.md",
         "Read and follow `.agent/commands/example.md`.",
     )
     _write(
-        tmp_path / ".claude" / "commands" / "jc-example.md",
+        tmp_path / ".claude" / "commands" / "oak-example.md",
         "Read and follow `.agent/commands/example.md`.",
     )
     _write(
-        tmp_path / ".cursor" / "commands" / "jc-example.md",
+        tmp_path / ".cursor" / "commands" / "oak-example.md",
         "Read and follow @.agent/commands/example.md",
     )
     _write(
-        tmp_path / ".gemini" / "commands" / "jc-example.toml",
+        tmp_path / ".gemini" / "commands" / "oak-example.toml",
         'prompt = "Read and follow `.agent/commands/example.md`."',
     )
 
@@ -874,7 +1021,7 @@ def test_audit_adapter_parity_requires_thin_wrappers(tmp_path: Path) -> None:
     assert subject.audit_adapter_parity(tmp_path) == []
 
     _write(
-        tmp_path / ".cursor" / "commands" / "jc-example.md",
+        tmp_path / ".cursor" / "commands" / "oak-example.md",
         """
 Read and follow @.agent/commands/example.md
 line 1

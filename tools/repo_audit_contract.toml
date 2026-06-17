@@ -25,6 +25,8 @@ activity-report = "oaknational.python_repo_template.demo.activity_report:main"
   "format-fix",
   "lint",
   "lint-fix",
+  "markdownlint",
+  "markdownlint-fix",
   "typecheck",
   "repo-audit",
   "test",

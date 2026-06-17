@@ -31,6 +31,7 @@ Read and follow `.agent/rules/my-rule.md`.
 ## Anti-pattern
 
 Placing substantive content directly in a platform adapter. This creates:
+
 - Invisible content (other platforms never see it)
 - Drift risk (content diverges between adapters)
 - Maintenance burden (updates must happen in multiple places)
