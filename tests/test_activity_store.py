@@ -123,6 +123,41 @@ def test_validate_activity_frame_rejects_invalid_values() -> None:
         )
 
 
+def test_validate_activity_frame_rejects_out_of_range_minutes() -> None:
+    with pytest.raises(subject.ActivityDataError, match="supported integer range"):
+        subject.validate_activity_frame(
+            pd.DataFrame(
+                {
+                    "date": ["2026-01-01"],
+                    "category": ["focus"],
+                    "minutes": [1e19],
+                    "notes": [""],
+                }
+            )
+        )
+
+
+def test_default_csv_loader_preserves_na_like_category_and_notes(tmp_path: Path) -> None:
+    csv_path = tmp_path / "activity.csv"
+    csv_path.write_text(
+        "\n".join(
+            [
+                "date,category,minutes,notes",
+                "2026-01-01,NA,60,NA",
+                "2026-01-02,focus,45,done",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    frame = subject.load_activity_log(csv_path)
+
+    assert set(frame["category"]) == {"NA", "focus"}
+    na_notes = frame.loc[frame["category"] == "NA", "notes"].tolist()
+    assert na_notes == ["NA"]
+
+
 def test_prepare_activity_log_writes_sorted_validated_frame() -> None:
     captured: dict[str, object] = {}
 

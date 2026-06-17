@@ -26,6 +26,8 @@ ALLOWED_METADATA_KEYS = {
     "category_targets",
 }
 REMOTE_TIMEOUT_SECONDS = 10
+_INT64_MAX = 2**63 - 1
+_INT64_MIN = -(2**63)
 
 CsvLoader = Callable[[Path], pd.DataFrame]
 ParquetLoader = Callable[[Path], pd.DataFrame]
@@ -89,9 +91,16 @@ class ActivitySource:
 
 
 def default_csv_loader(path: Path) -> pd.DataFrame:
-    """Load a CSV activity log."""
+    """Load a CSV activity log as raw strings.
 
-    return pd.read_csv(path)
+    Every column is read as a string with pandas' default NA-token detection
+    disabled, so legitimate values such as ``NA``, ``null``, or ``None`` are
+    preserved verbatim instead of being silently coerced to missing values. The
+    boundary validators in :func:`validate_activity_frame` stay the single
+    source of type coercion and rejection.
+    """
+
+    return pd.read_csv(path, dtype=str, keep_default_na=False)
 
 
 def default_parquet_loader(path: Path) -> pd.DataFrame:
@@ -319,7 +328,7 @@ def _load_csv_source(
         msg = f"Could not load activity data from {source.raw}."
         raise ActivityDataError(msg) from exc
     text = payload.decode("utf-8")
-    return pd.read_csv(io.StringIO(text))
+    return pd.read_csv(io.StringIO(text), dtype=str, keep_default_na=False)
 
 
 def _load_parquet_source(
@@ -506,6 +515,9 @@ def _normalise_minutes(series: pd.Series) -> pd.Series:
         raise ActivityDataError(msg)
     if not (numeric % 1 == 0).all():
         msg = "Activity minutes must be whole numbers."
+        raise ActivityDataError(msg)
+    if (numeric > _INT64_MAX).any() or (numeric < _INT64_MIN).any():
+        msg = "Activity minutes are out of the supported integer range."
         raise ActivityDataError(msg)
     integer = numeric.astype("int64")
     if (integer <= 0).any():
