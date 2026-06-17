@@ -1,5 +1,5 @@
 ---
-name: jc-ephemeral-to-permanent-homing
+name: oak-ephemeral-to-permanent-homing
 description: >-
   Canonical homing method for moving durable content out of ephemeral surfaces.
 ---

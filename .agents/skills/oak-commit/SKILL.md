@@ -1,5 +1,5 @@
 ---
-name: jc-commit
+name: oak-commit
 description: >-
   Create a well-formed commit for current changes with conventional message format.
 ---
