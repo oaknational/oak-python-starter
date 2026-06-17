@@ -44,7 +44,7 @@ The repo adopts the following cross-platform Practice surface contract:
 
 5. `.agents/` is intentionally narrow.
    In this repo, `.agents/skills/*/SKILL.md` is the portable skill layer and
-   `.agents/skills/jc-*/SKILL.md` is the portable command-workflow layer for
+   `.agents/skills/oak-*/SKILL.md` is the portable command-workflow layer for
    Codex. `.agents/` is not treated as a blanket mirror of all artefact types.
 
 6. Unsupported states must be explicit.

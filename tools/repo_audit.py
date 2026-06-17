@@ -97,6 +97,9 @@ EXPECTED_HOOK_SUPPORT = {
 AuditFunction = Callable[[Path], list[str]]
 REQUIRED_PATHS = [
     "README.md",
+    "LICENCE",
+    "SECURITY.md",
+    ".github/workflows/ci.yml",
     ".pre-commit-config.yaml",
     "pyproject.toml",
     "pyrightconfig.json",
@@ -498,6 +501,154 @@ def audit_identity(root: Path) -> list[str]:
             and "docs/dev-tooling.md" in practice_index,
             "Practice Index must expose verification, continuity, planning, and tooling surfaces",
         )
+    return failures
+
+
+def audit_distribution_metadata(root: Path) -> list[str]:
+    check = "distribution-metadata"
+    failures: list[str] = []
+    data = _load_pyproject(root, failures, check)
+    if data is None:
+        return failures
+
+    project = _object_mapping(data.get("project"))
+    if project is None:
+        require(failures, check, False, "pyproject.toml must define [project]")
+        return failures
+
+    require(
+        failures,
+        check,
+        project.get("license") == "MIT",
+        'pyproject.toml [project] must declare license = "MIT"',
+    )
+    license_files = _string_list(project.get("license-files"))
+    require(
+        failures,
+        check,
+        license_files is not None and "LICENCE" in license_files,
+        "pyproject.toml [project] must list LICENCE in license-files",
+    )
+    authors = _object_list(project.get("authors"))
+    require(
+        failures,
+        check,
+        authors is not None and len(authors) > 0,
+        "pyproject.toml [project] must declare at least one author",
+    )
+    classifiers = _string_list(project.get("classifiers"))
+    require(
+        failures,
+        check,
+        classifiers is not None and "Programming Language :: Python :: 3.14" in classifiers,
+        "pyproject.toml [project] classifiers must include the Python 3.14 classifier",
+    )
+    require(
+        failures,
+        check,
+        classifiers is not None and "Typing :: Typed" in classifiers,
+        "pyproject.toml [project] classifiers must include 'Typing :: Typed' "
+        "for the shipped py.typed marker",
+    )
+    urls = _string_mapping(project.get("urls"))
+    require(
+        failures,
+        check,
+        urls is not None and "Repository" in urls,
+        "pyproject.toml [project.urls] must declare a Repository URL",
+    )
+
+    licence = read_text(root / "LICENCE", failures, check)
+    if licence is not None:
+        require(
+            failures,
+            check,
+            "MIT License" in licence and "Oak National Academy" in licence,
+            "LICENCE must contain the MIT licence text and the Oak National Academy "
+            "copyright holder",
+        )
+    security = read_text(root / "SECURITY.md", failures, check)
+    if security is not None:
+        require(
+            failures,
+            check,
+            "vulnerabilit" in security.lower(),
+            "SECURITY.md must document how to report a vulnerability",
+        )
+    return failures
+
+
+def _workflow_triggers(workflow: dict[object, object]) -> set[str]:
+    # PyYAML parses the bare GitHub Actions key `on:` as the boolean True, so
+    # fall back to it; a quoted `"on":` key survives as the string instead.
+    raw = workflow.get("on", workflow.get(True))
+    if isinstance(raw, str):
+        return {raw}
+    if isinstance(raw, list):
+        return {item for item in cast(list[object], raw) if isinstance(item, str)}
+    if isinstance(raw, dict):
+        return {key for key in cast(dict[object, object], raw) if isinstance(key, str)}
+    return set()
+
+
+def _workflow_run_commands(workflow: dict[object, object]) -> list[str]:
+    # Returns each step's raw `run` payload, which may be a multi-line block.
+    jobs = workflow.get("jobs")
+    if not isinstance(jobs, dict):
+        return []
+    commands: list[str] = []
+    for job in cast(dict[object, object], jobs).values():
+        if not isinstance(job, dict):
+            continue
+        steps = cast(dict[object, object], job).get("steps")
+        if not isinstance(steps, list):
+            continue
+        for step in cast(list[object], steps):
+            if not isinstance(step, dict):
+                continue
+            run = cast(dict[object, object], step).get("run")
+            if isinstance(run, str):
+                commands.append(run)
+    return commands
+
+
+def audit_ci_workflow(root: Path) -> list[str]:
+    check = "ci-workflow"
+    failures: list[str] = []
+    workflow_path = root / ".github" / "workflows" / "ci.yml"
+    workflow = _load_yaml(workflow_path, failures, check)
+    if workflow is None:
+        return failures
+    if not isinstance(workflow, dict):
+        require(
+            failures,
+            check,
+            False,
+            ".github/workflows/ci.yml must define a top-level mapping",
+        )
+        return failures
+    mapping = cast(dict[object, object], workflow)
+
+    triggers = _workflow_triggers(mapping)
+    found = sorted(triggers)
+    require(
+        failures,
+        check,
+        "push" in triggers,
+        f".github/workflows/ci.yml must trigger on push (found triggers: {found})",
+    )
+    require(
+        failures,
+        check,
+        "pull_request" in triggers,
+        f".github/workflows/ci.yml must trigger on pull_request (found triggers: {found})",
+    )
+    require(
+        failures,
+        check,
+        any(QUALITY_GATES_ENTRY in command for command in _workflow_run_commands(mapping)),
+        f".github/workflows/ci.yml must run the CI gate sequence via `{QUALITY_GATES_ENTRY}`",
+    )
     return failures
 
 
@@ -1492,10 +1643,10 @@ def _audit_command_parity(root: Path) -> list[str]:
     canonical = {path.stem for path in (root / ".agent/commands").glob("*.md") if path.is_file()}
     for name in canonical:
         adapters = [
-            (root / ".agents/skills" / f"jc-{name}" / "SKILL.md", 12),
-            (root / ".claude/commands" / f"jc-{name}.md", 10),
-            (root / ".cursor/commands" / f"jc-{name}.md", 10),
-            (root / ".gemini/commands" / f"jc-{name}.toml", 8),
+            (root / ".agents/skills" / f"oak-{name}" / "SKILL.md", 12),
+            (root / ".claude/commands" / f"oak-{name}.md", 10),
+            (root / ".cursor/commands" / f"oak-{name}.md", 10),
+            (root / ".gemini/commands" / f"oak-{name}.toml", 8),
         ]
         for path, max_nonempty_lines in adapters:
             require(
@@ -1627,6 +1778,8 @@ DEFAULT_AUDIT_CHECKS: tuple[AuditFunction, ...] = (
     audit_required_paths,
     audit_entry_surfaces,
     audit_identity,
+    audit_distribution_metadata,
+    audit_ci_workflow,
     audit_gate_scripts,
     audit_packaging_contract,
     audit_typing_contract,

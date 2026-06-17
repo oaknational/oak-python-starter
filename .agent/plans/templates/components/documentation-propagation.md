@@ -13,5 +13,5 @@ Plans should explicitly record whether they changed:
 
 If no update is needed, record a brief no-change rationale.
 
-Before closure, apply `jc-consolidate-docs` or the equivalent canonical
+Before closure, apply `oak-consolidate-docs` or the equivalent canonical
 consolidation workflow.

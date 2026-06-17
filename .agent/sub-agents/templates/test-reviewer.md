@@ -186,14 +186,6 @@ This agent reviews test quality and TDD compliance. It does NOT:
 4. **Each test proves ONE thing** — About product code, not test code
 5. **No skipped tests** — Fix it or delete it
 
-## Boundaries
-
-This agent reviews test quality and TDD compliance. It does NOT:
-
-- Refactor product code (that is `code-reviewer`)
-- Review architectural compliance (that is `architecture-reviewer`)
-- Modify any files (observe and report only)
-
 When findings cross scope, escalate per the reviewer-team component.
 
 ---

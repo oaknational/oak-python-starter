@@ -53,6 +53,31 @@ Review for:
 - docs and code still agree
 - imports respect repo boundaries
 
+## Pythonic Idiom
+
+Judge whether the change reads as idiomatic, modern Python (3.14), not merely
+whether it works. Reward simplicity; flag the un-Pythonic.
+
+- Prefer comprehensions, `any`/`all`, and `set` membership over manual loops and
+  flag accumulation where they read more clearly. Do not force a comprehension
+  that hurts readability.
+- Prefer guard clauses and early returns over deep nesting; prefer `pathlib`
+  over `os.path`, f-strings over `%`/`.format`, and context managers for
+  resource handling.
+- Favour EAFP where it is clearer, but keep explicit boundary validation at
+  trust boundaries (LBYL is correct there).
+- Strict-typing idioms in this repo: a `cast(dict[object, object], x)` (or
+  similar) must be immediately preceded by an `isinstance` guard — never used as
+  a type-checker silencer. `isinstance`-filtered comprehensions are the
+  sanctioned alternative to `# type: ignore`; reward them, never flag them.
+  Prefer precise types over widened ones (see `no-type-shortcuts`).
+- Flag load-bearing fallbacks or defaults with a non-obvious key or value (for
+  example `x.get(a, x.get(b))`) and confirm a test exercises each branch.
+- Flag negative tests that mutate several variables at once: they prove weak,
+  non-independent evidence (see `testing-strategy.md`).
+- Names express intent; data shapes use `dataclass`/`NamedTuple`/`enum` where
+  that clarifies over loose tuples or stringly-typed values.
+
 ## Specialist Coverage
 
 Recommend:
