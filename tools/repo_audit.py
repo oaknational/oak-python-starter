@@ -612,10 +612,14 @@ def _workflow_run_commands(workflow: dict[object, object]) -> list[str]:
     return commands
 
 
+def _workflow_path(root: Path, name: str) -> Path:
+    return root / ".github" / "workflows" / name
+
+
 def audit_ci_workflow(root: Path) -> list[str]:
     check = "ci-workflow"
     failures: list[str] = []
-    workflow_path = root / ".github" / "workflows" / "ci.yml"
+    workflow_path = _workflow_path(root, "ci.yml")
     workflow = _load_yaml(workflow_path, failures, check)
     if workflow is None:
         return failures
@@ -655,7 +659,7 @@ def audit_ci_workflow(root: Path) -> list[str]:
 def audit_release_workflow(root: Path) -> list[str]:
     check = "release-workflow"
     failures: list[str] = []
-    workflow = _load_yaml(root / ".github" / "workflows" / "release.yml", failures, check)
+    workflow = _load_yaml(_workflow_path(root, "release.yml"), failures, check)
     if workflow is not None:
         if isinstance(workflow, dict):
             mapping = cast(dict[object, object], workflow)
@@ -789,7 +793,7 @@ def audit_secret_scanning(root: Path) -> list[str]:
             ),
         )
 
-    workflow = _load_yaml(root / ".github" / "workflows" / "ci.yml", failures, check)
+    workflow = _load_yaml(_workflow_path(root, "ci.yml"), failures, check)
     if isinstance(workflow, dict):
         run_commands = _workflow_run_commands(cast(dict[object, object], workflow))
         require(
