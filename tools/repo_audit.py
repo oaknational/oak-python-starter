@@ -99,6 +99,7 @@ REQUIRED_PATHS = [
     "README.md",
     "LICENCE",
     "SECURITY.md",
+    ".github/workflows/ci.yml",
     ".pre-commit-config.yaml",
     "pyproject.toml",
     "pyrightconfig.json",
@@ -574,6 +575,80 @@ def audit_distribution_metadata(root: Path) -> list[str]:
             "vulnerabilit" in security.lower(),
             "SECURITY.md must document how to report a vulnerability",
         )
+    return failures
+
+
+def _workflow_triggers(workflow: dict[object, object]) -> set[str]:
+    # PyYAML parses the bare GitHub Actions key `on:` as the boolean True, so
+    # fall back to it; a quoted `"on":` key survives as the string instead.
+    raw = workflow.get("on", workflow.get(True))
+    if isinstance(raw, str):
+        return {raw}
+    if isinstance(raw, list):
+        return {item for item in cast(list[object], raw) if isinstance(item, str)}
+    if isinstance(raw, dict):
+        return {key for key in cast(dict[object, object], raw) if isinstance(key, str)}
+    return set()
+
+
+def _workflow_run_commands(workflow: dict[object, object]) -> list[str]:
+    # Returns each step's raw `run` payload, which may be a multi-line block.
+    jobs = workflow.get("jobs")
+    if not isinstance(jobs, dict):
+        return []
+    commands: list[str] = []
+    for job in cast(dict[object, object], jobs).values():
+        if not isinstance(job, dict):
+            continue
+        steps = cast(dict[object, object], job).get("steps")
+        if not isinstance(steps, list):
+            continue
+        for step in cast(list[object], steps):
+            if not isinstance(step, dict):
+                continue
+            run = cast(dict[object, object], step).get("run")
+            if isinstance(run, str):
+                commands.append(run)
+    return commands
+
+
+def audit_ci_workflow(root: Path) -> list[str]:
+    check = "ci-workflow"
+    failures: list[str] = []
+    workflow_path = root / ".github" / "workflows" / "ci.yml"
+    workflow = _load_yaml(workflow_path, failures, check)
+    if workflow is None:
+        return failures
+    if not isinstance(workflow, dict):
+        require(
+            failures,
+            check,
+            False,
+            ".github/workflows/ci.yml must define a top-level mapping",
+        )
+        return failures
+    mapping = cast(dict[object, object], workflow)
+
+    triggers = _workflow_triggers(mapping)
+    found = sorted(triggers)
+    require(
+        failures,
+        check,
+        "push" in triggers,
+        f".github/workflows/ci.yml must trigger on push (found triggers: {found})",
+    )
+    require(
+        failures,
+        check,
+        "pull_request" in triggers,
+        f".github/workflows/ci.yml must trigger on pull_request (found triggers: {found})",
+    )
+    require(
+        failures,
+        check,
+        any(QUALITY_GATES_ENTRY in command for command in _workflow_run_commands(mapping)),
+        f".github/workflows/ci.yml must run the CI gate sequence via `{QUALITY_GATES_ENTRY}`",
+    )
     return failures
 
 
@@ -1704,6 +1779,7 @@ DEFAULT_AUDIT_CHECKS: tuple[AuditFunction, ...] = (
     audit_entry_surfaces,
     audit_identity,
     audit_distribution_metadata,
+    audit_ci_workflow,
     audit_gate_scripts,
     audit_packaging_contract,
     audit_typing_contract,
