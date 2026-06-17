@@ -869,6 +869,137 @@ jobs:
     assert "must trigger on pull_request" not in joined
 
 
+_VALID_BUMP_MAP = 'bump_map = { "^feat" = "MINOR", "^fix" = "MINOR", "^.+" = "PATCH" }'
+
+
+def _release_workflow_yaml(*, triggers: str = "both", with_cz_bump: bool = True) -> str:
+    on_block = {
+        "both": "on:\n  push:\n    branches: [main]\n  workflow_dispatch:\n",
+        "push-only": "on:\n  push:\n    branches: [main]\n",
+        "dispatch-only": "on:\n  workflow_dispatch:\n",
+    }[triggers]
+    step = (
+        "      - run: uv run cz bump --files-only --changelog --yes\n"
+        if with_cz_bump
+        else "      - run: uv build\n"
+    )
+    return (
+        "name: Release\n"
+        + on_block
+        + "jobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n"
+        + step
+    )
+
+
+def _commitizen_pyproject(bump_map_line: str) -> str:
+    return (
+        "[project]\n"
+        'name = "oaknational-python-repo-template"\n'
+        'version = "0.1.0"\n\n'
+        "[tool.commitizen]\n"
+        'name = "cz_conventional_commits"\n'
+        'version_provider = "uv"\n' + (bump_map_line + "\n" if bump_map_line else "")
+    )
+
+
+def _write_release_world(
+    root: Path, *, workflow: str | None = None, bump_map_line: str = _VALID_BUMP_MAP
+) -> None:
+    _write(root / ".github" / "workflows" / "release.yml", workflow or _release_workflow_yaml())
+    _write(root / "pyproject.toml", _commitizen_pyproject(bump_map_line))
+
+
+def test_audit_release_workflow_accepts_a_valid_workflow_and_bump_map(tmp_path: Path) -> None:
+    _write_release_world(tmp_path)
+
+    assert subject.audit_release_workflow(tmp_path) == []
+
+
+def test_audit_release_workflow_reports_missing_release_yml(tmp_path: Path) -> None:
+    _write(tmp_path / "pyproject.toml", _commitizen_pyproject(_VALID_BUMP_MAP))
+
+    joined = "\n".join(subject.audit_release_workflow(tmp_path))
+
+    assert "could not read" in joined and ".github/workflows/release.yml" in joined
+
+
+def test_audit_release_workflow_rejects_a_non_mapping_workflow(tmp_path: Path) -> None:
+    _write_release_world(tmp_path, workflow="- invalid")
+
+    joined = "\n".join(subject.audit_release_workflow(tmp_path))
+
+    assert ".github/workflows/release.yml must define a top-level mapping" in joined
+
+
+def test_audit_release_workflow_requires_a_push_trigger(tmp_path: Path) -> None:
+    _write_release_world(tmp_path, workflow=_release_workflow_yaml(triggers="dispatch-only"))
+
+    joined = "\n".join(subject.audit_release_workflow(tmp_path))
+
+    assert "must trigger on push to main" in joined
+    assert "must offer workflow_dispatch" not in joined
+
+
+def test_audit_release_workflow_requires_workflow_dispatch_for_manual_major(tmp_path: Path) -> None:
+    _write_release_world(tmp_path, workflow=_release_workflow_yaml(triggers="push-only"))
+
+    joined = "\n".join(subject.audit_release_workflow(tmp_path))
+
+    assert "must offer workflow_dispatch for manual major releases" in joined
+    assert "must trigger on push to main" not in joined
+
+
+def test_audit_release_workflow_requires_a_cz_bump_step(tmp_path: Path) -> None:
+    _write_release_world(tmp_path, workflow=_release_workflow_yaml(with_cz_bump=False))
+
+    joined = "\n".join(subject.audit_release_workflow(tmp_path))
+
+    assert "must run `cz bump`" in joined
+
+
+def test_audit_release_workflow_requires_feat_and_fix_to_be_minor(tmp_path: Path) -> None:
+    _write_release_world(
+        tmp_path,
+        bump_map_line='bump_map = { "^feat" = "PATCH", "^fix" = "PATCH", "^.+" = "PATCH" }',
+    )
+
+    joined = "\n".join(subject.audit_release_workflow(tmp_path))
+
+    assert "must map feat and fix to MINOR" in joined
+
+
+def test_audit_release_workflow_requires_a_patch_catch_all(tmp_path: Path) -> None:
+    _write_release_world(
+        tmp_path,
+        bump_map_line='bump_map = { "^feat" = "MINOR", "^fix" = "MINOR" }',
+    )
+
+    joined = "\n".join(subject.audit_release_workflow(tmp_path))
+
+    assert "must map other commit types to PATCH" in joined
+
+
+def test_audit_release_workflow_rejects_auto_major(tmp_path: Path) -> None:
+    _write_release_world(
+        tmp_path,
+        bump_map_line=(
+            'bump_map = { "^.+!$" = "MAJOR", "^feat" = "MINOR", "^fix" = "MINOR", "^.+" = "PATCH" }'
+        ),
+    )
+
+    joined = "\n".join(subject.audit_release_workflow(tmp_path))
+
+    assert "must not auto-bump MAJOR" in joined
+
+
+def test_audit_release_workflow_requires_a_bump_map(tmp_path: Path) -> None:
+    _write_release_world(tmp_path, bump_map_line="")
+
+    joined = "\n".join(subject.audit_release_workflow(tmp_path))
+
+    assert "must map feat and fix to MINOR" in joined
+
+
 def test_audit_secret_scanning_accepts_pinned_lockstep_surfaces(tmp_path: Path) -> None:
     _write_valid_secret_scanning(tmp_path)
 

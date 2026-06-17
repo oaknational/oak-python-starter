@@ -142,6 +142,26 @@ Validate a message manually with:
 uv run cz check --message "docs: explain the Commitizen workflow"
 ```
 
+## Releases
+
+- automated by `.github/workflows/release.yml` using the **release-PR pattern**,
+  so the committed `pyproject.toml` version advances under the protected `main`
+  ruleset with no direct push and no bypass token
+- `Commitizen` computes the bump from Conventional Commits via the custom
+  `bump_map` in `[tool.commitizen]`: `feat`/`fix` → minor, everything else →
+  patch, and breaking markers are **not** auto-mapped to major
+- on a push to `main` the workflow either *prepares* (opens/refreshes a
+  `chore(release)` PR that bumps `pyproject.toml`, `uv.lock`, and `CHANGELOG.md`)
+  or *publishes* (when the committed version has no tag yet — i.e. a release PR
+  just merged — it tags `vX.Y.Z`, runs `uv build`, and creates the GitHub Release
+  with the wheel + sdist attached)
+- **major releases are manual**: a `!`/`BREAKING CHANGE` marker makes the
+  auto-release stand down; cut the major via the workflow's `workflow_dispatch`
+  (`increment = MAJOR`)
+- the version stays committed in the tree; releases publish to GitHub Releases
+  only (no PyPI). `audit_release_workflow` keeps the workflow and the bump policy
+  honest
+
 ## Hydration guidance
 
 When hydrating or extending another Python repo with this Practice:
