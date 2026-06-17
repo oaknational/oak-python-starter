@@ -14,8 +14,8 @@
 ## Current Objective
 
 Add the high-value quality-gate types the ecosystem review surfaced, each as its
-own PR wired into `check-ci`. Reviewer agents and the Markdown gate are done;
-gitleaks, pip-audit, codespell, and supply-chain config remain.
+own PR wired into `check-ci`. Reviewer agents, the Markdown gate, and gitleaks
+are done; pip-audit, codespell, and supply-chain config remain.
 
 ## What Landed (2026-06-17)
 
@@ -29,23 +29,42 @@ gitleaks, pip-audit, codespell, and supply-chain config remain.
   MD024 siblings-only; keep MD040 and the rest. Surfaced and fixed a real
   duplicated `## Boundaries` block in the test-reviewer template.
 
+## What Landed (gitleaks, PR #16, merged)
+
+- **Design decision (owner):** enforce gitleaks *alongside* `check-ci`, NOT inside
+  it. gitleaks is a Go binary, not a uv package; keeping it out of `check-ci`
+  preserves the "`uv sync` is sufficient" invariant. This is the first gate
+  outside the single `check-ci` signal — accepted, documented cost.
+- **Channels:** pinned pre-commit mirror (`github.com/gitleaks/gitleaks` `rev:
+  v8.30.1`; pre-commit auto-provisions Go, no manual install) + a pinned
+  `secret-scan` CI job that downloads the binary and verifies a hardcoded sha256.
+  `gitleaks-action` rejected: needs `GITLEAKS_LICENSE` for org repos + v2 dies
+  when Node 20 runners retire (Sept 2026).
+- **Governance:** `audit_secret_scanning` (new `repo_audit` check) keeps the
+  pre-commit rev, the CI version, and `[secret_scanning].gitleaks_version` in
+  `tools/repo_audit_contract.toml` in lockstep. CI archive name is *derived* from
+  the version so a partial bump fails loudly at the checksum step.
+- **`.gitleaks.toml`:** `[extend] useDefault = true`; no `[allowlist]` block (an
+  empty one is rejected by gitleaks ≥8.30 — keep it absent until a real exemption
+  with at least one concrete check exists). Working-tree (`dir`) scan only, not
+  history — documented as a deliberate later enhancement.
+- **Prerequisites policy (owner):** binary / non-standard-install tools go in the
+  README Prerequisites section with an official install link; the auditor
+  enforces the gitleaks link. See memory `binary-tools-need-readme-prerequisites`.
+
 ## Next Session — Start Here
 
 Each its own feature branch off the current `main`, its own PR. Follow the
-gate-machinery coupling map in the plan (seven surfaces per gate).
+gate-machinery coupling map in the plan (seven surfaces per gate). **pip-audit
+and codespell are Python packages**, so unlike gitleaks they DO follow the full
+in-`check-ci` seven-surface coupling map (dev dependency, devtools handler,
+gate sequence, etc.).
 
-1. **gitleaks** — secret scanning; pre-commit + `check-ci`; a `.gitleaks.toml`
-   allowlist with a documented doctrine (copy the ecosystem's commented-allowlist
-   pattern). **Note**: gitleaks is a Go binary, not a `uv` package, so it breaks
-   step 1 of the coupling map (no dev dependency). Decide its install path: the
-   `gitleaks` pre-commit mirror for local hooks, and a pinned `gitleaks/gitleaks-action`
-   (or the binary) for CI; the `check-ci` step must decide whether to require the
-   binary on PATH or skip-if-absent (the ecosystem uses a docker fallback).
-2. **pip-audit** — dependency-vulnerability scan (uv-aware, e.g. `uv export`
+1. **pip-audit** — dependency-vulnerability scan (uv-aware, e.g. `uv export`
    piped to `pip-audit`), complementing deptry hygiene. Update the README line
    that says deptry "is dependency hygiene, not vulnerability scanning".
-3. **codespell** — en-GB-aware spell check with a small repo wordlist for jargon.
-4. **supply-chain config** — commit `.github/dependabot.yml` (pip + github-actions)
+2. **codespell** — en-GB-aware spell check with a small repo wordlist for jargon.
+3. **supply-chain config** — commit `.github/dependabot.yml` (pip + github-actions)
    and pin the `ci.yml` action SHAs (unblocked now #11 is merged); optional
    `repo_audit` self-check that workflow actions are SHA-pinned.
 
@@ -84,4 +103,7 @@ gate-machinery coupling map in the plan (seven surfaces per gate).
 
 ## Next Safe Step
 
-- Open a feature branch for **gitleaks** off the current `main` and proceed.
+- Open a feature branch for **pip-audit** off the current `main` and proceed.
+  Note the gitleaks pre-commit hook now runs on every commit (~6s installed),
+  and `secret-scan` is a separate CI job — confirm both it and Quality gates are
+  green on the next PR too (neither is ruleset-required yet).
