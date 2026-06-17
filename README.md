@@ -148,3 +148,10 @@ uv run cz check --message "feat: add truthful commit-msg enforcement"
 - `tests/` — behaviour-first tests
 - `tools/repo_audit.py` — tracked-file audit for repo identity and adapter
   integrity
+
+## Licence
+
+Released under the [MIT licence](LICENCE), copyright Oak National Academy.
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting and the credentials
+policy.

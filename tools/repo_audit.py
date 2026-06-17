@@ -97,6 +97,8 @@ EXPECTED_HOOK_SUPPORT = {
 AuditFunction = Callable[[Path], list[str]]
 REQUIRED_PATHS = [
     "README.md",
+    "LICENCE",
+    "SECURITY.md",
     ".pre-commit-config.yaml",
     "pyproject.toml",
     "pyrightconfig.json",
@@ -497,6 +499,80 @@ def audit_identity(root: Path) -> list[str]:
             and "plans/high-level-plan.md" in practice_index
             and "docs/dev-tooling.md" in practice_index,
             "Practice Index must expose verification, continuity, planning, and tooling surfaces",
+        )
+    return failures
+
+
+def audit_distribution_metadata(root: Path) -> list[str]:
+    check = "distribution-metadata"
+    failures: list[str] = []
+    data = _load_pyproject(root, failures, check)
+    if data is None:
+        return failures
+
+    project = _object_mapping(data.get("project"))
+    if project is None:
+        require(failures, check, False, "pyproject.toml must define [project]")
+        return failures
+
+    require(
+        failures,
+        check,
+        project.get("license") == "MIT",
+        'pyproject.toml [project] must declare license = "MIT"',
+    )
+    license_files = _string_list(project.get("license-files"))
+    require(
+        failures,
+        check,
+        license_files is not None and "LICENCE" in license_files,
+        "pyproject.toml [project] must list LICENCE in license-files",
+    )
+    authors = _object_list(project.get("authors"))
+    require(
+        failures,
+        check,
+        authors is not None and len(authors) > 0,
+        "pyproject.toml [project] must declare at least one author",
+    )
+    classifiers = _string_list(project.get("classifiers"))
+    require(
+        failures,
+        check,
+        classifiers is not None and "Programming Language :: Python :: 3.14" in classifiers,
+        "pyproject.toml [project] classifiers must include the Python 3.14 classifier",
+    )
+    require(
+        failures,
+        check,
+        classifiers is not None and "Typing :: Typed" in classifiers,
+        "pyproject.toml [project] classifiers must include 'Typing :: Typed' "
+        "for the shipped py.typed marker",
+    )
+    urls = _string_mapping(project.get("urls"))
+    require(
+        failures,
+        check,
+        urls is not None and "Repository" in urls,
+        "pyproject.toml [project.urls] must declare a Repository URL",
+    )
+
+    licence = read_text(root / "LICENCE", failures, check)
+    if licence is not None:
+        require(
+            failures,
+            check,
+            "MIT License" in licence and "Oak National Academy" in licence,
+            "LICENCE must contain the MIT licence text and the Oak National Academy "
+            "copyright holder",
+        )
+    security = read_text(root / "SECURITY.md", failures, check)
+    if security is not None:
+        require(
+            failures,
+            check,
+            "vulnerabilit" in security.lower(),
+            "SECURITY.md must document how to report a vulnerability",
         )
     return failures
 
@@ -1627,6 +1703,7 @@ DEFAULT_AUDIT_CHECKS: tuple[AuditFunction, ...] = (
     audit_required_paths,
     audit_entry_surfaces,
     audit_identity,
+    audit_distribution_metadata,
     audit_gate_scripts,
     audit_packaging_contract,
     audit_typing_contract,
