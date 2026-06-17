@@ -33,7 +33,7 @@ thin adapters only.
 | --- | --- | --- |
 | Directives | `.agent/directives/` | none |
 | Rules | `.agent/rules/` | `.cursor/rules/`, `.claude/rules/`, others as supported |
-| Commands | `.agent/commands/` | `.cursor/commands/`, `.claude/commands/`, `.gemini/commands/`, `.agents/skills/jc-*/` |
+| Commands | `.agent/commands/` | `.cursor/commands/`, `.claude/commands/`, `.gemini/commands/`, `.agents/skills/oak-*/` |
 | Skills | `.agent/skills/` | platform skill wrappers |
 | Memory | `.agent/memory/` | none |
 | Practice Core | `.agent/practice-core/` | none |

@@ -1,5 +1,5 @@
 ---
-name: jc-session-handoff
+name: oak-session-handoff
 description: >-
   Lightweight end-of-session closeout: refresh continuity and capture
   learning.

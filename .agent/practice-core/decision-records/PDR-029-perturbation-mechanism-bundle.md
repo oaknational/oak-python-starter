@@ -234,7 +234,7 @@ workflow.
 | **Read-trigger surface** | Explicitly named in the session-open grounding order | A short file that start-right-quick / start-right-thorough reads before work begins |
 | **Skill / command invocation gate** | When the workflow is run | A named acceptance step inside a command (e.g. `/session-handoff` step 7c) naming the authoritative file to read |
 | **Pre-commit hook / CI gate** | On commit or push | A repo-root script invoked by Husky or CI job (one of the few places code is genuinely required) |
-| **Health probe / scanner** | On-demand or scheduled | A named ritual step that enumerates from authoritative files (e.g. `/jc-consolidate-docs` step 7c walkthrough). A CLI sub-command is one valid instantiation. |
+| **Health probe / scanner** | On-demand or scheduled | A named ritual step that enumerates from authoritative files (e.g. `/oak-consolidate-docs` step 7c walkthrough). A CLI sub-command is one valid instantiation. |
 | **Structural artefact constraint** | At artefact-authoring time | A schema or lint rule that fails fast if the structure is wrong |
 
 A single tripwire is better than none; **two complementary

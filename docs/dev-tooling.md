@@ -14,6 +14,7 @@ Its package identity follows the Oak Python convention:
 - Python version management: `.python-version`
 - formatter and linter: `ruff`
 - type checking: `pyright`
+- markdown linting: `pymarkdown`
 - dependency hygiene: `deptry`
 - commit workflow: `commitizen`
 - tests: `pytest`
@@ -34,6 +35,8 @@ Its package identity follows the Oak Python convention:
 - `uv run python -m oaknational.python_repo_template.devtools format-fix`
 - `uv run python -m oaknational.python_repo_template.devtools lint`
 - `uv run python -m oaknational.python_repo_template.devtools lint-fix`
+- `uv run python -m oaknational.python_repo_template.devtools markdownlint`
+- `uv run python -m oaknational.python_repo_template.devtools markdownlint-fix`
 - `uv run python -m oaknational.python_repo_template.devtools typecheck`
 - `uv run python -m oaknational.python_repo_template.devtools repo-audit`
 - `uv run python -m oaknational.python_repo_template.devtools test`
@@ -51,6 +54,19 @@ Its package identity follows the Oak Python convention:
   run dependency hygiene before the tracked-repo audit
 - `pyarrow` remains a deliberate `deptry` `DEP002` exception because pandas
   exercises it indirectly through the bounded Parquet path
+
+## Markdown linting
+
+- direct commands:
+  `uv run python -m oaknational.python_repo_template.devtools markdownlint`
+  (check) and
+  `uv run python -m oaknational.python_repo_template.devtools markdownlint-fix`
+  (autofix)
+- `pymarkdown` scans the tracked Markdown estate, respecting `.gitignore`
+- rules are configured in `[tool.pymarkdown]` in `pyproject.toml`; YAML front
+  matter is recognised, `MD013`, `MD041`, and `MD029` are disabled and `MD024`
+  is relaxed to siblings-only, so structural rules such as `MD040` stay on
+- `check` and `check-ci` both run the markdown lint after the Ruff lint
 
 ## Packaging proof
 

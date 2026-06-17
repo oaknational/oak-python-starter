@@ -1,5 +1,5 @@
 ---
-name: jc-review
+name: oak-review
 description: >-
   Perform a code review with specialist sub-agents.
 ---
