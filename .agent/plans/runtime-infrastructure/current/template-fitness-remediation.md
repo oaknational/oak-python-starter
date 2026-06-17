@@ -4,10 +4,10 @@ overview: "Fix the fundamental blockers to this repo serving as a demonstration,
 todos:
   - id: licence-metadata
     content: "F1 — add LICENCE and [project] distribution metadata."
-    status: pending
+    status: completed
   - id: boundary-correctness
     content: "F2 — make the CSV boundary robust to pandas NA/dtype sniffing, with negative tests."
-    status: pending
+    status: completed
   - id: honest-gates
     content: "F3 — raise coverage threshold toward achieved and audit the omit-list."
     status: pending
@@ -25,9 +25,21 @@ todos:
 # Template Fitness Remediation
 
 **Last Updated**: 2026-06-17
-**Status**: 🟡 PLANNING
+**Status**: 🔄 IN PROGRESS
 **Scope**: the fundamental blockers to this repo serving as a demonstration, teaching aid, and template basis for future repos.
 **Source**: [Deep-Dive Review 2026-06-17](../../../reports/2026-06-17-python-repo-deep-review.md).
+
+## Progress (2026-06-17)
+
+- ✅ Review and this plan landed (PR #7).
+- ✅ **Phase 1 landed** (PR #8): F1 — MIT licence + PEP 639 distribution
+  metadata + `SECURITY.md` + `audit_distribution_metadata`; F2 — deterministic
+  CSV boundary + int64-range guard + tests. The built wheel was verified to
+  carry the licence and classifiers.
+- ✅ Command-adapter prefix renamed `jc-` → `oak-` (PR #9).
+- ⏭ **Phase 2 is next**: F4 CI workflow, F3 coverage honesty, F8 chart
+  accessibility. Start-here detail lives in the thread record:
+  [`template-fitness-remediation.next-session.md`](../../../memory/operational/threads/template-fitness-remediation.next-session.md).
 
 ## End Goal
 
