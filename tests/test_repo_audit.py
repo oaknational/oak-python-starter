@@ -715,6 +715,103 @@ name = "oaknational-python-repo-template"
     assert "must declare a Repository URL" in joined
 
 
+def test_audit_ci_workflow_accepts_bare_and_quoted_on_keys(tmp_path: Path) -> None:
+    workflow_path = tmp_path / ".github" / "workflows" / "ci.yml"
+
+    # Bare `on:` — PyYAML parses the key as the boolean True (the fallback branch).
+    _write(
+        workflow_path,
+        """
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run python -m oaknational.python_repo_template.devtools check-ci
+""",
+    )
+
+    assert subject.audit_ci_workflow(tmp_path) == []
+
+    # Quoted "on": — survives as the string key, exercising the other branch.
+    _write(
+        workflow_path,
+        """
+name: CI
+"on":
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: uv run python -m oaknational.python_repo_template.devtools check-ci
+""",
+    )
+
+    assert subject.audit_ci_workflow(tmp_path) == []
+
+
+def test_audit_ci_workflow_reports_missing_triggers_independently(tmp_path: Path) -> None:
+    workflow_path = tmp_path / ".github" / "workflows" / "ci.yml"
+
+    # Wrong triggers, but the gate command is present: only the trigger checks fire.
+    _write(
+        workflow_path,
+        """
+name: CI
+on:
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: uv run python -m oaknational.python_repo_template.devtools check-ci
+""",
+    )
+
+    joined = "\n".join(subject.audit_ci_workflow(tmp_path))
+
+    assert "must trigger on push" in joined
+    assert "must trigger on pull_request" in joined
+    assert "must run the CI gate sequence" not in joined
+
+
+def test_audit_ci_workflow_reports_missing_gate_command_independently(tmp_path: Path) -> None:
+    workflow_path = tmp_path / ".github" / "workflows" / "ci.yml"
+
+    # Correct triggers, but no gate command: only the command check fires.
+    _write(
+        workflow_path,
+        """
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "no gates here"
+""",
+    )
+
+    joined = "\n".join(subject.audit_ci_workflow(tmp_path))
+
+    assert "must run the CI gate sequence" in joined
+    assert "must trigger on push" not in joined
+    assert "must trigger on pull_request" not in joined
+
+
 def test_audit_hook_contract_requires_canonical_policy_and_gemini_support(tmp_path: Path) -> None:
     _copy_repo_file(".agent/hooks/policy.json", tmp_path)
     _copy_repo_file(".cursor/hooks.json", tmp_path)
