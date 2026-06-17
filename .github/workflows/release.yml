@@ -112,29 +112,31 @@ jobs:
           set -euo pipefail
           prev="v${PREV_VERSION}"
           if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
-            set +e
-            uv run cz bump --files-only --changelog --yes --increment "${INCREMENT}"
-            rc=$?
-            set -e
-            if [ "${rc}" -ne 0 ]; then echo "manual bump failed (${rc})"; exit "${rc}"; fi
+            increment="${INCREMENT}"
           else
-            range="${prev}..HEAD"
-            if git log "${range}" --pretty=%B | grep -qiE '^([a-z]+(\([^)]+\))?!:|BREAKING[ -]CHANGE)'; then
-              echo "::warning::Breaking change detected since ${prev}. A major release must be cut manually via Run workflow (increment = MAJOR); auto-release stood down."
-              echo "prepared=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            set +e
-            uv run cz bump --files-only --changelog --yes
-            rc=$?
-            set -e
-            if [ "${rc}" -eq 21 ]; then
-              echo "No releasable commits since ${prev}."
-              echo "prepared=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            if [ "${rc}" -ne 0 ]; then echo "cz bump failed (${rc})"; exit "${rc}"; fi
+            # cz_conventional_commits ignores [tool.commitizen].bump_map, so we
+            # compute the increment from that policy ourselves and pass it
+            # explicitly below (see tools/release_increment.py).
+            increment="$(git log "${prev}..HEAD" --pretty=format:'%B%x00' | uv run python tools/release_increment.py)"
+            case "${increment}" in
+              BREAKING)
+                echo "::warning::Breaking change detected since ${prev}. Cut a major manually via Run workflow (increment = MAJOR); auto-release stood down."
+                echo "prepared=false" >> "$GITHUB_OUTPUT"
+                exit 0
+                ;;
+              NONE)
+                echo "No releasable commits since ${prev}."
+                echo "prepared=false" >> "$GITHUB_OUTPUT"
+                exit 0
+                ;;
+              MINOR | PATCH) ;;
+              *)
+                echo "unexpected increment '${increment}'"
+                exit 1
+                ;;
+            esac
           fi
+          uv run cz bump --increment "${increment}" --files-only --changelog --yes
           next=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
           if [ -z "${next}" ]; then echo "could not read the bumped version"; exit 1; fi
           echo "version=${next}" >> "$GITHUB_OUTPUT"
