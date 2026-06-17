@@ -83,12 +83,14 @@ Three ordered phases. Phase 1 removes the two true blockers (you cannot base a r
 ## Phase 1 — Fundamental blockers
 
 ### F1 — Licence and distribution metadata
+
 - **Decision required (owner)**: which licence (recommend matching Oak's standard open-source code licence, e.g. MIT; the ecosystem repo uses a British-spelled `LICENCE`).
 - **Means**: add a root `LICENCE` file; add `license`, `license-files`, `authors`, `classifiers` (incl. `Programming Language :: Python :: 3.14`), and `urls` to `[project]`.
 - **Acceptance**: the built wheel METADATA carries the licence and classifiers; `repo_audit` gains an `audit_distribution_metadata` check asserting these keys exist.
 - **Validate**: `uv run python -m oaknational.python_repo_template.devtools build` then inspect wheel METADATA; `... devtools repo-audit`.
 
 ### F2 — Deterministic CSV boundary
+
 - **Means**: in `default_csv_loader` (and the remote CSV path) pass `keep_default_na=False` and an explicit `dtype`/converter set so `NA`/`null`/`None` category and note cells, and thousands-separated numbers, are not silently mangled before validation. Keep the validators as the single source of rejection.
 - **Acceptance**: new negative/positive tests prove `category="NA"` is **accepted**, `notes="NA"` is preserved literally, and the existing reject paths (empty, fractional, non-positive, wrong columns) still fire with their exact messages.
 - **Validate**: `... devtools test` and `... devtools coverage`.
@@ -96,16 +98,19 @@ Three ordered phases. Phase 1 removes the two true blockers (you cannot base a r
 ## Phase 2 — Core quality for a teaching template
 
 ### F3 — Honest coverage gate
+
 - **Means**: raise `fail_under` toward the achieved level (≈85); either remove the `devtools.py` omit or document its rationale inline; add `audit_coverage_contract` to `repo_audit` pinning the threshold floor and the exact omit-list.
 - **Acceptance**: lowering `fail_under` or silently extending the omit-list fails `repo-audit`.
 - **Validate**: `... devtools coverage`; `... devtools repo-audit`.
 
 ### F4 — CI workflow
+
 - **Means**: add `.github/workflows/ci.yml` running `uv run python -m oaknational.python_repo_template.devtools check-ci` on push and pull_request, on Python 3.14. This also exercises the wheel-smoke for real (today only stubbed).
 - **Acceptance**: the workflow runs green; `repo_audit` optionally asserts the workflow exists and invokes `check-ci`.
 - **Validate**: CI run on a branch; `... devtools check-ci` locally.
 
 ### F8 — Accessible chart output (organisation WCAG 2.2 AA mandate)
+
 - **Means**: when `--chart` is given, also write a sibling text alternative from `render_summary` (SC 1.1.1); darken `#d08d46` to clear 3:1 non-text contrast and give the target marker a contrasting halo (SC 1.4.11).
 - **Acceptance**: a test asserts the sidecar text file is written and matches the report; recomputed contrast for every palette colour and the target marker is ≥3:1 against both backgrounds.
 - **Validate**: `... devtools test`; manual chart render.

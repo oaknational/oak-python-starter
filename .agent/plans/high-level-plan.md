@@ -1,6 +1,5 @@
 ---
 plan_id: high-level-plan
-title: "High-Level Plan"
 type: strategic-index
 status: active
 last_updated: 2026-06-17

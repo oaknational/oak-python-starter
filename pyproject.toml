@@ -57,6 +57,7 @@ dev = [
   "import-linter>=2.0.0",
   "pandas-stubs>=2.3.2.250926",
   "types-requests>=2.32.4.20250913",
+  "pymarkdownlnt>=0.9.38",
 ]
 
 [tool.deptry]
@@ -86,6 +87,22 @@ quote-style = "double"
 include = ["src", "tests", "tools"]
 pythonVersion = "3.14"
 typeCheckingMode = "strict"
+
+[tool.pymarkdown]
+# Recognise YAML front matter so the parser does not read a closing `---` as a
+# setext heading. Disable line-length (MD013): this doc estate reflows prose and
+# carries tables, links, and code that a hard column limit would fight. Disable
+# first-line-heading (MD041): partials, rule files, and reviewer templates
+# legitimately open with a sub-heading or prose. Allow repeated sibling headings
+# (MD024) such as per-session "What Was Done" sections. Disable ordered-list
+# prefix (MD029): some rule docs number their items continuously across section
+# breaks as stable reference IDs. Every other rule, including MD040 (fenced code
+# must declare a language) and MD025 (a single top-level heading), stays on.
+extensions.front-matter.enabled = true
+plugins.md013.enabled = false
+plugins.md041.enabled = false
+plugins.md024.siblings_only = true
+plugins.md029.enabled = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
