@@ -9,8 +9,8 @@
 ## Owning Plans
 
 - Gates: [`../../../plans/runtime-infrastructure/current/quality-gate-surface-expansion.md`](../../../plans/runtime-infrastructure/current/quality-gate-surface-expansion.md)
-- Release automation: [`../../../plans/runtime-infrastructure/current/release-automation.md`](../../../plans/runtime-infrastructure/current/release-automation.md)
-- Template fitness (F3/F8/F5-7): [`../../../plans/runtime-infrastructure/current/template-fitness-remediation.md`](../../../plans/runtime-infrastructure/current/template-fitness-remediation.md)
+- Release automation (ARCHIVED 2026-06-18): [`../../../plans/runtime-infrastructure/archive/release-automation.md`](../../../plans/runtime-infrastructure/archive/release-automation.md)
+- Template fitness (F3/F8/F5/F7 done; F6 deferred): [`../../../plans/runtime-infrastructure/current/template-fitness-remediation.md`](../../../plans/runtime-infrastructure/current/template-fitness-remediation.md)
 - Source review: [`../../../reports/2026-06-17-oak-quality-gate-types-review.md`](../../../reports/2026-06-17-oak-quality-gate-types-review.md)
 
 ## Current Objective (owner-approved 2026-06-18)
@@ -195,7 +195,9 @@ All merged to `main` unless noted. `main` is green.
 3. When the sprint's PRs are all merged, **merge release PR #25 with `--auto`**
    to cut the accumulated release, then verify the new GitHub Release + the
    bumped `main` version.
-4. **Deep `consolidate-docs` graduation is deferred to a fresh-context session**
-   (do not attempt it at low context): home durable doctrine out of plans,
-   archive completed plans (release-automation is essentially done + verified),
-   rotate the napkin, refresh `completed-plans.md`/indexes.
+4. **A deep `consolidate-docs` ran 2026-06-18:** the release-automation plan was
+   archived (doctrine confirmed homed in README/docs/workflow/audit),
+   `completed-plans.md` and the plan indexes refreshed, durable lessons distilled,
+   and a session experience note added. The napkin (222 lines) was not rotated
+   (under threshold). Remaining graduation is light and can wait for a natural
+   break.

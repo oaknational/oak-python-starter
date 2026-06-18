@@ -22,7 +22,7 @@ todos:
 # Release Automation
 
 **Last Updated**: 2026-06-18  
-**Status**: ✅ DELIVERED & LIVE-VERIFIED (PRs #20/#22 merged; `v0.1.0` + `v0.2.0` released). Ready to archive in the next deep `consolidate-docs`.  
+**Status**: ✅ ARCHIVED 2026-06-18 — DELIVERED & LIVE-VERIFIED (PRs #20/#22 merged; `v0.1.0` + `v0.2.0` released). Durable doctrine homed in README "## Releases", `docs/dev-tooling.md`, the `release.yml` comment, `tools/release_increment.py`, and `audit_release_workflow`. The `--auto`/UNSTABLE merge mechanic lives in the gate-expansion thread record (still needed for the open release PR #25).  
 **Scope**: Automate versioned GitHub Releases with a committed version and a custom bump policy, via a Commitizen-driven release-PR, under the protected `main` ruleset.
 
 > **Delivered note (2026-06-18):** Live verification caught a real bug —
