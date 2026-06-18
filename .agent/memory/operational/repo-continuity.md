@@ -1,15 +1,15 @@
 # Repo Continuity
 
-**Last refreshed**: 2026-06-18 (later) — **supply-chain PR #28 opened**. The
-`feat/supply-chain-pinning` branch now carries (all committed, HEAD `f5225cb`):
-action SHA-pins + `dependabot.yml` + the `audit_supply_chain` self-check + the
-incidental packaging-schema fix (below). **PR #28 is open and awaiting CI + the
-SonarCloud gate green, then merge.** Earlier this program:
-gitleaks gate (#16), coverage→GitHub Code Quality (#18), **release automation**
-(live-verified — `v0.1.0` + `v0.2.0` released), **pip-audit** gate (#24),
-**codespell** gate (#26) all merged; `main` is green at `v0.2.0`. An
+**Last refreshed**: 2026-06-18 (later) — **supply-chain PR #28 + coverage PR #31
+both MERGED**. `main` is green and now carries: SHA-pinned actions +
+`dependabot.yml` + `audit_supply_chain` + the packaging-schema fix (#28), and the
+honest coverage floor (`fail_under` 70→85) + `audit_coverage_contract` (#31).
+Earlier this program: gitleaks gate (#16), coverage→GitHub Code Quality (#18),
+**release automation** (live-verified — `v0.1.0` + `v0.2.0` released),
+**pip-audit** gate (#24), **codespell** gate (#26) all merged. An
 owner-approved **"highest proportionate bar" program** (4 lanes) is in progress —
-Tier 1a effectively done (supply-chain in PR #28), Tiers 1b/3/2 queued.
+Tier 1a done; Tier 1b **F3 done**; **next is Tier 1b F8** (WCAG 2.2 AA accessible
+chart), then F5/6/7, Tier 3, Tier 2, then merge release PR #25.
 Full program state + the critical release-PR `--auto` mechanic live in the
 [gate-expansion thread record](threads/quality-gate-surface-expansion.next-session.md).
 
@@ -34,13 +34,14 @@ Full program state + the critical release-PR `--auto` mechanic live in the
 ## Branch-Primary Lane State
 
 - Merged this program: #16 gitleaks, #18 coverage→Code Quality, #19/#20/#22
-  release automation, #24 pip-audit, #26 codespell. `main` is green at `v0.2.0`.
+  release automation, #24 pip-audit, #26 codespell, **#28 supply-chain pinning +
+  `audit_supply_chain` + packaging-schema fix**, **#31 honest coverage floor
+  (85) + `audit_coverage_contract`**. `main` is green.
 - **Open: release PR #25 `chore(release): v0.3.0`** (standing, intentionally
-  accumulating — merge with `--auto` at sprint end).
-- **Open: supply-chain PR #28** (branch `feat/supply-chain-pinning`, HEAD
-  `f5225cb`): action SHA-pins + `dependabot.yml` + `audit_supply_chain`
-  self-check, plus the packaging-schema fix below. Awaiting CI + SonarCloud green.
-- **Folded into PR #28** (committed by this session): a packaging-schema fix —
+  accumulating every merged feat/fix — merge with `--auto` at sprint end; it now
+  also includes #28 + #31). The next prepare run will retitle it to the bumped
+  version.
+- **Folded into PR #28** (merged): a packaging-schema fix —
   `pyproject.toml` `[tool.hatch.build.targets.wheel].sources` `["src"]` →
   `{ "src" = "" }` (the array tripped the *Even Better TOML* SchemaStore Hatch
   schema, which types `sources` as an object; both forms build byte-identical
@@ -57,7 +58,8 @@ Full program state + the critical release-PR `--auto` mechanic live in the
   `get_project_quality_gate_status` / `search_sonar_issues_in_projects`,
   projectKey `oaknational_oak-python-starter`, `pullRequest <n>`.
 - Releases cut + verified: **`v0.1.0`, `v0.2.0`** (wheel + sdist attached).
-- Coverage `fail_under` still 70 (achieved ~88); raising it is Tier 1b / F3.
+- Coverage `fail_under` is now **85** (achieved ~88), pinned by
+  `audit_coverage_contract` (#31). F3 done.
 
 ## Current Session Focus
 
@@ -72,9 +74,12 @@ Full program state + the critical release-PR `--auto` mechanic live in the
   helper extraction). Verified all four pinned action SHAs match their upstream
   `vN` tags. SonarCloud flagged two new-code smells on the first push → fixed by
   decomposing `audit_supply_chain`; awaiting the Sonar re-run.
-- Next: get PR #28 green (CI + SonarCloud) → merge → Tier 1b (F3/F8/F5-7) →
-  Tier 3 → Tier 2; then merge release PR #25. Authoritative detail in the
-  gate-expansion thread record.
+- 2026-06-18 (later still): merged PR #28; then landed **Tier 1b F3** as PR #31
+  (honest coverage floor 85 + `audit_coverage_contract`), config-reviewed (fixed
+  a false-positive on an absent `omit` key) and merged. Checkpointing here so the
+  WCAG work (F8) starts with fresh context.
+- Next: **Tier 1b F8** (WCAG 2.2 AA accessible chart) → F5/6/7 → Tier 3 → Tier 2;
+  then merge release PR #25. Authoritative detail in the gate-expansion thread.
 
 ## Repo-Wide Invariants / Non-Goals
 
@@ -98,13 +103,16 @@ Full program state + the critical release-PR `--auto` mechanic live in the
 
 ## Next Safe Step
 
-- **Get supply-chain PR #28 green** (CI + the SonarCloud gate) and **merge**
-  (it is a normal PR, so CodeQL triggers and `gh pr merge 28 --squash
-  --delete-branch` once green — not the bot-PR `--auto` path). Then Tier 1b
-  (F3 → F8 → F5/6/7), Tier 3 (branch coverage, Hypothesis, version-policy ADR),
-  Tier 2 (governance checklist). Finally **merge release PR #25 with `--auto`**
-  to cut the accumulated release. Authoritative detail + the `--auto`/UNSTABLE
-  mechanic are in the gate-expansion thread record.
+- **Tier 1b F8 — WCAG 2.2 AA accessible chart** (next; org accessibility mandate
+  makes this important to get right): write a text alternative from
+  `render_summary` (SC 1.1.1); darken `#d08d46` and halo the target marker for
+  ≥3:1 contrast (SC 1.4.11); test the sidecar + the contrast ratios. See the
+  template-fitness-remediation plan. Then F5/6/7, Tier 3 (branch coverage,
+  Hypothesis, version-policy ADR), Tier 2 (governance checklist). Finally **merge
+  release PR #25 with `--auto`** to cut the accumulated release. Normal feature
+  PRs merge with `gh pr merge <n> --squash --delete-branch` once green (CI +
+  SonarCloud); the bot-opened release PR #25 needs `--auto` (it sits UNSTABLE).
+  Authoritative detail in the gate-expansion thread record.
 
 ## Open Side-Tasks
 
