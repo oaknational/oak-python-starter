@@ -1,24 +1,25 @@
 name: Release
 
-# Release automation via the release-PR pattern, so the committed version in
-# pyproject.toml can advance under the protected `main` ruleset (no direct push,
-# no bypass token). Two phases, selected by whether the committed version already
-# has a matching tag:
-#   - prepare: committed version IS tagged -> compute the next version from
-#     Conventional Commits (Commitizen custom bump map) and open/refresh a
-#     "release" PR that bumps pyproject + CHANGELOG. Breaking changes stand down
-#     for a manual major.
-#   - publish: committed version is NOT tagged (a release PR just merged) ->
-#     tag it, build, and create the GitHub Release with the wheel + sdist.
-# Major releases are manual: run this workflow via "Run workflow" with
-# increment = MAJOR.
+# Continuous release on merge to main. After CI passes on main, compute the
+# Conventional Commits increment (custom policy via tools/release_increment.py),
+# bump pyproject + uv.lock + CHANGELOG with Commitizen, then commit + tag and push
+# straight to the protected `main` branch using the Oak Semantic Release Bot
+# GitHub App token (a ruleset bypass actor). The bump commit carries `[skip ci]`
+# so it does not re-trigger CI and loop. Every qualifying merge therefore advances
+# the version and publishes a GitHub Release with the wheel + sdist.
+#
+# Major releases stay manual: a `!`/`BREAKING CHANGE` marker makes the auto-release
+# stand down (and tools/prevent_accidental_major.py blocks the marker at commit
+# time); cut the major deliberately via "Run workflow" with increment = MAJOR.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
     inputs:
       increment:
-        description: "Release increment to prepare (use MAJOR for a deliberate major release)"
+        description: "Release increment to force (use MAJOR for a deliberate major release)"
         type: choice
         options: [MAJOR, MINOR, PATCH]
         default: MAJOR
@@ -28,23 +29,38 @@ on:
 permissions:
   contents: read
 
-# Serialise releases on a ref; never cancel a release mid-flight.
+# Serialise releases so a rapid second merge never races the in-flight bump push.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release
   cancel-in-progress: false
 
 jobs:
   release:
     name: Release
+    # Only release after CI succeeded on main, or on a deliberate manual dispatch.
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
     steps:
+      # Mint a short-lived installation token for the release bot. The bot is a
+      # bypass actor on the `main` ruleset, so the bump commit + tag push through.
+      - name: Generate the release-bot token
+        id: app-token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - name: Check out full history and tags
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
+          # Keep the bot token in the git config so `git push` to protected main
+          # is authenticated as the bypass actor.
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
@@ -57,34 +73,75 @@ jobs:
 
       - name: Configure the bot git identity
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "oak-semantic-release-bot[bot]"
+          git config user.email "oak-semantic-release-bot[bot]@users.noreply.github.com"
 
-      - name: Determine the release phase
-        id: phase
+      - name: Compute the release increment
+        id: increment
+        env:
+          FORCED_INCREMENT: ${{ inputs.increment }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           version=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-          if git rev-parse -q --verify "refs/tags/v${version}" >/dev/null; then
-            phase=prepare
+          prev="v${version}"
+          echo "previous=${prev}" >> "$GITHUB_OUTPUT"
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            increment="${FORCED_INCREMENT}"
+          elif git rev-parse -q --verify "refs/tags/${prev}" >/dev/null; then
+            # cz_conventional_commits ignores [tool.commitizen].bump_map, so we
+            # compute the increment from that single policy source ourselves.
+            increment="$(git log "${prev}..HEAD" --pretty=format:'%B%x00' | uv run python tools/release_increment.py)"
           else
-            phase=publish
+            # The committed version has no tag yet (bootstrap) — release it as-is.
+            increment="PATCH"
           fi
-          echo "phase=${phase}" >> "$GITHUB_OUTPUT"
-          echo "Committed version v${version} -> phase ${phase}"
+          case "${increment}" in
+            BREAKING)
+              echo "::warning::Breaking change since ${prev}; cut a major via Run workflow (increment = MAJOR). Auto-release stood down."
+              echo "release=false" >> "$GITHUB_OUTPUT"
+              ;;
+            NONE)
+              echo "No releasable commits since ${prev}."
+              echo "release=false" >> "$GITHUB_OUTPUT"
+              ;;
+            MAJOR | MINOR | PATCH)
+              echo "increment=${increment}" >> "$GITHUB_OUTPUT"
+              echo "release=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "unexpected increment '${increment}'"
+              exit 1
+              ;;
+          esac
 
-      # --- PUBLISH: the committed version has no tag, so a release PR just merged.
-      - name: Tag and publish the GitHub Release
-        if: steps.phase.outputs.phase == 'publish'
+      - name: Bump, tag, and push to main
+        id: bump
+        if: steps.increment.outputs.release == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.phase.outputs.version }}
+          INCREMENT: ${{ steps.increment.outputs.increment }}
+          PREV: ${{ steps.increment.outputs.previous }}
+        run: |
+          set -euo pipefail
+          uv run cz bump --increment "${INCREMENT}" --changelog --files-only --yes
+          version=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          if [ -z "${version}" ]; then echo "could not read the bumped version"; exit 1; fi
+          # `[skip ci]` stops the bump push from re-triggering CI -> Release (a loop).
+          git add pyproject.toml uv.lock CHANGELOG.md
+          git commit -m "bump: version ${PREV} -> v${version} [skip ci]"
+          git tag -a "v${version}" -m "v${version}"
+          git push origin HEAD:main
+          git push origin "v${version}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and publish the GitHub Release
+        if: steps.increment.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.bump.outputs.version }}
         run: |
           set -euo pipefail
           tag="v${VERSION}"
-          git tag -a "${tag}" -m "${tag}"
-          git push origin "${tag}"
           uv build
           notes="$(mktemp)"
           if uv run cz changelog --dry-run "${VERSION}" > "${notes}" 2>/dev/null && [ -s "${notes}" ]; then
@@ -92,73 +149,3 @@ jobs:
           else
             gh release create "${tag}" --title "${tag}" --generate-notes ./dist/*
           fi
-
-      - name: Note an ignored manual dispatch
-        if: steps.phase.outputs.phase == 'publish' && github.event_name == 'workflow_dispatch'
-        env:
-          VERSION: ${{ steps.phase.outputs.version }}
-        run: |
-          echo "::warning::A manual release was requested, but committed version v${VERSION} is not yet tagged, so the pending release was published instead. Re-run after it completes to prepare the next release."
-
-      # --- PREPARE: the committed version is tagged, so look for the next release.
-      - name: Compute the next release and bump the files
-        id: prepare
-        if: steps.phase.outputs.phase == 'prepare'
-        env:
-          PREV_VERSION: ${{ steps.phase.outputs.version }}
-          INCREMENT: ${{ inputs.increment }}
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          set -euo pipefail
-          prev="v${PREV_VERSION}"
-          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
-            increment="${INCREMENT}"
-          else
-            # cz_conventional_commits ignores [tool.commitizen].bump_map, so we
-            # compute the increment from that policy ourselves and pass it
-            # explicitly below (see tools/release_increment.py).
-            increment="$(git log "${prev}..HEAD" --pretty=format:'%B%x00' | uv run python tools/release_increment.py)"
-            case "${increment}" in
-              BREAKING)
-                echo "::warning::Breaking change detected since ${prev}. Cut a major manually via Run workflow (increment = MAJOR); auto-release stood down."
-                echo "prepared=false" >> "$GITHUB_OUTPUT"
-                exit 0
-                ;;
-              NONE)
-                echo "No releasable commits since ${prev}."
-                echo "prepared=false" >> "$GITHUB_OUTPUT"
-                exit 0
-                ;;
-              MINOR | PATCH) ;;
-              *)
-                echo "unexpected increment '${increment}'"
-                exit 1
-                ;;
-            esac
-          fi
-          uv run cz bump --increment "${increment}" --files-only --changelog --yes
-          next=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
-          if [ -z "${next}" ]; then echo "could not read the bumped version"; exit 1; fi
-          echo "version=${next}" >> "$GITHUB_OUTPUT"
-          echo "prepared=true" >> "$GITHUB_OUTPUT"
-
-      # Pinned to a commit SHA (this action runs with the job's
-      # contents/pull-requests write token); Dependabot bumps it via the comment.
-      - name: Open or refresh the release PR
-        if: steps.phase.outputs.phase == 'prepare' && steps.prepare.outputs.prepared == 'true'
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        with:
-          branch: release/next
-          base: main
-          title: "chore(release): v${{ steps.prepare.outputs.version }}"
-          commit-message: "chore(release): v${{ steps.prepare.outputs.version }}"
-          labels: release
-          body: |
-            Automated release PR. Merging this cuts release **v${{ steps.prepare.outputs.version }}**.
-
-            It lands the version bump in `pyproject.toml`, `uv.lock`, and
-            `CHANGELOG.md`; the Release workflow then tags `v${{ steps.prepare.outputs.version }}`
-            and publishes the GitHub Release with the built wheel + sdist.
-
-            Note: this PR is opened with the default token, so CI does not run on
-            it automatically.

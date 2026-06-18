@@ -79,7 +79,11 @@ REQUIRED_HOOK_GIT_CONFIG_PREFIXES = {
         "bypasses or force pushes."
     ),
 }
-REQUIRED_PRE_COMMIT_SKIP_IDS = ("quality-gates", "commitizen-commit-msg")
+REQUIRED_PRE_COMMIT_SKIP_IDS = (
+    "quality-gates",
+    "commitizen-commit-msg",
+    "prevent-accidental-major",
+)
 REQUIRED_PRE_COMMIT_SKIP_REASON = (
     "SKIP is prohibited here when it bypasses the repo's quality-gates or "
     "commitizen-commit-msg hooks."
@@ -692,8 +696,11 @@ def audit_release_workflow(root: Path) -> list[str]:
             require(
                 failures,
                 check,
-                "push" in triggers,
-                f".github/workflows/release.yml must trigger on push to main (found: {found})",
+                "workflow_run" in triggers,
+                (
+                    ".github/workflows/release.yml must trigger on workflow_run (release "
+                    f"after CI succeeds on main) (found: {found})"
+                ),
             )
             require(
                 failures,
@@ -719,6 +726,15 @@ def audit_release_workflow(root: Path) -> list[str]:
                     ".github/workflows/release.yml must compute the increment via "
                     "tools/release_increment.py (cz_conventional_commits ignores "
                     "the custom bump_map)"
+                ),
+            )
+            require(
+                failures,
+                check,
+                any("[skip ci]" in command for command in run_commands),
+                (
+                    ".github/workflows/release.yml must mark the bump commit `[skip ci]` so "
+                    "pushing it to main does not re-trigger CI -> Release (an infinite loop)"
                 ),
             )
         else:

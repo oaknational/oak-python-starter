@@ -140,13 +140,15 @@ Its package identity follows the Oak Python convention:
 
 ## Coverage reporting
 
-- the `coverage` gate runs `pytest` under `coverage.py`; locally it prints the
-  `term-missing` report and fails under the threshold in `[tool.coverage.report]`
-  (`fail_under = 85`, an honest floor below the ~88% the suite achieves)
+- the `coverage` gate runs `pytest` under `coverage.py` with **branch coverage**
+  on; locally it prints the `term-missing` report and fails under the threshold
+  in `[tool.coverage.report]` (`fail_under = 86`, an honest floor below the
+  ~87.6% the suite achieves with branches counted)
 - the `coverage-contract` `repo-audit` check guards what the coverage gate
-  itself cannot: it fails if `fail_under` drops below 85, or if
-  `[tool.coverage.run].omit` excludes any file beyond the justified set
-  (`devtools.py`) — so the threshold cannot be quietly lowered and code cannot be
+  itself cannot: it fails if `fail_under` drops below 86, if branch coverage is
+  switched off, or if `[tool.coverage.run].omit` excludes any file beyond the
+  justified set (`devtools.py`) — so the threshold cannot be quietly lowered,
+  branch coverage cannot be disabled to inflate the number, and code cannot be
   hidden from the coverage denominator. Raising `fail_under` is always allowed
 - CI additionally derives a Cobertura report from the same run with the
   `coverage xml` subcommand — the `coverage` gate's `pytest --cov` run writes the
@@ -185,25 +187,29 @@ uv run cz check --message "docs: explain the Commitizen workflow"
 
 ## Releases
 
-- automated by `.github/workflows/release.yml` using the **release-PR pattern**,
-  so the committed `pyproject.toml` version advances under the protected `main`
-  ruleset with no direct push and no bypass token
+- automated by `.github/workflows/release.yml` as **continuous release on merge**:
+  it triggers on `workflow_run` after CI succeeds on `main`, so a release only
+  cuts once the gates are green
 - the bump policy is `feat`/`fix` → minor, everything else → patch, and breaking
   markers are **not** auto-mapped to major; it lives in `[tool.commitizen].bump_map`
   but, because `cz_conventional_commits` ignores that map, `tools/release_increment.py`
   reads it and computes the increment, which the workflow applies via
   `cz bump --increment`
-- on a push to `main` the workflow either *prepares* (opens/refreshes a
-  `chore(release)` PR that bumps `pyproject.toml`, `uv.lock`, and `CHANGELOG.md`)
-  or *publishes* (when the committed version has no tag yet — i.e. a release PR
-  just merged — it tags `vX.Y.Z`, runs `uv build`, and creates the GitHub Release
-  with the wheel + sdist attached)
+- the **Oak Semantic Release Bot** GitHub App (a `main`-ruleset bypass actor)
+  authenticates via `actions/create-github-app-token` (secrets `RELEASE_APP_ID`
+  - `RELEASE_APP_PRIVATE_KEY`); the workflow bumps `pyproject.toml`, `uv.lock`,
+  and `CHANGELOG.md`, commits + tags `vX.Y.Z`, pushes straight to `main`, then
+  `uv build`s and creates the GitHub Release with the wheel + sdist attached
+- the bump commit is marked `[skip ci]` so pushing it to `main` does not
+  re-trigger CI → Release (an infinite loop)
 - **major releases are manual**: a `!`/`BREAKING CHANGE` marker makes the
   auto-release stand down; cut the major via the workflow's `workflow_dispatch`
-  (`increment = MAJOR`)
+  (`increment = MAJOR`). The `prevent-accidental-major` commit-msg hook
+  (`tools/prevent_accidental_major.py`) rejects the marker at commit time so it
+  cannot land by accident and silently halt the auto-release
 - the version stays committed in the tree; releases publish to GitHub Releases
-  only (no PyPI). `audit_release_workflow` keeps the workflow and the bump policy
-  honest
+  only (no PyPI). `audit_release_workflow` keeps the workflow (trigger, `cz bump`,
+  the increment tool, the `[skip ci]` loop guard) and the bump policy honest
 
 ## Hydration guidance
 
