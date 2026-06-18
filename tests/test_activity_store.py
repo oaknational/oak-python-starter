@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+from collections.abc import Callable
 from pathlib import Path
 
 import pandas as pd
@@ -44,6 +45,9 @@ def make_redirect_response(url: str, location: str) -> requests.Response:
     response.status_code = 302
     response.url = url
     response.headers["Location"] = location
+    # default_remote_reader uses the response as a context manager, which closes
+    # `raw` on exit; a real response always has one, so give the fake a closeable.
+    response.raw = io.BytesIO()
     return response
 
 
@@ -276,15 +280,71 @@ def test_load_activity_log_dispatches_remote_sources_by_suffix() -> None:
 
 
 def test_load_activity_log_rejects_remote_redirects() -> None:
-    def fake_get(url: str, *, timeout: int, allow_redirects: bool) -> requests.Response:
+    def fake_get(
+        url: str, *, timeout: int, allow_redirects: bool, stream: bool = False
+    ) -> requests.Response:
         assert timeout == subject.REMOTE_TIMEOUT_SECONDS
         assert allow_redirects is False
+        assert stream is True
         return make_redirect_response(url, "http://example.test/activity.csv")
 
     with pytest.raises(subject.ActivityDataError, match="Could not load activity data"):
         subject.load_activity_log(
             "https://example.test/activity.csv",
             remote_reader=lambda url: subject.default_remote_reader(url, http_get=fake_get),
+        )
+
+
+def make_content_response(data: bytes, *, content_length: str | None = None) -> requests.Response:
+    response = requests.Response()
+    response.status_code = 200
+    # Pre-buffer the body so iter_content yields it in slices (no live socket).
+    response._content = data  # noqa: SLF001
+    response.__dict__["_content_consumed"] = True
+    if content_length is not None:
+        response.headers["Content-Length"] = content_length
+    return response
+
+
+def _content_getter(response: requests.Response) -> Callable[..., requests.Response]:
+    def fake_get(url: str, **kwargs: object) -> requests.Response:
+        assert kwargs.get("stream") is True
+        return response
+
+    return fake_get
+
+
+def test_default_remote_reader_returns_streamed_body_within_the_cap() -> None:
+    payload = b"date,category,minutes,notes\n2026-01-01,focus,30,ok\n"
+
+    body = subject.default_remote_reader(
+        "https://example.test/activity.csv",
+        http_get=_content_getter(make_content_response(payload)),
+    )
+
+    assert body == payload
+
+
+def test_default_remote_reader_rejects_a_declared_oversize_body() -> None:
+    response = make_content_response(b"small", content_length=str(50 * 1024 * 1024))
+
+    with pytest.raises(subject.ActivityDataError, match="exceeds the .* limit"):
+        subject.default_remote_reader(
+            "https://example.test/activity.csv",
+            http_get=_content_getter(response),
+            max_bytes=1024,
+        )
+
+
+def test_default_remote_reader_rejects_a_streamed_body_over_the_cap() -> None:
+    # No (or understated) Content-Length: the cap must still fire while streaming.
+    response = make_content_response(b"x" * 4096)
+
+    with pytest.raises(subject.ActivityDataError, match="exceeds the .* limit"):
+        subject.default_remote_reader(
+            "https://example.test/activity.csv",
+            http_get=_content_getter(response),
+            max_bytes=1024,
         )
 
 
