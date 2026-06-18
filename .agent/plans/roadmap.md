@@ -10,8 +10,12 @@ The repo grows in three layers:
 
 ## Near term
 
+- **prove the clone/rename/adapt promise** with a real first-adoption dry-run
+  (see [docs/first-adoption-dry-run.md](../../docs/first-adoption-dry-run.md)) and
+  trim or document whatever friction it surfaces
+- keep the (now substantial) gate, release, and `repo_audit` machinery honest —
+  and proportionate to a template, not a feature product
 - preserve planning, memory, and adapter parity
-- keep repo audit and hooks honest
 - maintain a small but complete demo surface
 
 ## Ongoing constraint

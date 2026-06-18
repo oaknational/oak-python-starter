@@ -35,6 +35,15 @@
 - The harness auto-mode classifier **blocks `gh workflow run Release -f
   increment=...`** — agent-forced release version. Rely on the computed increment
   from a real merge.
+- **Consolidation must reach the STRATEGIC index, not just continuity/threads.**
+  A deep `consolidate-docs` pass refreshed continuity, thread records, and the
+  collection README but left `high-level-plan.md` + `roadmap.md` at a mid-program
+  snapshot — the top-level strategic surfaces are easy to forget. Add them to the
+  consolidation sweep. (Caught when the owner asked for a strategic retrospective.)
+- **The sharp strategic question is proportionality, not more rigor.** For a
+  "lightweight template foundation", the VISION's clone/rename/adapt promise is
+  validated by construction, not by a real adoption — so the next high-value move
+  is a first-adoption dry-run (`docs/first-adoption-dry-run.md`), not more gates.
 
 ## Session: 2026-06-18 (final) — program COMPLETE: F6 + Tier 3 + Tier 2 + deps + v0.3.0
 

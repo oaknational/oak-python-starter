@@ -176,4 +176,12 @@ over-block). Full state in the
   release-model experience note. Incoming Practice boxes empty (no-op). Napkin 294 lines —
   under the rotation threshold, left in place; `distilled.md` unchanged
   (durable lessons already homed in docs).
+- 2026-06-18 (final, strategic tier): refreshed the **strategic index** —
+  `high-level-plan.md` (strand table + next intentions) and `roadmap.md` had
+  stayed at a mid-program snapshot that the previous consolidation pass missed
+  (it reached continuity/threads/collection-README but not the top-level index).
+  Both now reflect program completion + the continuous-release model, and reframe
+  the next move as **proving the clone/rename/adapt promise** (new
+  `docs/first-adoption-dry-run.md`) and **watching proportionality**. Also fixed a
+  stale "release-PR automation" line in `docs/using-this-template.md`.
 - The earlier 2026-04-23 source-Practice transfer remains the closed baseline.
