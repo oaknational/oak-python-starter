@@ -183,21 +183,40 @@ All merged to `main` unless noted. `main` is green.
   lychee, mutation testing) — diminishing returns for a template; revisit only
   on explicit request.
 
-## Next Safe Step
+## PROGRAM COMPLETE (2026-06-18 final)
 
-1. **#28, #31, #33, #34 are MERGED; `main` is green. Tier 1b is done except F6.**
-   Resume at **Tier 1b F6** (the deferred `agent_hooks.py` guardrail hardening —
-   read its full entry under Remaining Program Work; get owner intent on the
-   fail-closed semantics first, and pre-verify the modified hook allows a heredoc
-   commit before relying on it).
-2. Then Tier 3 (branch coverage, Hypothesis, version-policy ADR), then the
-   Tier 2 governance checklist.
-3. When the sprint's PRs are all merged, **merge release PR #25 with `--auto`**
-   to cut the accumulated release, then verify the new GitHub Release + the
-   bumped `main` version.
-4. **A deep `consolidate-docs` ran 2026-06-18:** the release-automation plan was
-   archived (doctrine confirmed homed in README/docs/workflow/audit),
-   `completed-plans.md` and the plan indexes refreshed, durable lessons distilled,
-   and a session experience note added. The napkin (222 lines) was not rotated
-   (under threshold). Remaining graduation is light and can wait for a natural
-   break.
+The "highest proportionate bar" program is **done** and **`v0.3.0` is cut** — a
+`v0.3.0` tag plus a GitHub Release carrying the wheel and sdist. Landed in the
+final session:
+
+1. **F6 (#37)** — `agent_hooks.py` hardening. Owner chose **recurse-and-check**.
+   `|` added to `_shell_segments`; `_hook_bypass_reason`/`_blocked_shell_pattern_reason`
+   recurse (quote-aware) into `$(...)`/backtick bodies via `_reason_with_substitutions`.
+   **Key correction:** a first cut stripped quoted-heredoc bodies (to allow a
+   commit message mentioning a blocked command) — REVERTED because a quoted
+   delimiter blocks expansion, not execution, so `bash <<'EOF'…EOF` still runs the
+   body; stripping turned a caught force-push into a missed one (under-block).
+   Heredoc bodies are now never stripped (over-block is safe); a regression test
+   pins the `bash`-fed heredoc force-push as denied.
+2. **Tier 3** — branch coverage + floor 86 + `audit_coverage_contract` branch
+   guard (#38); Hypothesis property tests for the data boundary (#39);
+   single-version **ADR-0002** (#40, owner chose ADR over a matrix).
+3. **Tier 2** — `docs/repository-governance.md` owner-action checklist (#41).
+4. **Dependabot** — #29 (actions, SHAs verified vs upstream tags) + #30 (14 python
+   deps, verified green incl. pip-audit) merged.
+5. **Release** — PR #25 merged via `gh pr merge 25 --squash --auto` → `v0.3.0`.
+
+**Outstanding = owner-only** (in `docs/repository-governance.md`): required status
+checks, release-PR token, Code Quality preview, `v*` tag protection.
+
+**Documented F6 residuals (deferred to a future owner-authorised session):**
+glued control operators (`ok|git push --force` — shlex yields `ok|git` as one
+token; affects all four operators; needs a quote-aware raw tokeniser); bare
+subshells `(...)`; heredoc-prose over-block (a commit message quoting a blocked
+command verbatim inside a heredoc is over-blocked — safe; reword or use `-m`).
+
+**Tier 4 stays deferred** (SBOM, SLSA, Scorecard, dependency-review, lychee,
+mutation testing) — revisit only on explicit owner request.
+
+A `consolidate-docs` / closeout is the next natural step (graduate plans to
+completed, refresh the template-fitness thread now F6 is done).

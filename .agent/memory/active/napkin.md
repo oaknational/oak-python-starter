@@ -1,5 +1,41 @@
 # Napkin
 
+## Session: 2026-06-18 (final) — program COMPLETE: F6 + Tier 3 + Tier 2 + deps + v0.3.0
+
+### What Was Done
+
+- **F6 (#37)** agent-hook hardening: `|` segment split + recurse-and-check into
+  `$(...)`/backtick (quote-aware). **Tier 3**: branch coverage + floor 86 (#38),
+  Hypothesis property tests for the data boundary (#39), single-version ADR-0002
+  (#40). **Tier 2**: `docs/repository-governance.md` owner checklist (#41).
+  **Dependabot** #29 (actions, SHAs verified vs tags) + #30 (14 python deps,
+  verified green) merged. **Release PR #25 merged → `v0.3.0`** (tag + Release +
+  wheel/sdist). Program is done; Tier 4 stays deferred.
+
+### Surprises & corrections (critically assess)
+
+- **Guardrails must prefer over-blocking to under-blocking.** My first F6 cut
+  stripped quoted-delimiter heredoc bodies so a commit message could *mention* a
+  blocked command. WRONG: a quoted delimiter blocks *expansion*, not *execution* —
+  `bash <<'EOF'\n<cmd>\nEOF` still runs the body, so the strip turned a caught
+  force-push into a MISSED one. Reverted; added a regression test pinning the
+  `bash`-fed heredoc force-push as denied. Over-blocking a commit message is safe;
+  under-blocking a force-push is not. The residual (heredoc prose mentioning a
+  blocked command is over-blocked) is documented, not "fixed" unsafely.
+- **The live hook bites your own tooling.** Once heredoc bodies are scanned, a
+  `gh pr edit --body "$(cat <<EOF ... | HUSKY=0 git push ... EOF)"` is denied —
+  use `--body-file` (only the command line is scanned, not file contents), and
+  keep blocked-command sequences out of heredoc commit messages.
+- **Verified, didn't trust:** Explore agent's "validation is idempotent" claim
+  (confirmed empirically — pandas renders midnight `datetime64` to date-only);
+  Dependabot SHAs (matched upstream tags via API); the live `main` ruleset (via
+  API: PR + `code_quality` + no-deletion + non-fast-forward; NO
+  `required_status_checks`, NO tag ruleset). See [[critically-assess-subagents-and-sources]].
+- **Scope discipline on a safety rail:** closed the documented `|`/`$(...)` gaps
+  (owner-authorised) but left glued operators (`ok|git`) + bare subshells as
+  documented residuals for a future authorised session, rather than unilaterally
+  rewriting the tokeniser.
+
 ## Session: 2026-06-18 (later still) — Tier 1b F3/F8/F5/F7 landed, F6 deferred
 
 ### What Was Done

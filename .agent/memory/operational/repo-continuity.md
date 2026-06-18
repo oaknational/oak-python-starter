@@ -1,18 +1,18 @@
 # Repo Continuity
 
-**Last refreshed**: 2026-06-18 (later) — **Tier 1b complete except F6**. `main`
-is green; merged this session: #28 supply-chain pinning + `audit_supply_chain` +
-packaging-schema fix, #31 honest coverage floor (`fail_under` 70→85) +
-`audit_coverage_contract`, #33 WCAG 2.2 AA accessible chart (F8), #34 remote
-size-cap (F5) + rename guide (F7). **Tier 1b F6** (the `agent_hooks.py` guardrail
-hardening) is **DEFERRED** — it modifies the safety hook that runs on every bash
-command, the "fail-closed on `$(`" requirement is ambiguous (a blanket deny
-breaks the agent's own heredoc commits), and a bad edit self-locks; it needs
-owner intent + a dedicated session. Earlier this program: gitleaks (#16),
-coverage→Code Quality (#18), release automation (live-verified, `v0.1.0`/`v0.2.0`),
-pip-audit (#24), codespell (#26). **Next: Tier 1b F6, then Tier 3, then Tier 2,
-then merge release PR #25.** Full state + the F6 analysis + the release-PR
-`--auto` mechanic live in the
+**Last refreshed**: 2026-06-18 (final) — **the "highest proportionate bar"
+program is COMPLETE; `v0.3.0` is cut** (tag + GitHub Release with wheel + sdist).
+`main` is green. Landed this session: **F6** agent-hook hardening (#37, owner
+chose recurse-and-check), **Tier 3** branch coverage + floor 86 (#38), Hypothesis
+property tests (#39), single-version ADR-0002 (#40), **Tier 2** governance
+checklist `docs/repository-governance.md` (#41), **Dependabot** #29 (actions) +
+#30 (14 python deps) verified-and-merged, then **release PR #25 → `v0.3.0`** via
+`--auto`. Earlier in the program: gitleaks (#16), coverage→Code Quality (#18),
+release automation (`v0.1.0`/`v0.2.0`), pip-audit (#24), codespell (#26),
+supply-chain (#28), F3/F8/F5/F7 (#31/#33/#34). **Tier 4 stays deliberately
+deferred.** Remaining work is **owner-only settings** (`docs/repository-governance.md`)
+plus documented F6 residuals (glued shell operators, bare subshells, heredoc-prose
+over-block). Full state in the
 [gate-expansion thread record](threads/quality-gate-surface-expansion.next-session.md).
 
 ## Active Threads
@@ -114,17 +114,18 @@ then merge release PR #25.** Full state + the F6 analysis + the release-PR
 
 ## Next Safe Step
 
-- **Tier 1b F6 — `agent_hooks.py` guardrail hardening (DEFERRED).** Get owner
-  intent on the "fail-closed on `$(`/backticks" semantics first (blanket-deny vs
-  recurse-and-check), then implement in a dedicated session. The full analysis,
-  the two bypasses it closes, the recommended safe design, and the mandatory
-  pre-verification (run the edited hook against a heredoc commit → must ALLOW)
-  are in the gate-expansion thread's Remaining Work entry. Then Tier 3 (branch
-  coverage, Hypothesis, version-policy ADR), Tier 2 (governance checklist).
-  Finally **merge release PR #25 with `--auto`** (bot PR, sits UNSTABLE) to cut
-  the accumulated release. Normal feature PRs merge with
-  `gh pr merge <n> --squash --delete-branch` once green (CI + SonarCloud).
-  Authoritative detail in the gate-expansion thread record.
+- **The program is complete — no queued program work remains.** If resuming:
+  (1) the only outstanding items are **owner-only GitHub settings** in
+  `docs/repository-governance.md` (required status checks, release-PR token, Code
+  Quality preview, `v*` tag protection) — I cannot do these; (2) **F6 residuals**
+  (glued shell operators like `ok|git`, bare subshells `(...)`, and heredoc-prose
+  over-block) are documented and deferred to a future owner-authorised session —
+  fixing the glued-operator one needs a quote-aware raw tokeniser, a
+  safety-critical change; (3) **Tier 4** (SBOM, SLSA, Scorecard, mutation testing)
+  stays deferred unless the owner asks. Steady-state: a new `chore(release)` PR
+  will accrue future feat/fix — merge it with `gh pr merge <n> --squash --auto`
+  (bot PR sits UNSTABLE; `code_quality` is the only required check). Normal PRs
+  merge with `gh pr merge <n> --squash --delete-branch` once green.
 
 ## Open Side-Tasks
 
