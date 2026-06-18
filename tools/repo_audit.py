@@ -572,7 +572,7 @@ def audit_distribution_metadata(root: Path) -> list[str]:
         require(
             failures,
             check,
-            "vulnerabilit" in security.lower(),
+            "vulnerab" in security.lower(),
             "SECURITY.md must document how to report a vulnerability",
         )
     return failures

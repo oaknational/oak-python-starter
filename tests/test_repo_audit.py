@@ -44,6 +44,7 @@ check = [
   "typecheck",
   "lint",
   "markdownlint",
+  "codespell",
   "dependency-hygiene",
   "pip-audit",
   "repo-audit",
@@ -56,6 +57,7 @@ check-ci = [
   "typecheck",
   "lint",
   "markdownlint",
+  "codespell",
   "import-linter",
   "dependency-hygiene",
   "pip-audit",
@@ -112,7 +114,7 @@ gitleaks_version = "v8.30.1"
 GITLEAKS_VERSION = "v8.30.1"
 
 CHECK_CI_SEQUENCE = (
-    "format -> typecheck -> lint -> markdownlint -> import-linter -> "
+    "format -> typecheck -> lint -> markdownlint -> codespell -> import-linter -> "
     "dependency-hygiene -> pip-audit -> repo-audit -> build -> test -> coverage"
 )
 
