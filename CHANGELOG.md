@@ -1,3 +1,9 @@
+## v0.4.0 (2026-06-18)
+
+### Feat
+
+- **release**: continuous release on merge via the Oak Semantic Release Bot (#44)
+
 ## v0.3.0 (2026-06-18)
 
 ### Feat
