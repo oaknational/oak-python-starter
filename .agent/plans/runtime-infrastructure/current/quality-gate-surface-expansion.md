@@ -18,7 +18,7 @@ todos:
     content: "Add a codespell spell-check gate with an en-GB-aware repo wordlist."
     status: completed
   - id: supply-chain-config
-    content: "Commit .github/dependabot.yml (uv + github-actions) and pin action SHAs; optional repo_audit self-check. IN FLIGHT on branch feat/supply-chain-pinning (commit 4c6d603, pushed, no PR); optional audit_supply_chain self-check + PR remain."
+    content: "dependabot.yml (uv + github-actions) + action SHA-pins + the audit_supply_chain repo_audit self-check + an incidental packaging-schema fix (pyproject sources -> object form; removal of the config-shape audit_packaging_contract) — all committed and OPEN as PR #28 (HEAD f5225cb). Remaining: get green (CI + SonarCloud) and merge."
     status: pending
 ---
 

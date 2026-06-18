@@ -1,5 +1,69 @@
 # Napkin
 
+## Session: 2026-06-18 (later) — supply-chain PR #28, SonarCloud gate, multi-agent collision
+
+### What Was Done
+
+- Merged `main` into `feat/supply-chain-pinning` (it predated the #27 handoff;
+  `git rebase` is hook-blocked, so a merge is the history-safe equivalent), added
+  the `audit_supply_chain` self-check (TDD), ran config/security/code reviewers,
+  and opened **PR #28**. Verified all four pinned SHAs match their upstream `vN`.
+- Committed the handed-over packaging-schema fix into PR #28 (the parallel session
+  that made it closed mid-task). Refreshed continuity/thread/plan.
+
+### Surprises & corrections (critically assess — don't rubber-stamp)
+
+- **SonarCloud is a live PR gate nobody documented.** `SonarCloud Code Analysis`
+  is org-level automatic analysis (no in-repo config), evaluating **new-code**
+  conditions. PR #28's first push failed `new_code_smells_severity` (cognitive
+  complexity 22 > 15 + a duplicated `.github` literal). Both were *real* and
+  matched repo doctrine, so I fixed (decomposed the audit) rather than suppressed.
+  Query via SonarQube MCP `get_project_quality_gate_status` /
+  `search_sonar_issues_in_projects`, projectKey `oaknational_oak-python-starter`.
+- **Reviewers earn their keep, but verify their findings.** I adopted the
+  substantive ones (docker `sha256:` digest acceptance — a false-failure bug;
+  job-level reusable-workflow `uses:` — a false-negative; `.yaml` globbing; DRY
+  helper) and rejected YAGNI test suggestions. Each adopted finding got a test.
+- **Two agents in one working tree = hazard.** Another session was concurrently
+  editing the *same files* (`repo_audit.py`, the test, `pyproject.toml`). I did
+  NOT race to commit (would entangle/destroy their half-done work); I paused and
+  asked the owner to sequence. My instinct to "restore" the deleted
+  `audit_packaging_contract` was exactly the mistake their napkin had already
+  recorded and corrected — assessing before acting saved a wrong edit.
+
+## Session: 2026-06-18 — pyproject `sources` schema error → bad-audit removal
+
+### What Was Done
+
+- Editor (*Even Better TOML* → SchemaStore Hatch schema) flagged
+  `tool.hatch.build.targets.wheel.sources = ["src"]` as `["src"] is not of type
+  "object"`. Hatchling accepts both the array and the table form; switched to
+  `sources = { "src" = "" }` (schema-clean, byte-identical wheel — verified).
+- Owner's deeper call: `audit_packaging_contract` was **badly designed** — it
+  asserted *config shape* (`sources == ["src"]`, `only-include == [...]`), which
+  is implementation-detail testing, not behaviour. Removed the audit function,
+  its `DEFAULT_AUDIT_CHECKS` registration, and both test references. All gates green.
+
+### Patterns / Learnings to Remember
+
+- **Don't assert config shape in audits/tests.** Per `testing-strategy.md` ("test
+  behaviour, not implementation details"): pinning a specific config spelling is
+  doubly wrong when multiple spellings are behaviourally identical (here
+  `["src"]` ≡ `{"src"=""}`). A failing such test should send you to delete
+  the check, not "fix" the asserted value (my first instinct, corrected).
+- **The packaging behaviour is already guarded — don't re-add a check.** The
+  `build` gate (`_run_build_probe` → `_run_installed_wheel_smoke_check` in
+  `devtools.py`, run in `check` + `check-ci` + CI) builds the wheel, installs it
+  into a fresh venv, and proves `import oaknational.python_repo_template` resolves
+  to the *installed wheel* (`__file__` not under repo root), then runs both entry
+  points. That is the namespace-preserved/`src/`-stripped proof. Do **not** add a
+  packaging-config audit *or* a redundant pytest namelist test on top of it —
+  both are weaker and violate "smallest validation layer". I nearly added the
+  namelist test after wrongly claiming a gap; the wheel-smoke already covers it.
+- **Use the IDE problems list early.** The error was an editor diagnostic
+  (`mcp__ide__getDiagnostics`), invisible to CLI gates — I burned several CLI
+  probes before checking it.
+
 ## Session: 2026-06-17 (later) — CI, reviewer agents, Markdown gate, PR sweep
 
 ### What Was Done
