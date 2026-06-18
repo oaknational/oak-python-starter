@@ -1,19 +1,27 @@
 # Repo Continuity
 
-**Last refreshed**: 2026-06-17 (later session) — CI is now live on `main`
-(F4 merged), reviewer agents are registered with a Pythonicity lens, a Markdown
-linting gate shipped, and the 6 open Dependabot vulnerability bumps were
-verified green and merged. All 9 open PRs landed; `main` is green. Phase 2
-(F3, F8) and a new quality-gate-surface-expansion workstream are queued.
+**Last refreshed**: 2026-06-18 — mid-program checkpoint (session split for
+context). Since the last refresh: gitleaks gate (#16), coverage→GitHub Code
+Quality (#18), **release automation** (release-PR pattern, live-verified —
+`v0.1.0` + `v0.2.0` released), **pip-audit** gate (#24), **codespell** gate
+(#26) all merged; `main` is green at `v0.2.0`. An owner-approved
+**"highest proportionate bar" program** (4 lanes) is in progress — Tier 1a
+nearly done (supply-chain pinning in flight), Tiers 1b/3/2 queued. Full program
+state + the critical release-PR `--auto` mechanic live in the
+[gate-expansion thread record](threads/quality-gate-surface-expansion.next-session.md).
 
 ## Active Threads
 
-- **template-fitness-remediation** — F4 landed; **F3** (coverage honesty) and
-  **F8** (chart accessibility) remain, then F5/F6/F7. See
-  [`threads/template-fitness-remediation.next-session.md`](threads/template-fitness-remediation.next-session.md).
-- **quality-gate-surface-expansion** — reviewer agents + Markdown gate done;
-  **gitleaks, pip-audit, codespell, supply-chain config** queued. See
+- **quality-gate-surface-expansion → "highest proportionate bar" program**
+  (the live spine) — gitleaks/pip-audit/codespell gates, coverage publishing, and
+  release automation all **done**; supply-chain pinning **in flight** (branch
+  `feat/supply-chain-pinning`, no PR yet); Tier 1b (F3/F8/F5-7), Tier 3
+  (Pythonic), Tier 2 (governance) queued. Tier 4 deliberately deferred. The
+  thread record is the authoritative program handoff. See
   [`threads/quality-gate-surface-expansion.next-session.md`](threads/quality-gate-surface-expansion.next-session.md).
+- **template-fitness-remediation** — F1/F2/F4 landed; **F3/F8/F5-7** remain and
+  are now folded into the program's Tier 1b. See
+  [`threads/template-fitness-remediation.next-session.md`](threads/template-fitness-remediation.next-session.md).
 - Closed references:
   [`threads/review-findings-closeout.next-session.md`](threads/review-findings-closeout.next-session.md),
   [`threads/pythonic-alignment.next-session.md`](threads/pythonic-alignment.next-session.md),
@@ -22,19 +30,21 @@ verified green and merged. All 9 open PRs landed; `main` is green. Phase 2
 
 ## Branch-Primary Lane State
 
-- Phase 1 landed via PRs #7/#8/#9. This session merged **9 PRs**: F4 CI workflow
-  (#11), reviewer agents (#12), Markdown gate (#13), and 6 Dependabot vulnerability
-  bumps (#1–#6: requests, urllib3, idna, pillow, pygments, pytest).
-- `main` is green (remote `CI [push]` success + local `check-ci`). 0 open PRs.
-- Current metrics (2026-06-17): **82 tests, 88.10% coverage**. Coverage
-  `fail_under` is still 70 pending F3 (raise toward ~85).
+- Merged this program: #16 gitleaks, #18 coverage→Code Quality, #19/#20/#22
+  release automation, #24 pip-audit, #26 codespell. `main` is green at `v0.2.0`.
+- **Open: release PR #25 `chore(release): v0.3.0`** (standing, intentionally
+  accumulating — merge with `--auto` at sprint end). **Pushed, no PR: branch
+  `feat/supply-chain-pinning`** (action SHA-pins + dependabot.yml).
+- Releases cut + verified: **`v0.1.0`, `v0.2.0`** (wheel + sdist attached).
+- Coverage `fail_under` still 70 (achieved ~88); raising it is Tier 1b / F3.
 
 ## Current Session Focus
 
-- 2026-06-17 (later): shipped CI, reviewer agents, the Markdown gate; merged all
-  open PRs (including the vuln bumps); updated all planning/continuation surfaces.
-- Next: F3 → F8, plus the queued gate types (gitleaks, pip-audit, codespell,
-  supply-chain config).
+- 2026-06-18: drove the gap analysis + the owner-approved 4-lane program; landed
+  pip-audit + codespell; checkpointing mid-program (supply-chain in flight) to
+  split the remaining work across sessions and avoid low-context burden.
+- Next: finish supply-chain PR → Tier 1b (F3/F8/F5-7) → Tier 3 → Tier 2; then
+  merge release PR #25. Authoritative detail in the gate-expansion thread record.
 
 ## Repo-Wide Invariants / Non-Goals
 
@@ -58,19 +68,22 @@ verified green and merged. All 9 open PRs landed; `main` is green. Phase 2
 
 ## Next Safe Step
 
-- Resume Phase 2 with **F3** (coverage honesty), then **F8** (chart
-  accessibility); and/or start the next gate type (**gitleaks**). Each its own
-  feature branch off the current `main` + PR. Details in the two thread records
-  and the two active plans.
+- Open the **supply-chain PR** from `feat/supply-chain-pinning` (optionally add
+  the `audit_supply_chain` self-check first), verify green, merge. Then Tier 1b
+  (F3 → F8 → F5/6/7), Tier 3 (branch coverage, Hypothesis, version-policy ADR),
+  Tier 2 (governance checklist). Finally **merge release PR #25 with `--auto`**
+  to cut the accumulated release. Authoritative detail + the `--auto`/UNSTABLE
+  mechanic are in the gate-expansion thread record.
 
 ## Open Side-Tasks
 
-- Dependabot now has **0 open PRs** (the 6 vulnerability bumps were merged this
-  session), so the F5 supply-chain concern is partially addressed; committing a
-  `dependabot.yml` and pinning action SHAs remains queued in the gate-expansion
-  plan. Note: the push warned of 11 vulnerability alerts (4 high, 6 moderate,
-  1 low) before the merges; the 6 bumps do **not** provably clear all 11 —
-  re-check the Dependabot/security-alert count, do not assume it is zero.
+- **Owner actions (settings, not code):** add "Quality gates" + "Secret scanning"
+  to the ruleset's required checks; provide a release-PR PAT/App token; enable
+  GitHub Code Quality preview; add `v*` tag protection. (See thread record.)
+- **Deferred to fresh context:** a deep `consolidate-docs` graduation (home
+  durable doctrine, archive the done release-automation plan, rotate the napkin).
+- Re-check the Dependabot security-alert count before assuming zero open vulns
+  (pip-audit now scans the locked set in `check-ci`, so new advisories surface).
 
 ## Deep Consolidation Status
 
