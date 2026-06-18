@@ -16,6 +16,11 @@ Install the distribution as `oaknational-python-repo-template` and import it as
 `oaknational.python_repo_template`. That is the baseline convention this repo
 uses to define "Pythonic within Oak".
 
+Adopting this template for a new project? See
+[docs/using-this-template.md](docs/using-this-template.md) for the ordered rename
+steps — `repo-audit` pins the template identity, so it doubles as a checklist
+that flags any surface you miss.
+
 The package ships `py.typed`, and the repo type-checks `src/`, `tests/`, and
 `tools/` under explicit strict `pyright` settings.
 
