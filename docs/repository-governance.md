@@ -10,42 +10,32 @@ and cannot be expressed in the repo. This page is the canonical owner-action
 checklist for them. An adopter of this template should work through it once for
 their own repository.
 
-## Already enforced by the `main` ruleset
+## Already enforced in GitHub settings
 
-The active "Protect default branch" ruleset already requires:
+The active rulesets enforce:
 
-- a **pull request** to change `main` (no direct pushes);
-- the **CodeQL `code_quality`** check to pass before merge;
-- **no branch deletion** and **no force-push** (non-fast-forward) on `main`.
+- a **pull request** to change `main` (no direct pushes), and **no branch
+  deletion** or **force-push** on `main`;
+- **required status checks** before merge: `Quality gates`, `Secret scanning
+  (gitleaks)`, `CodeQL`, and `SonarCloud Code Analysis` — so `main` cannot go red
+  and still merge;
+- **release-tag protection**: a `v*` tag ruleset (default rules) so release tags
+  cannot be force-moved or deleted.
+
+The **Oak Semantic Release Bot** GitHub App is wired for continuous release: the
+`RELEASE_APP_CLIENT_ID` / `RELEASE_APP_PRIVATE_KEY` repo secrets are set and the
+app is a **bypass actor** on the `main` ruleset, so it can push the bump commit +
+tag to protected `main`. If the app's key is rotated, or it is removed as a
+bypass actor, the release push will be rejected. See
+[Releases](dev-tooling.md#releases).
 
 ## Owner actions outstanding
 
-These are settings changes a repository owner must make by hand. Each closes a
-gap the in-repo gates structurally cannot.
-
-1. **Make CI a real merge gate (highest priority).**
-   Add **`Quality gates`** and **`Secret scanning (gitleaks)`** to the `main`
-   ruleset's *required status checks*. Today the ruleset requires a PR and the
-   CodeQL check, but **not** these two — so `main` can go red and a PR can still
-   merge. This is the single biggest enforcement gap.
-
-2. **Release bot (done — keep it wired).**
-   Continuous release pushes the bump commit + tag straight to protected `main`
-   via the **Oak Semantic Release Bot** GitHub App. This needs the
-   `RELEASE_APP_ID` / `RELEASE_APP_PRIVATE_KEY` repo secrets **and** the app added
-   as a **bypass actor** on the `main` ruleset (both are in place). If the app's
-   key is rotated or it is removed as a bypass actor, the release push will be
-   rejected. See [Releases](dev-tooling.md#releases).
-
-3. **Enable GitHub Code Quality (organisation preview).**
+1. **Enable GitHub Code Quality (organisation preview).**
    Coverage is uploaded as Cobertura on every PR, but the upload runs with
    `fail-on-error: false`, so until the org enables the Code Quality preview it
    is a harmless no-op rather than a visible PR signal. See
    [Coverage reporting](dev-tooling.md#coverage-reporting).
-
-4. **Protect release tags.**
-   Add a tag ruleset for `v*` so release tags cannot be force-moved or deleted.
-   There is currently no tag ruleset; only the branch ruleset above exists.
 
 ## Why these stay manual
 

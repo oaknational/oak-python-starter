@@ -174,12 +174,13 @@ uv run cz check --message "feat: add truthful commit-msg enforcement"
 
 ## Releases
 
-Releases are **continuous**: every merge to `main` advances the version. After
+Releases are **continuous**, and originate **only** from a merge to `main`. After
 CI passes on `main`, the Release workflow computes the Conventional Commits
 increment, and the **Oak Semantic Release Bot** (a `main`-ruleset bypass actor)
 bumps `pyproject.toml`, `uv.lock`, and `CHANGELOG.md`, commits + tags `vX.Y.Z`,
 pushes straight to `main`, and publishes a GitHub Release with the built wheel +
-sdist attached. The bump commit carries `[skip ci]` so it does not loop.
+sdist attached. The bump commit carries `[skip ci]` so it does not loop. There is
+no manual release trigger.
 
 The bump level is computed by Commitizen with this repo's policy:
 
@@ -187,17 +188,16 @@ The bump level is computed by Commitizen with this repo's policy:
 | --- | --- |
 | `feat`, `fix` | minor |
 | everything else (`chore`, `docs`, `perf`, `refactor`, `build`, `ci`, …) | patch |
-| `!` / `BREAKING CHANGE` | no auto-release — a **major** is required |
+| `!` / `BREAKING CHANGE` | no auto-release |
 
-**Major versions are manual.** A breaking marker makes the auto-release stand
-down; cut the major deliberately via the Release workflow's *Run workflow* button
-(`increment = MAJOR`). To stop a breaking marker landing by accident (which would
-silently halt the auto-release), the `prevent-accidental-major` commit-msg hook
-rejects `type!:` / `BREAKING CHANGE` in commits. Releases publish to GitHub
-Releases only (no PyPI).
+**Major versions are not automated.** A breaking marker makes the auto-release
+stand down, and the `prevent-accidental-major` commit-msg hook rejects `type!:` /
+`BREAKING CHANGE` in commits so one cannot land by accident. On the rare occasion
+a major is warranted, a human engineer cuts it strategically, outside this repo's
+automation. Releases publish to GitHub Releases only (not PyPI).
 
-The workflow needs the `RELEASE_APP_ID` / `RELEASE_APP_PRIVATE_KEY` secrets and
-the bot added as a ruleset bypass actor — see
+The workflow needs the `RELEASE_APP_CLIENT_ID` / `RELEASE_APP_PRIVATE_KEY`
+secrets and the bot added as a ruleset bypass actor — see
 [docs/repository-governance.md](docs/repository-governance.md).
 
 ## Governance

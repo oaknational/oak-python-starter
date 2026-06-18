@@ -196,17 +196,20 @@ uv run cz check --message "docs: explain the Commitizen workflow"
   reads it and computes the increment, which the workflow applies via
   `cz bump --increment`
 - the **Oak Semantic Release Bot** GitHub App (a `main`-ruleset bypass actor)
-  authenticates via `actions/create-github-app-token` (secrets `RELEASE_APP_ID`
-  - `RELEASE_APP_PRIVATE_KEY`); the workflow bumps `pyproject.toml`, `uv.lock`,
-  and `CHANGELOG.md`, commits + tags `vX.Y.Z`, pushes straight to `main`, then
-  `uv build`s and creates the GitHub Release with the wheel + sdist attached
+  authenticates via `actions/create-github-app-token` (secrets
+  `RELEASE_APP_CLIENT_ID` and `RELEASE_APP_PRIVATE_KEY`); the workflow bumps
+  `pyproject.toml`, `uv.lock`, and `CHANGELOG.md`, commits + tags `vX.Y.Z`, pushes
+  straight to `main`, then `uv build`s and creates the GitHub Release with the
+  wheel + sdist attached
 - the bump commit is marked `[skip ci]` so pushing it to `main` does not
   re-trigger CI → Release (an infinite loop)
-- **major releases are manual**: a `!`/`BREAKING CHANGE` marker makes the
-  auto-release stand down; cut the major via the workflow's `workflow_dispatch`
-  (`increment = MAJOR`). The `prevent-accidental-major` commit-msg hook
+- there is **no manual release trigger** (no `workflow_dispatch`): releases
+  originate only from a merge to `main`, which `audit_release_workflow` enforces
+- **major releases are not automated**: a `!`/`BREAKING CHANGE` marker makes the
+  auto-release stand down, and the `prevent-accidental-major` commit-msg hook
   (`tools/prevent_accidental_major.py`) rejects the marker at commit time so it
-  cannot land by accident and silently halt the auto-release
+  cannot land by accident and silently halt releases. The rare major is cut by a
+  human engineer outside this repo's automation
 - the version stays committed in the tree; releases publish to GitHub Releases
   only (no PyPI). `audit_release_workflow` keeps the workflow (trigger, `cz bump`,
   the increment tool, the `[skip ci]` loop guard) and the bump policy honest

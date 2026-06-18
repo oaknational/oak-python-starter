@@ -1,29 +1,24 @@
 name: Release
 
-# Continuous release on merge to main. After CI passes on main, compute the
-# Conventional Commits increment (custom policy via tools/release_increment.py),
-# bump pyproject + uv.lock + CHANGELOG with Commitizen, then commit + tag and push
-# straight to the protected `main` branch using the Oak Semantic Release Bot
-# GitHub App token (a ruleset bypass actor). The bump commit carries `[skip ci]`
-# so it does not re-trigger CI and loop. Every qualifying merge therefore advances
-# the version and publishes a GitHub Release with the wheel + sdist.
+# Continuous release on merge to main, and ONLY from a merge to main. After CI
+# passes on main, compute the Conventional Commits increment (custom policy via
+# tools/release_increment.py), bump pyproject + uv.lock + CHANGELOG with
+# Commitizen, then commit + tag and push straight to the protected `main` branch
+# using the Oak Semantic Release Bot GitHub App token (a ruleset bypass actor).
+# The bump commit carries `[skip ci]` so it does not re-trigger CI and loop. Every
+# qualifying merge therefore advances the version and publishes a GitHub Release
+# with the wheel + sdist.
 #
-# Major releases stay manual: a `!`/`BREAKING CHANGE` marker makes the auto-release
-# stand down (and tools/prevent_accidental_major.py blocks the marker at commit
-# time); cut the major deliberately via "Run workflow" with increment = MAJOR.
+# There is deliberately no manual trigger: releases originate only from the PR
+# workflow. Major releases are NOT automated — a `!`/`BREAKING CHANGE` marker
+# makes the auto-release stand down (and tools/prevent_accidental_major.py blocks
+# the marker at commit time); the rare major is cut by a human engineer outside
+# this repo's automation.
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      increment:
-        description: "Release increment to force (use MAJOR for a deliberate major release)"
-        type: choice
-        options: [MAJOR, MINOR, PATCH]
-        default: MAJOR
-        required: true
 
 # Least privilege by default; the job widens to what it needs.
 permissions:
@@ -37,10 +32,8 @@ concurrency:
 jobs:
   release:
     name: Release
-    # Only release after CI succeeded on main, or on a deliberate manual dispatch.
-    if: >-
-      github.event_name == 'workflow_dispatch'
-      || github.event.workflow_run.conclusion == 'success'
+    # Only release after CI succeeded on main.
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -51,7 +44,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
         with:
-          app-id: ${{ secrets.RELEASE_APP_ID }}
+          client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Check out full history and tags
@@ -78,17 +71,12 @@ jobs:
 
       - name: Compute the release increment
         id: increment
-        env:
-          FORCED_INCREMENT: ${{ inputs.increment }}
-          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           version=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
           prev="v${version}"
           echo "previous=${prev}" >> "$GITHUB_OUTPUT"
-          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
-            increment="${FORCED_INCREMENT}"
-          elif git rev-parse -q --verify "refs/tags/${prev}" >/dev/null; then
+          if git rev-parse -q --verify "refs/tags/${prev}" >/dev/null; then
             # cz_conventional_commits ignores [tool.commitizen].bump_map, so we
             # compute the increment from that single policy source ourselves.
             increment="$(git log "${prev}..HEAD" --pretty=format:'%B%x00' | uv run python tools/release_increment.py)"
@@ -103,14 +91,14 @@ jobs:
           fi
           case "${increment}" in
             BREAKING)
-              echo "::warning::Breaking change since ${prev}; cut a major via Run workflow (increment = MAJOR). Auto-release stood down."
+              echo "::warning::Breaking change since ${prev}; auto-release stood down. A major is cut by a human engineer outside this repo's automation."
               echo "release=false" >> "$GITHUB_OUTPUT"
               ;;
             NONE)
               echo "No releasable commits since ${prev}."
               echo "release=false" >> "$GITHUB_OUTPUT"
               ;;
-            MAJOR | MINOR | PATCH)
+            MINOR | PATCH)
               echo "increment=${increment}" >> "$GITHUB_OUTPUT"
               echo "mode=bump" >> "$GITHUB_OUTPUT"
               echo "release=true" >> "$GITHUB_OUTPUT"
