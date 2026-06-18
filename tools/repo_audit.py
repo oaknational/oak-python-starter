@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 import sys
 import tomllib
 from collections.abc import Callable, Sequence
@@ -591,25 +592,44 @@ def _workflow_triggers(workflow: dict[object, object]) -> set[str]:
     return set()
 
 
-def _workflow_run_commands(workflow: dict[object, object]) -> list[str]:
-    # Returns each step's raw `run` payload, which may be a multi-line block.
+def _workflow_jobs(workflow: dict[object, object]) -> list[dict[object, object]]:
     jobs = workflow.get("jobs")
     if not isinstance(jobs, dict):
         return []
-    commands: list[str] = []
-    for job in cast(dict[object, object], jobs).values():
-        if not isinstance(job, dict):
-            continue
-        steps = cast(dict[object, object], job).get("steps")
+    return [job for job in cast(dict[object, object], jobs).values() if isinstance(job, dict)]
+
+
+def _workflow_step_values(workflow: dict[object, object], key: str) -> list[str]:
+    # Returns the string value of `key` from every step across every job.
+    values: list[str] = []
+    for job in _workflow_jobs(workflow):
+        steps = job.get("steps")
         if not isinstance(steps, list):
             continue
         for step in cast(list[object], steps):
             if not isinstance(step, dict):
                 continue
-            run = cast(dict[object, object], step).get("run")
-            if isinstance(run, str):
-                commands.append(run)
-    return commands
+            value = cast(dict[object, object], step).get(key)
+            if isinstance(value, str):
+                values.append(value)
+    return values
+
+
+def _workflow_run_commands(workflow: dict[object, object]) -> list[str]:
+    # Each step's raw `run` payload, which may be a multi-line block.
+    return _workflow_step_values(workflow, "run")
+
+
+def _workflow_uses(workflow: dict[object, object]) -> list[str]:
+    # Every `uses:` reference in the workflow. GitHub Actions allows `uses:` both
+    # at the step level (an action) and at the job level (a reusable-workflow
+    # call); both must be pinned, so we gather both.
+    references = _workflow_step_values(workflow, "uses")
+    for job in _workflow_jobs(workflow):
+        job_uses = job.get("uses")
+        if isinstance(job_uses, str):
+            references.append(job_uses)
+    return references
 
 
 def _workflow_path(root: Path, name: str) -> Path:
@@ -737,6 +757,101 @@ def audit_release_workflow(root: Path) -> list[str]:
             ),
         )
 
+    return failures
+
+
+# Git always emits lowercase hex, so the pattern is lowercase-only on purpose.
+_COMMIT_SHA = re.compile(r"[0-9a-f]{40}")
+# A `docker://` action pinned to an image digest is genuinely immutable.
+_DOCKER_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+
+
+def _is_pinned_ref(ref: str) -> bool:
+    return bool(_COMMIT_SHA.fullmatch(ref) or _DOCKER_DIGEST.fullmatch(ref))
+
+
+def audit_supply_chain(root: Path) -> list[str]:
+    check = "supply-chain"
+    failures: list[str] = []
+
+    # Every GitHub Actions `uses:` reference across all workflows must be pinned
+    # to an immutable ref (a full commit SHA, or a sha256 image digest for
+    # `docker://` actions), not a mutable tag or branch, so a retagged or
+    # compromised upstream release cannot silently change what CI runs. Local
+    # composite actions (`./...`, with no `@`) are first-party and are exempt.
+    workflows_dir = root / ".github" / "workflows"
+    if not workflows_dir.is_dir():
+        require(
+            failures,
+            check,
+            False,
+            ".github/workflows/ must exist for supply-chain pin enforcement",
+        )
+        return failures
+    workflow_paths = sorted({*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml")})
+    for workflow_path in workflow_paths:
+        workflow = _load_yaml(workflow_path, failures, check)
+        if not isinstance(workflow, dict):
+            continue
+        relative = _relative_path(workflow_path)
+        for uses in _workflow_uses(cast(dict[object, object], workflow)):
+            if "@" not in uses:
+                continue
+            ref = uses.rsplit("@", 1)[1]
+            require(
+                failures,
+                check,
+                _is_pinned_ref(ref),
+                f"{relative}: `uses: {uses}` must be pinned to a commit SHA "
+                "(40 hex chars) or a sha256 digest, not a tag or branch",
+            )
+
+    # Dependabot must watch both ecosystems this repo pins, so the SHA pins above
+    # and the locked Python dependencies still receive scheduled update PRs.
+    dependabot_path = root / ".github" / "dependabot.yml"
+    if not dependabot_path.exists():
+        require(
+            failures,
+            check,
+            False,
+            ".github/dependabot.yml must exist to schedule dependency updates",
+        )
+        return failures
+    dependabot = _load_yaml(dependabot_path, failures, check)
+    if dependabot is None:
+        return failures
+    if not isinstance(dependabot, dict):
+        require(
+            failures,
+            check,
+            False,
+            ".github/dependabot.yml must define a top-level mapping",
+        )
+        return failures
+    mapping = cast(dict[object, object], dependabot)
+    require(
+        failures,
+        check,
+        mapping.get("version") == 2,
+        ".github/dependabot.yml must declare version: 2",
+    )
+    updates = mapping.get("updates")
+    ecosystems: set[str] = set()
+    if isinstance(updates, list):
+        for entry in cast(list[object], updates):
+            if not isinstance(entry, dict):
+                continue
+            ecosystem = cast(dict[object, object], entry).get("package-ecosystem")
+            if isinstance(ecosystem, str):
+                ecosystems.add(ecosystem)
+    for required in ("uv", "github-actions"):
+        require(
+            failures,
+            check,
+            required in ecosystems,
+            f".github/dependabot.yml must schedule updates for the {required!r} "
+            f"package-ecosystem (found: {sorted(ecosystems)})",
+        )
     return failures
 
 
@@ -1981,6 +2096,7 @@ DEFAULT_AUDIT_CHECKS: tuple[AuditFunction, ...] = (
     audit_distribution_metadata,
     audit_ci_workflow,
     audit_release_workflow,
+    audit_supply_chain,
     audit_secret_scanning,
     audit_gate_scripts,
     audit_packaging_contract,

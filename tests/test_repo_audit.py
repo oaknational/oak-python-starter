@@ -1366,6 +1366,181 @@ line 10
     assert "must stay thin rather than copying canonical content" in "\n".join(failures)
 
 
+_PINNED_CI_WORKFLOW = """
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - run: uv run python -m oaknational.python_repo_template.devtools check-ci
+"""
+
+_DEPENDABOT_CONFIG = """
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+"""
+
+
+def _write_supply_chain_world(
+    root: Path,
+    *,
+    ci_workflow: str = _PINNED_CI_WORKFLOW,
+    dependabot: str | None = _DEPENDABOT_CONFIG,
+) -> None:
+    _write(root / ".github" / "workflows" / "ci.yml", ci_workflow)
+    if dependabot is not None:
+        _write(root / ".github" / "dependabot.yml", dependabot)
+
+
+def test_audit_supply_chain_accepts_sha_pinned_actions_and_dependabot(tmp_path: Path) -> None:
+    _write_supply_chain_world(tmp_path)
+
+    assert subject.audit_supply_chain(tmp_path) == []
+
+
+def test_audit_supply_chain_rejects_a_tag_pinned_action(tmp_path: Path) -> None:
+    _write_supply_chain_world(
+        tmp_path,
+        ci_workflow="""
+name: CI
+on: [push]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+""",
+    )
+
+    joined = "\n".join(subject.audit_supply_chain(tmp_path))
+
+    assert "actions/checkout@v4" in joined
+    assert "must be pinned to a commit SHA" in joined
+
+
+def test_audit_supply_chain_requires_a_dependabot_config(tmp_path: Path) -> None:
+    _write_supply_chain_world(tmp_path, dependabot=None)
+
+    joined = "\n".join(subject.audit_supply_chain(tmp_path))
+
+    assert ".github/dependabot.yml" in joined
+    assert "must exist" in joined
+
+
+def test_audit_supply_chain_requires_dependabot_version_2(tmp_path: Path) -> None:
+    _write_supply_chain_world(
+        tmp_path,
+        dependabot="""
+version: 1
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+""",
+    )
+
+    joined = "\n".join(subject.audit_supply_chain(tmp_path))
+
+    assert "version: 2" in joined
+
+
+def test_audit_supply_chain_rejects_a_tag_pinned_reusable_workflow(tmp_path: Path) -> None:
+    # A job-level `uses:` (a reusable-workflow call) must be pinned too, not just
+    # step-level action references.
+    _write_supply_chain_world(
+        tmp_path,
+        ci_workflow="""
+name: CI
+on: [push]
+jobs:
+  call:
+    uses: some-org/repo/.github/workflows/reusable.yml@v1
+""",
+    )
+
+    joined = "\n".join(subject.audit_supply_chain(tmp_path))
+
+    assert "reusable.yml@v1" in joined
+    assert "must be pinned" in joined
+
+
+def test_audit_supply_chain_accepts_a_docker_digest_and_local_action(tmp_path: Path) -> None:
+    # A `docker://` ref pinned to a sha256 digest is genuinely pinned, and a
+    # local composite action (`./...`, no `@`) is first-party and exempt.
+    digest = "sha256:" + "a" * 64
+    _write_supply_chain_world(
+        tmp_path,
+        ci_workflow=f"""
+name: CI
+on: [push]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/local
+      - uses: docker://ghcr.io/owner/image@{digest}
+""",
+    )
+
+    assert subject.audit_supply_chain(tmp_path) == []
+
+
+def test_audit_supply_chain_scans_yaml_extension_workflows(tmp_path: Path) -> None:
+    # GitHub Actions accepts both .yml and .yaml; a tag pin in a .yaml workflow
+    # must still be caught.
+    _write_supply_chain_world(tmp_path)
+    _write(
+        tmp_path / ".github" / "workflows" / "extra.yaml",
+        """
+name: Extra
+on: [push]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+""",
+    )
+
+    joined = "\n".join(subject.audit_supply_chain(tmp_path))
+
+    assert "extra.yaml" in joined
+    assert "actions/checkout@v4" in joined
+
+
+def test_audit_supply_chain_requires_both_pinned_ecosystems(tmp_path: Path) -> None:
+    _write_supply_chain_world(
+        tmp_path,
+        dependabot="""
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+""",
+    )
+
+    joined = "\n".join(subject.audit_supply_chain(tmp_path))
+
+    assert "github-actions" in joined
+
+
 def test_main_reports_success_and_failure() -> None:
     stdout = StringIO()
     subject.main(root=subject.REPO_ROOT, stdout=stdout)
