@@ -295,6 +295,103 @@ def test_evaluate_hook_policy_denies_repo_canonical_prohibited_shell_commands() 
         )
 
 
+def test_evaluate_hook_policy_denies_substitution_and_pipe_bypasses() -> None:
+    """F6: $(...)/backtick substitutions and piped stages must not slip the rail."""
+    policy = subject.load_policy()
+    force_push_reason = "Force push is prohibited here because it overwrites remote history."
+
+    cases = [
+        # $(...) command substitution: the trailing ")" used to break the anchor.
+        ("echo $(git push --force)", force_push_reason),
+        ("echo $(git stash)", "git stash is prohibited here because it can lose uncommitted work."),
+        (
+            "echo $(git commit --no-pre-commit -m test)",
+            "--no-pre-commit is prohibited here because it bypasses pre-commit hooks.",
+        ),
+        # Backtick command substitution.
+        ("echo `git push --force origin main`", force_push_reason),
+        # Nested substitution is recovered by recursing into each inner command.
+        (
+            "echo $(echo $(git stash))",
+            "git stash is prohibited here because it can lose uncommitted work.",
+        ),
+        # Piped stages: the bypass lives on a segment whose first token is not git.
+        (
+            "true | HUSKY=0 git push origin main",
+            "HUSKY=0 is prohibited here because it disables git hooks.",
+        ),
+        (
+            "echo ok | git -c core.hooksPath=/dev/null commit -m test",
+            HOOKS_PATH_BYPASS_REASON,
+        ),
+        ("echo ok | git push --force origin main", force_push_reason),
+        # Double quotes do NOT suppress command substitution, so it stays checked.
+        ('echo "$(git push --force)"', force_push_reason),
+        # Unterminated substitution fails safe-side: the remainder is still checked.
+        ("echo $(git push --force", force_push_reason),
+        # A live $(...) inside an unquoted heredoc body must still be caught.
+        ("cat <<EOF\n$(git push --force)\nEOF", force_push_reason),
+        # A quoted delimiter blocks expansion but NOT execution: bash still runs
+        # the body, so heredoc bodies are never stripped and this stays denied.
+        ("bash <<'EOF'\ngit push --force\nEOF", force_push_reason),
+    ]
+
+    for command, reason in cases:
+        outcome = subject.evaluate_hook_policy(
+            policy,
+            subject.HookContext(
+                platform="github",
+                event="pre-tool",
+                shell_command=command,
+                session_source=None,
+            ),
+        )
+
+        assert outcome == subject.HookOutcome(
+            decision="deny",
+            reason=reason,
+            message=None,
+        ), command
+
+
+def test_evaluate_hook_policy_allows_benign_substitutions_and_pipes() -> None:
+    """F6: recurse-and-check must not block legitimate substitutions or pipes."""
+    policy = subject.load_policy()
+    heredoc_commit = (
+        "git commit -m \"$(cat <<'EOF'\n"
+        "feat: harden the agent hook guardrail\n"
+        "\n"
+        "Close the substitution and pipe bypasses.\n"
+        "EOF\n"
+        ')"'
+    )
+    safe_commands = [
+        heredoc_commit,
+        "echo $(date)",
+        "echo $(git status)",
+        "git status | grep modified",
+        "git log --oneline | head -n 20",
+        # Single quotes suppress substitution: a mention is text, not execution.
+        "git commit -m 'explain why $(git clean -fd) must never run in CI'",
+        # A single quote inside double quotes is literal, so $(date) stays active.
+        'echo "it\'s $(date)"',
+        # Quoted parens in a substitution body must not close it early.
+        "echo $(awk -F'(' '{print $1}')",
+        # Empty substitution is a no-op, not a spurious recursion.
+        "echo $()",
+    ]
+    for command in safe_commands:
+        assert subject.evaluate_hook_policy(
+            policy,
+            subject.HookContext(
+                platform="claude",
+                event="pre-tool",
+                shell_command=command,
+                session_source=None,
+            ),
+        ) == subject.HookOutcome(decision="allow", reason=None, message=None), command
+
+
 def test_evaluate_hook_policy_allows_safe_shell_commands_and_safe_mentions() -> None:
     policy = subject.load_policy()
 
