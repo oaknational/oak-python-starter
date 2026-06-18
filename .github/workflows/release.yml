@@ -42,12 +42,12 @@ jobs:
       pull-requests: write
     steps:
       - name: Check out full history and tags
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
@@ -142,11 +142,11 @@ jobs:
           echo "version=${next}" >> "$GITHUB_OUTPUT"
           echo "prepared=true" >> "$GITHUB_OUTPUT"
 
-      # SHA-pin this third-party action in the queued supply-chain PR (it runs
-      # with the job's contents/pull-requests write token).
+      # Pinned to a commit SHA (this action runs with the job's
+      # contents/pull-requests write token); Dependabot bumps it via the comment.
       - name: Open or refresh the release PR
         if: steps.phase.outputs.phase == 'prepare' && steps.prepare.outputs.prepared == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
         with:
           branch: release/next
           base: main
