@@ -81,6 +81,16 @@ Its package identity follows the Oak Python convention:
   is relaxed to siblings-only, so structural rules such as `MD040` stay on
 - `check` and `check-ci` both run the markdown lint after the Ruff lint
 
+## Spell checking
+
+- `codespell` spell-checks the tracked text estate; it is a blocking step in
+  `check` and `check-ci` (right after the Markdown lint)
+- direct command: `uv run codespell .`
+- British spellings pass codespell's default dictionary, so no en-GB conversion
+  fires; configuration lives in `[tool.codespell]` in `pyproject.toml`
+- `skip` excludes lock files, caches, and binary artefacts; add repo jargon to
+  `ignore-words-list` only when codespell genuinely flags a real non-word
+
 ## Secret scanning
 
 - `gitleaks` performs secret scanning: it looks for committed credentials,

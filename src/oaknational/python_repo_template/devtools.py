@@ -447,6 +447,7 @@ def _step_runners(
         "lint-fix": ["ruff", "check", *PYTHON_TARGETS, "--fix", "--ignore-noqa"],
         "markdownlint": ["pymarkdown", "scan", "-r", "--respect-gitignore", "."],
         "markdownlint-fix": ["pymarkdown", "fix", "-r", "--respect-gitignore", "."],
+        "codespell": ["codespell", "."],
         "import-linter": ["lint-imports"],
         "dependency-hygiene": ["deptry", "."],
         "pip-audit": _run_pip_audit,

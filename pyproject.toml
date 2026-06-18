@@ -73,6 +73,7 @@ dev = [
   "types-requests>=2.32.4.20250913",
   "pymarkdownlnt>=0.9.38",
   "pip-audit>=2.7.3",
+  "codespell>=2.3.0",
 ]
 
 [tool.deptry]
@@ -80,6 +81,12 @@ known_first_party = ["oaknational"]
 
 [tool.deptry.per_rule_ignores]
 DEP002 = ["pyarrow"]
+
+[tool.codespell]
+# en-GB spell check. British spellings pass codespell's default dictionary, so
+# no en-GB conversion fires and no ignore list is needed yet. Add repo jargon to
+# `ignore-words-list` only when codespell genuinely flags a real non-word.
+skip = "*.lock,./.git,./.venv,./dist,./build,./.ruff_cache,./.pytest_cache,./htmlcov,**/__pycache__,*.png,*.parquet"
 
 [tool.hatch.build.targets.wheel]
 only-include = ["src/oaknational/python_repo_template"]
