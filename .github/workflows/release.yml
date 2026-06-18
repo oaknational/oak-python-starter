@@ -93,8 +93,13 @@ jobs:
             # compute the increment from that single policy source ourselves.
             increment="$(git log "${prev}..HEAD" --pretty=format:'%B%x00' | uv run python tools/release_increment.py)"
           else
-            # The committed version has no tag yet (bootstrap) — release it as-is.
-            increment="PATCH"
+            # The committed version is not tagged yet (a fresh fork of this
+            # template): release it as-is so the adopter's first version is the
+            # one they chose, rather than bumping past it.
+            echo "No tag for committed ${prev}; releasing it as the bootstrap version."
+            echo "mode=bootstrap" >> "$GITHUB_OUTPUT"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           case "${increment}" in
             BREAKING)
@@ -107,6 +112,7 @@ jobs:
               ;;
             MAJOR | MINOR | PATCH)
               echo "increment=${increment}" >> "$GITHUB_OUTPUT"
+              echo "mode=bump" >> "$GITHUB_OUTPUT"
               echo "release=true" >> "$GITHUB_OUTPUT"
               ;;
             *)
@@ -115,30 +121,42 @@ jobs:
               ;;
           esac
 
-      - name: Bump, tag, and push to main
-        id: bump
+      - name: Apply the release
+        id: release_step
         if: steps.increment.outputs.release == 'true'
         env:
+          MODE: ${{ steps.increment.outputs.mode }}
           INCREMENT: ${{ steps.increment.outputs.increment }}
           PREV: ${{ steps.increment.outputs.previous }}
         run: |
           set -euo pipefail
-          uv run cz bump --increment "${INCREMENT}" --changelog --files-only --yes
-          version=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
-          if [ -z "${version}" ]; then echo "could not read the bumped version"; exit 1; fi
-          # `[skip ci]` stops the bump push from re-triggering CI -> Release (a loop).
-          git add pyproject.toml uv.lock CHANGELOG.md
-          git commit -m "bump: version ${PREV} -> v${version} [skip ci]"
-          git tag -a "v${version}" -m "v${version}"
-          git push origin HEAD:main
-          git push origin "v${version}"
+          if [ "${MODE}" = "bump" ]; then
+            uv run cz bump --increment "${INCREMENT}" --changelog --files-only --yes
+            # Regenerate the lock so its project version matches the bump.
+            uv lock
+            version=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+            if [ -z "${version}" ]; then echo "could not read the bumped version"; exit 1; fi
+            # `[skip ci]` stops the bump push re-triggering CI -> Release (a loop).
+            git add pyproject.toml uv.lock CHANGELOG.md
+            git commit -m "bump: version ${PREV} -> v${version} [skip ci]"
+            git tag -a "v${version}" -m "v${version}"
+            git push origin HEAD:main
+            git push origin "v${version}"
+          else
+            # bootstrap: tag the committed version as-is (no bump, no commit).
+            version=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+            git tag -a "v${version}" -m "v${version}"
+            git push origin "v${version}"
+          fi
+          # Set only on full success (set -e aborts earlier) — the publish step
+          # gates on this, so it never runs against a half-applied release.
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Build and publish the GitHub Release
-        if: steps.increment.outputs.release == 'true'
+        if: steps.release_step.outputs.version != ''
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          VERSION: ${{ steps.bump.outputs.version }}
+          VERSION: ${{ steps.release_step.outputs.version }}
         run: |
           set -euo pipefail
           tag="v${VERSION}"

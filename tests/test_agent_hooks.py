@@ -12,8 +12,8 @@ QUALITY_GATE_MESSAGE = (
     "oaknational.python_repo_template.devtools check before you stop."
 )
 SKIP_BYPASS_REASON = (
-    "SKIP is prohibited here when it bypasses the repo's quality-gates or "
-    "commitizen-commit-msg hooks."
+    "SKIP is prohibited here when it bypasses the repo's quality-gates, "
+    "commitizen-commit-msg, or prevent-accidental-major hooks."
 )
 HOOKS_PATH_BYPASS_REASON = (
     "core.hooksPath overrides are prohibited here because they bypass repo git hooks."

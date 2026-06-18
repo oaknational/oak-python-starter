@@ -85,8 +85,8 @@ REQUIRED_PRE_COMMIT_SKIP_IDS = (
     "prevent-accidental-major",
 )
 REQUIRED_PRE_COMMIT_SKIP_REASON = (
-    "SKIP is prohibited here when it bypasses the repo's quality-gates or "
-    "commitizen-commit-msg hooks."
+    "SKIP is prohibited here when it bypasses the repo's quality-gates, "
+    "commitizen-commit-msg, or prevent-accidental-major hooks."
 )
 REQUIRED_DYNAMIC_GIT_CONFIG_REASON = (
     "Dynamic git config is prohibited here for git commit and git push because "

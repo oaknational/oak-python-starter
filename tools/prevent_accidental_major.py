@@ -38,7 +38,11 @@ def main(argv: list[str] | None = None) -> int:
     if not args:
         sys.stderr.write("prevent_accidental_major: expected a commit-message file path\n")
         return 1
-    message = Path(args[0]).read_text(encoding="utf-8")
+    try:
+        message = Path(args[0]).read_text(encoding="utf-8")
+    except OSError as error:
+        sys.stderr.write(f"prevent_accidental_major: cannot read {args[0]!r}: {error}\n")
+        return 1
     if is_breaking([message]):
         sys.stderr.write(_REJECTION)
         return 1

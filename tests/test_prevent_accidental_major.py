@@ -46,3 +46,9 @@ def test_rejects_a_breaking_change_footer(tmp_path: Path) -> None:
 
 def test_errors_without_a_path_argument(tmp_path: Path) -> None:
     assert subject.main([]) == 1
+
+
+def test_errors_cleanly_on_a_missing_file(tmp_path: Path) -> None:
+    missing = str(tmp_path / "does-not-exist")
+
+    assert subject.main([missing]) == 1
