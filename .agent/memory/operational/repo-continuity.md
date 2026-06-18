@@ -131,8 +131,6 @@ then merge release PR #25.** Full state + the F6 analysis + the release-PR
 - **Owner actions (settings, not code):** add "Quality gates" + "Secret scanning"
   to the ruleset's required checks; provide a release-PR PAT/App token; enable
   GitHub Code Quality preview; add `v*` tag protection. (See thread record.)
-- **Deferred to fresh context:** a deep `consolidate-docs` graduation (home
-  durable doctrine, archive the done release-automation plan, rotate the napkin).
 - Re-check the Dependabot security-alert count before assuming zero open vulns
   (pip-audit now scans the locked set in `check-ci`, so new advisories surface).
 
@@ -141,13 +139,16 @@ then merge release PR #25.** Full state + the F6 analysis + the release-PR
 - The 2026-06-17 later session captured its learning into the napkin, the two
   thread records, the two active plans, the gate-types review report, and the
   continuity/high-level surfaces.
-- 2026-06-18 (later): ran a light `consolidate-docs` pass alongside the
-  packaging-fix handoff. Findings: incoming Practice boxes empty (only a
-  placeholder dir); napkin 160 lines (no rotation due); this session's lesson
-  already lives in `testing-strategy.md` (nothing to graduate); plan/thread/
-  continuity reconciled. **The deep graduation remains DEFERRED to a dedicated
-  fresh-context session** — specifically archiving the **release-automation
-  plan** (marked DELIVERED & LIVE-VERIFIED; needs its release doctrine homed +
-  move to `archive/` + `completed-plans.md` row + index/link fixes). Not done
-  now by design (low-context risk on a 5-surface plan operation).
+- 2026-06-18 (deep pass): ran a full `consolidate-docs` at end of the Tier 1b
+  session. **Archived the release-automation plan** to
+  `runtime-infrastructure/archive/` (doctrine confirmed homed in README "##
+  Releases", `docs/dev-tooling.md`, the `release.yml` comment,
+  `tools/release_increment.py`, and `audit_release_workflow`); added its
+  `completed-plans.md` row and archive index entry; fixed the thread-record link;
+  refreshed `current/README.md` to current reality. Distilled the session's
+  settled lessons into `distilled.md` and added a session experience note.
+  Incoming Practice boxes empty (no-op). Napkin 222 lines — under the rotation
+  threshold, left in place. Both remaining `current/` plans
+  (quality-gate-surface-expansion as the live program spine; template-fitness
+  with only F6 left) are deliberately kept open.
 - The earlier 2026-04-23 source-Practice transfer remains the closed baseline.
