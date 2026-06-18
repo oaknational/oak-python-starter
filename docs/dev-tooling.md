@@ -48,12 +48,25 @@ Its package identity follows the Oak Python convention:
 ## Dependency hygiene
 
 - direct command: `uv run deptry .`
-- `deptry` proves declared dependency hygiene, not vulnerability scanning
+- `deptry` proves declared dependency hygiene (unused, missing, or misplaced
+  dependencies) — which is distinct from vulnerability scanning (see below)
 - `uv run python -m oaknational.python_repo_template.devtools check` and
   `uv run python -m oaknational.python_repo_template.devtools check-ci` both
   run dependency hygiene before the tracked-repo audit
 - `pyarrow` remains a deliberate `deptry` `DEP002` exception because pandas
   exercises it indirectly through the bounded Parquet path
+
+## Dependency vulnerability scanning
+
+- `pip-audit` scans the project's locked dependencies for known advisories; it is
+  a blocking step in `check` and `check-ci` (right after dependency hygiene)
+- direct command (the pipe equivalent of the gate):
+  `uv export --no-emit-project --no-hashes --format requirements-txt | uv run pip-audit -r -`
+  (the gate itself writes the export to a temporary file and passes
+  `--requirement <file>`, which is equivalent)
+- the gate exports the locked set with `--no-emit-project` (so the project itself
+  is not audited against PyPI) and audits that, so it scans exactly what is pinned
+  in `uv.lock`
 
 ## Markdown linting
 

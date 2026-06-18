@@ -86,7 +86,7 @@ Before choosing a lane, apply this order:
 All quality gates are blocking. The gate sequence for this repo:
 
 ```text
-format -> typecheck -> lint -> markdownlint -> import-linter -> dependency-hygiene -> repo-audit -> build -> test -> coverage
+format -> typecheck -> lint -> markdownlint -> import-linter -> dependency-hygiene -> pip-audit -> repo-audit -> build -> test -> coverage
 ```
 
 Non-mutating gate entry point:
