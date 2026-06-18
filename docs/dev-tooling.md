@@ -210,6 +210,11 @@ uv run cz check --message "docs: explain the Commitizen workflow"
 - the version stays committed in the tree; releases publish to GitHub Releases
   only (no PyPI). `audit_release_workflow` keeps the workflow (trigger, `cz bump`,
   the increment tool, the `[skip ci]` loop guard) and the bump policy honest
+- **gotcha:** because the loop guard relies on GitHub's CI-skip marker, a feature
+  commit or PR title/body that contains that literal marker in prose will make a
+  squash-merge skip CI too — so no `workflow_run` fires and no release is cut.
+  Keep the literal marker out of feature commit/PR messages; only the bump commit
+  should carry it
 
 ## Hydration guidance
 
