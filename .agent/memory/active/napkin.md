@@ -86,3 +86,42 @@
   exists.
 - When a napkin has accumulated a whole closed tranche, rotate it after
   graduation so the next session starts from a clean active-memory surface.
+
+## Session: 2026-06-18 — quality program (gates, release automation) + mid-program handoff
+
+### Surprises & corrections
+
+- **`cz_conventional_commits` ignores `[tool.commitizen].bump_map`.** It reads the
+  plugin's hardcoded map (`bump.py:_find_increment` → `self.cz.bump_map`), not the
+  config. A custom bump policy needs a self-computed increment passed via
+  `cz bump --increment` (see `tools/release_increment.py`). Only the **live
+  end-to-end verification** of release automation exposed this — a static review
+  and a local `cz bump --dry-run` (which happened to see a `feat`, mapped the same
+  either way) both looked correct. Lesson: verify release/version automation by
+  actually running it, not just by reading it.
+- **A `GITHUB_TOKEN`-opened release PR is perpetually `UNSTABLE`** because `ci.yml`
+  does not run on bot-opened PRs (recursion prevention). Merge it with
+  `gh pr merge <n> --squash --auto` — NOT `--admin` (the harness classifier
+  blocks admin bypass of branch protection, correctly). The real fix is a
+  PAT/App token so CI runs on the release PR.
+
+### Patterns that worked
+
+- **Reviewers earn their keep on coupling surfaces.** config-review caught a
+  missed seven-surface coupling surface (`.agent/commands/gates.md` still claimed
+  "deptry is not vulnerability scanning" after pip-audit landed). Fixed AND made
+  `audit_dependency_hygiene` enforce the pip-audit mention so it can't drift again.
+- **Kill spell-check false positives at source, not with a repo-wide ignore.**
+  codespell flagged an intentional `"vulnerabilit"` substring; reworking the
+  audit to match `"vulnerab"` removed the need for any `ignore-words-list`.
+- **Standing release PR accumulation:** let the release/next PR accumulate every
+  feat/fix merge through a multi-PR sprint, then merge it once for a single clean
+  release — avoids per-PR release churn.
+
+### Source plane: executive
+
+- Owner contracts reaffirmed this session: a committed (not tag-derived) version;
+  custom bump policy (feat/fix→minor, else→patch, breaking→manual major); GitHub
+  Releases only (no PyPI); binary tools documented in README Prerequisites with
+  official install links; "highest *proportionate* bar" (stop before Tier 4 —
+  SBOM/Scorecard/mutation — unless explicitly asked).

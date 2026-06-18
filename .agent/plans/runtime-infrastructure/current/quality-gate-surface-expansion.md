@@ -13,12 +13,12 @@ todos:
     status: completed
   - id: pip-audit
     content: "Add a pip-audit dependency-vulnerability gate (uv-aware), complementing deptry hygiene."
-    status: pending
+    status: completed
   - id: codespell
     content: "Add a codespell spell-check gate with an en-GB-aware repo wordlist."
-    status: pending
+    status: completed
   - id: supply-chain-config
-    content: "Commit .github/dependabot.yml (pip + github-actions) and pin CI action SHAs; optional repo_audit self-check."
+    content: "Commit .github/dependabot.yml (uv + github-actions) and pin action SHAs; optional repo_audit self-check. IN FLIGHT on branch feat/supply-chain-pinning (commit 4c6d603, pushed, no PR); optional audit_supply_chain self-check + PR remain."
     status: pending
 ---
 
