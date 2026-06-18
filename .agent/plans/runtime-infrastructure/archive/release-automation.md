@@ -21,8 +21,16 @@ todos:
 
 # Release Automation
 
+> **SUPERSEDED (2026-06-18, post-archive):** the release-PR / `--auto` pattern
+> this plan delivered was later replaced by **continuous release on merge,
+> PR-merge-only** via the Oak Semantic Release Bot (a ruleset bypass actor pushes
+> the bump straight to protected `main`). This file is retained as the historical
+> record of how `v0.1.0`–`v0.3.0` were cut. For the current model see README
+> "## Releases", `docs/dev-tooling.md`, and the gate-expansion thread record's
+> "SUPERSEDED: release model is now continuous-on-merge" banner.
+
 **Last Updated**: 2026-06-18  
-**Status**: ✅ ARCHIVED 2026-06-18 — DELIVERED & LIVE-VERIFIED (PRs #20/#22 merged; `v0.1.0` + `v0.2.0` released). Durable doctrine homed in README "## Releases", `docs/dev-tooling.md`, the `release.yml` comment, `tools/release_increment.py`, and `audit_release_workflow`. The `--auto`/UNSTABLE merge mechanic lives in the gate-expansion thread record (still needed for the open release PR #25).  
+**Status**: ✅ ARCHIVED 2026-06-18 — DELIVERED & LIVE-VERIFIED (PRs #20/#22 merged; `v0.1.0` + `v0.2.0` released). Durable doctrine homed in README "## Releases", `docs/dev-tooling.md`, the `release.yml` comment, `tools/release_increment.py`, and `audit_release_workflow`. (The `--auto`/UNSTABLE merge mechanic it references is itself now superseded — see the note above.)  
 **Scope**: Automate versioned GitHub Releases with a committed version and a custom bump policy, via a Commitizen-driven release-PR, under the protected `main` ruleset.
 
 > **Delivered note (2026-06-18):** Live verification caught a real bug —
