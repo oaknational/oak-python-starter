@@ -52,12 +52,15 @@ in which case also rename the `src/oaknational/` directory and the
 7. **Re-run `check` until green**, then commit on a branch and open a PR — the
    same workflow the template models.
 
+To pressure-test your adoption (and the template itself), work through the
+[first-adoption dry-run](first-adoption-dry-run.md) and log any friction.
+
 ## What you are keeping
 
 The value of the template is the *infrastructure*, not the demo: the `src/`
 layout, the single `devtools` gate surface, the full blocking gate sequence
 (format, type-check, lint, markdown, spell-check, import-linter,
 dependency-hygiene, pip-audit, repo-audit, build, test, coverage), the
-SHA-pinned CI with Dependabot, the release-PR automation, the secret-scanning
-gate, and the `.agent/` working method. Those stay as-is; only the names and the
+SHA-pinned CI with Dependabot, the continuous-release-on-merge automation, the
+secret-scanning gate, and the `.agent/` working method. Those stay as-is; only the names and the
 demo change.
