@@ -1,8 +1,19 @@
 # Repo Continuity
 
-**Last refreshed**: 2026-06-18 (final) — **the "highest proportionate bar"
-program is COMPLETE; `v0.3.0` is cut** (tag + GitHub Release with wheel + sdist).
-`main` is green. Landed this session: **F6** agent-hook hardening (#37, owner
+**Last refreshed**: 2026-06-18 (final+) — the "highest proportionate bar" program
+is COMPLETE (`v0.3.0` cut). **NEW: the release model is now CONTINUOUS release on
+merge (PR #44)** — the release-PR/`--auto` pattern is retired. After CI passes on
+`main`, the Oak Semantic Release Bot (app 2995796, a ruleset bypass actor) bumps +
+tags + pushes to `main` and publishes the Release; every qualifying merge advances
+the version. **Not yet live-verified:** PR #44's own merge skipped CI (its squash
+message contained the literal CI-skip token in prose), so no release fired and
+`main` is still `0.3.0`. The next clean merge (message free of the CI-skip token)
+will cut the first continuous release (**v0.4.0**, the computed minor from #44's
+feat) and verify the bot's push-to-protected-main. Do NOT force it via
+`workflow_dispatch` — the harness blocks an agent-forced increment, and the owner
+wants the computed one.
+
+(Earlier this session, pre-#44:) `main` is green. Landed: **F6** agent-hook hardening (#37, owner
 chose recurse-and-check), **Tier 3** branch coverage + floor 86 (#38), Hypothesis
 property tests (#39), single-version ADR-0002 (#40), **Tier 2** governance
 checklist `docs/repository-governance.md` (#41), **Dependabot** #29 (actions) +
@@ -114,18 +125,20 @@ over-block). Full state in the
 
 ## Next Safe Step
 
-- **The program is complete — no queued program work remains.** If resuming:
-  (1) the only outstanding items are **owner-only GitHub settings** in
-  `docs/repository-governance.md` (required status checks, release-PR token, Code
-  Quality preview, `v*` tag protection) — I cannot do these; (2) **F6 residuals**
-  (glued shell operators like `ok|git`, bare subshells `(...)`, and heredoc-prose
-  over-block) are documented and deferred to a future owner-authorised session —
-  fixing the glued-operator one needs a quote-aware raw tokeniser, a
-  safety-critical change; (3) **Tier 4** (SBOM, SLSA, Scorecard, mutation testing)
-  stays deferred unless the owner asks. Steady-state: a new `chore(release)` PR
-  will accrue future feat/fix — merge it with `gh pr merge <n> --squash --auto`
-  (bot PR sits UNSTABLE; `code_quality` is the only required check). Normal PRs
-  merge with `gh pr merge <n> --squash --delete-branch` once green.
+- **Verify the first continuous release.** When this closeout PR (or any clean
+  merge) lands, watch the `Release` `workflow_run` run: it should bump to
+  **v0.4.0**, push the bump commit + tag to `main`, and publish the Release. If
+  it fails, the likely cause is the bot app lacking `Contents: write` (the one
+  unverified prerequisite) — main stays intact; fix the app perms and re-merge.
+- **Remaining work otherwise:** (1) **owner-only GitHub settings** in
+  `docs/repository-governance.md` (required status checks, Code Quality preview,
+  `v*` tag protection — the release-bot secrets + bypass actor are already set);
+  (2) **F6 residuals** (glued shell operators like `ok|git`, bare subshells, and
+  heredoc-prose over-block) — deferred, the glued-operator one needs a quote-aware
+  raw tokeniser; (3) **PyPI publishing guide** for template adopters (owner asked;
+  docs-only, deferred — see Open Side-Tasks); (4) **Tier 4** stays deferred.
+  Normal PRs merge with `gh pr merge <n> --squash --delete-branch` once green —
+  keep the literal CI-skip token out of the message or the release won't fire.
 
 ## Open Side-Tasks
 
