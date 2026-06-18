@@ -22,33 +22,59 @@ def test_allows_conventional_non_breaking_commits(tmp_path: Path) -> None:
         "docs: explain the breaking change semantics for adopters",
     ]
     for message in allowed:
-        assert subject.main([_commit_msg(tmp_path, message)]) == 0, message
+        assert subject.main([_commit_msg(tmp_path, message)], allowed_base=tmp_path) == 0, message
 
 
 def test_rejects_a_bang_breaking_subject(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    code = subject.main([_commit_msg(tmp_path, "feat!: drop the legacy API")])
+    code = subject.main(
+        [_commit_msg(tmp_path, "feat!: drop the legacy API")], allowed_base=tmp_path
+    )
 
     assert code == 1
     assert "MAJOR" in capsys.readouterr().err
 
 
 def test_rejects_a_scoped_bang_subject(tmp_path: Path) -> None:
-    assert subject.main([_commit_msg(tmp_path, "refactor(core)!: rename the entry point")]) == 1
+    message = _commit_msg(tmp_path, "refactor(core)!: rename the entry point")
+
+    assert subject.main([message], allowed_base=tmp_path) == 1
 
 
 def test_rejects_a_breaking_change_footer(tmp_path: Path) -> None:
-    message = "feat: a new surface\n\nBREAKING CHANGE: removes the old one\n"
+    message = _commit_msg(tmp_path, "feat: a new surface\n\nBREAKING CHANGE: removes the old one\n")
 
-    assert subject.main([_commit_msg(tmp_path, message)]) == 1
+    assert subject.main([message], allowed_base=tmp_path) == 1
 
 
 def test_errors_without_a_path_argument(tmp_path: Path) -> None:
-    assert subject.main([]) == 1
+    assert subject.main([], allowed_base=tmp_path) == 1
 
 
 def test_errors_cleanly_on_a_missing_file(tmp_path: Path) -> None:
     missing = str(tmp_path / "does-not-exist")
 
-    assert subject.main([missing]) == 1
+    assert subject.main([missing], allowed_base=tmp_path) == 1
+
+
+def test_refuses_a_path_outside_the_allowed_base(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # A path that escapes the commit-message directory must be refused, not read.
+    outside = tmp_path.parent / "elsewhere.txt"
+    outside.write_text("feat!: sneak a breaking marker via traversal", encoding="utf-8")
+
+    code = subject.main([str(outside)], allowed_base=tmp_path)
+
+    assert code == 1
+    assert "refusing to read outside" in capsys.readouterr().err
+
+
+def test_git_directory_resolves_inside_the_repository() -> None:
+    # The default base (no allowed_base) is the worktree-aware git directory.
+    # A variable attribute name dodges ruff B009 + pyright reportPrivateUsage.
+    attribute = "_git_directory"
+    git_directory = getattr(subject, attribute)
+
+    assert git_directory().is_dir()

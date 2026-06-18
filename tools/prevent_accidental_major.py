@@ -16,6 +16,7 @@ so it can reuse ``release_increment.is_breaking`` — keeping one definition of
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -31,16 +32,40 @@ _REJECTION = (
 )
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Reject a commit message that carries a breaking-change marker."""
+def _git_directory() -> Path:
+    """Resolve the git directory (worktree-aware) that holds the commit message."""
+
+    result = subprocess.run(
+        ["git", "rev-parse", "--git-dir"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return Path(result.stdout.strip()).resolve()
+
+
+def main(argv: list[str] | None = None, *, allowed_base: Path | None = None) -> int:
+    """Reject a commit message that carries a breaking-change marker.
+
+    The message path comes from git via the commit-msg hook. It is canonicalised
+    and confined to the git directory (``allowed_base`` overrides this in tests)
+    so a stray argument cannot make the hook read an arbitrary file.
+    """
 
     args = sys.argv[1:] if argv is None else argv
     if not args:
         sys.stderr.write("prevent_accidental_major: expected a commit-message file path\n")
         return 1
     try:
-        message = Path(args[0]).read_text(encoding="utf-8")
-    except OSError as error:
+        base = (allowed_base or _git_directory()).resolve()
+        commit_message_path = Path(args[0]).resolve()
+        if not commit_message_path.is_relative_to(base):
+            sys.stderr.write(
+                f"prevent_accidental_major: refusing to read outside {base}: {args[0]!r}\n"
+            )
+            return 1
+        message = commit_message_path.read_text(encoding="utf-8")
+    except (OSError, subprocess.CalledProcessError) as error:
         sys.stderr.write(f"prevent_accidental_major: cannot read {args[0]!r}: {error}\n")
         return 1
     if is_breaking([message]):
