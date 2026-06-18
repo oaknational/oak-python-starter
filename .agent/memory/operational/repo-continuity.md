@@ -1,17 +1,16 @@
 # Repo Continuity
 
 **Last refreshed**: 2026-06-18 (final+) — the "highest proportionate bar" program
-is COMPLETE (`v0.3.0` cut). **NEW: the release model is now CONTINUOUS release on
-merge (PR #44)** — the release-PR/`--auto` pattern is retired. After CI passes on
-`main`, the Oak Semantic Release Bot (app 2995796, a ruleset bypass actor) bumps +
-tags + pushes to `main` and publishes the Release; every qualifying merge advances
-the version. **Not yet live-verified:** PR #44's own merge skipped CI (its squash
-message contained the literal CI-skip token in prose), so no release fired and
-`main` is still `0.3.0`. The next clean merge (message free of the CI-skip token)
-will cut the first continuous release (**v0.4.0**, the computed minor from #44's
-feat) and verify the bot's push-to-protected-main. Do NOT force it via
-`workflow_dispatch` — the harness blocks an agent-forced increment, and the owner
-wants the computed one.
+is COMPLETE. **The release model is now CONTINUOUS release on merge (PR #44),
+PR-merge-ONLY** — the release-PR/`--auto` pattern AND the manual `workflow_dispatch`
+are both gone (owner: releases originate only from a merge to `main`; the rare
+major is cut by a human outside this repo's automation). After CI passes on `main`,
+the Oak Semantic Release Bot (app 2995796, a ruleset bypass actor) bumps + tags +
+pushes to `main` and publishes the Release. **Live-verified** (a clean merge cut a
+release end-to-end; the bot's push-to-protected-`main` works). Don't write specific
+future version numbers in durable docs — they go stale; describe the mechanism.
+Required status checks (Quality gates, Secret scanning, CodeQL, SonarCloud) and a
+`v*` tag ruleset are now enforced in GitHub settings.
 
 (Earlier this session, pre-#44:) `main` is green. Landed: **F6** agent-hook hardening (#37, owner
 chose recurse-and-check), **Tier 3** branch coverage + floor 86 (#38), Hypothesis
@@ -125,20 +124,16 @@ over-block). Full state in the
 
 ## Next Safe Step
 
-- **Verify the first continuous release.** When this closeout PR (or any clean
-  merge) lands, watch the `Release` `workflow_run` run: it should bump to
-  **v0.4.0**, push the bump commit + tag to `main`, and publish the Release. If
-  it fails, the likely cause is the bot app lacking `Contents: write` (the one
-  unverified prerequisite) — main stays intact; fix the app perms and re-merge.
-- **Remaining work otherwise:** (1) **owner-only GitHub settings** in
-  `docs/repository-governance.md` (required status checks, Code Quality preview,
-  `v*` tag protection — the release-bot secrets + bypass actor are already set);
-  (2) **F6 residuals** (glued shell operators like `ok|git`, bare subshells, and
-  heredoc-prose over-block) — deferred, the glued-operator one needs a quote-aware
-  raw tokeniser; (3) **PyPI publishing guide** for template adopters (owner asked;
-  docs-only, deferred — see Open Side-Tasks); (4) **Tier 4** stays deferred.
-  Normal PRs merge with `gh pr merge <n> --squash --delete-branch` once green —
-  keep the literal CI-skip token out of the message or the release won't fire.
+- **Release automation is done and verified** (continuous, PR-merge-only). No
+  queued release work. Remaining: (1) **owner-only GitHub setting** — enable the
+  GitHub Code Quality org preview (the required checks + `v*` tag ruleset +
+  release-bot secrets/bypass are all in place); (2) **PyPI publishing guide** for
+  adopters (in progress this session — docs-only); (3) **F6 residuals** (glued
+  shell operators like `ok|git`, bare subshells, heredoc-prose over-block) —
+  deferred, the glued-operator one needs a quote-aware raw tokeniser; (4) **Tier 4**
+  stays deferred. Normal PRs merge with `gh pr merge <n> --squash --delete-branch`
+  once green — keep the literal CI-skip token out of the commit/PR message or the
+  squash-merge skips CI and no release fires.
 
 ## Open Side-Tasks
 

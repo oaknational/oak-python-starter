@@ -705,10 +705,11 @@ def audit_release_workflow(root: Path) -> list[str]:
             require(
                 failures,
                 check,
-                "workflow_dispatch" in triggers,
+                "workflow_dispatch" not in triggers,
                 (
-                    ".github/workflows/release.yml must offer workflow_dispatch for manual "
-                    "major releases"
+                    ".github/workflows/release.yml must NOT offer workflow_dispatch: releases "
+                    "originate only from a merge to main; a major is cut by a human outside "
+                    "this repo's automation"
                 ),
             )
             run_commands = _workflow_run_commands(mapping)
