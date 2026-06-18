@@ -1,14 +1,46 @@
 from __future__ import annotations
 
 import io
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
 import pytest
 import requests
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from oaknational.python_repo_template.data import activity_store as subject
+
+# A valid raw activity row as the CSV loader would yield it: every field a
+# string. Categories exclude whitespace (codepoint >= 33) so stripping never
+# empties them; minutes stay well inside the int64/float64-exact range so the
+# round-trip exercises behaviour, not numeric precision (range limits are
+# covered by the example-based tests below).
+_Row = tuple[str, str, str, str]
+_iso_dates = st.dates(min_value=date(1900, 1, 1), max_value=date(2200, 1, 1)).map(
+    lambda value: value.isoformat()
+)
+_categories = st.text(st.characters(min_codepoint=33, max_codepoint=126), min_size=1, max_size=12)
+_positive_minutes = st.integers(min_value=1, max_value=1_000_000_000).map(str)
+_notes = st.text(st.characters(min_codepoint=32, max_codepoint=126), max_size=20)
+_activity_rows = st.lists(
+    st.tuples(_iso_dates, _categories, _positive_minutes, _notes),
+    min_size=1,
+    max_size=8,
+)
+
+
+def _frame_from_rows(rows: Sequence[_Row]) -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "date": [row[0] for row in rows],
+            "category": [row[1] for row in rows],
+            "minutes": [row[2] for row in rows],
+            "notes": [row[3] for row in rows],
+        }
+    )
 
 
 def make_frame() -> pd.DataFrame:
@@ -461,3 +493,55 @@ def test_load_activity_metadata_rejects_invalid_yaml() -> None:
             categories=make_categories(),
             local_text_loader=lambda path: "category_targets: [",
         )
+
+
+# --- Property-based tests for the validation boundary -----------------------
+
+
+@settings(max_examples=50, deadline=None)
+@given(rows=_activity_rows)
+def test_validate_activity_frame_is_idempotent(rows: list[_Row]) -> None:
+    # The canonical frame is a fixed point: validating it again is a no-op.
+    once = subject.validate_activity_frame(_frame_from_rows(rows))
+    twice = subject.validate_activity_frame(once)
+
+    assert twice.equals(once)
+
+
+@settings(max_examples=50, deadline=None)
+@given(rows=_activity_rows, data=st.data())
+def test_validate_activity_frame_is_order_independent(
+    rows: list[_Row], data: st.DataObject
+) -> None:
+    # Canonical output is sorted deterministically, so row order in is irrelevant.
+    permuted = data.draw(st.permutations(rows))
+
+    from_original = subject.validate_activity_frame(_frame_from_rows(rows))
+    from_permuted = subject.validate_activity_frame(_frame_from_rows(permuted))
+
+    assert from_original.equals(from_permuted)
+
+
+@settings(max_examples=50, deadline=None)
+@given(rows=_activity_rows)
+def test_validate_activity_frame_preserves_in_range_positive_minutes(rows: list[_Row]) -> None:
+    result = subject.validate_activity_frame(_frame_from_rows(rows))
+
+    assert result["minutes"].dtype == "int64"
+    assert sorted(result["minutes"].tolist()) == sorted(int(row[2]) for row in rows)
+
+
+@settings(max_examples=50, deadline=None)
+@given(rows=_activity_rows, data=st.data())
+def test_validate_activity_frame_rejects_non_positive_minutes(
+    rows: list[_Row], data: st.DataObject
+) -> None:
+    # Whatever else is valid, a single non-positive minutes value must fail-fast.
+    index = data.draw(st.integers(min_value=0, max_value=len(rows) - 1))
+    non_positive = data.draw(st.integers(min_value=-1_000_000_000, max_value=0))
+    mutated = list(rows)
+    date_value, category, _minutes, notes = mutated[index]
+    mutated[index] = (date_value, category, str(non_positive), notes)
+
+    with pytest.raises(subject.ActivityDataError, match="positive integers"):
+        subject.validate_activity_frame(_frame_from_rows(mutated))
