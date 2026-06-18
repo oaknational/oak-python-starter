@@ -142,6 +142,12 @@ Its package identity follows the Oak Python convention:
 
 - the `coverage` gate runs `pytest` under `coverage.py`; locally it prints the
   `term-missing` report and fails under the threshold in `[tool.coverage.report]`
+  (`fail_under = 85`, an honest floor below the ~88% the suite achieves)
+- the `coverage-contract` `repo-audit` check guards what the coverage gate
+  itself cannot: it fails if `fail_under` drops below 85, or if
+  `[tool.coverage.run].omit` excludes any file beyond the justified set
+  (`devtools.py`) — so the threshold cannot be quietly lowered and code cannot be
+  hidden from the coverage denominator. Raising `fail_under` is always allowed
 - CI additionally derives a Cobertura report from the same run with the
   `coverage xml` subcommand — the `coverage` gate's `pytest --cov` run writes the
   `.coverage` data file, and `coverage xml` reads it (no second test run) — then
