@@ -1,3 +1,14 @@
+## v0.3.0 (2026-06-18)
+
+### Feat
+
+- **safety**: close pipe and substitution bypasses in agent hook (F6) (#37)
+- **adoptability**: cap remote fetches (F5) and add a rename guide (F7) (#34)
+- **demo**: make the activity chart WCAG 2.2 AA accessible (#33)
+- **gates**: honest coverage floor (fail_under 85) + audit_coverage_contract (#31)
+- **gates**: add codespell spell-check gate (#26)
+- **gates**: add pip-audit dependency-vulnerability gate (#24)
+
 ## v0.2.0 (2026-06-17)
 
 ### Fix

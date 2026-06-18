@@ -1,6 +1,6 @@
 [project]
 name = "oaknational-python-repo-template"
-version = "0.2.0"
+version = "0.3.0"
 description = "Reusable Oak Python template with agent infrastructure, strict quality gates, and a demo CLI."
 readme = "README.md"
 requires-python = ">=3.14"
