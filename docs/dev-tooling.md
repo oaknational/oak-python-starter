@@ -115,6 +115,18 @@ Its package identity follows the Oak Python convention:
   History scanning (`gitleaks git` with a full-depth checkout) is a deliberate
   later enhancement, not part of this gate
 
+## Supply-chain pinning
+
+- every GitHub Actions `uses:` in the workflows is pinned to a full commit SHA
+  (with a trailing `# vX` comment for readability), so a retagged or compromised
+  upstream release cannot silently change what CI runs
+- `.github/dependabot.yml` schedules weekly grouped update PRs for the two pinned
+  ecosystems — `uv` (the locked Python dependencies) and `github-actions` (the
+  pinned SHAs, which Dependabot bumps together with their `# vX` comment)
+- the `supply-chain` `repo-audit` check enforces both: it fails if any workflow
+  `uses:` is a tag or branch rather than a 40-hex SHA, or if Dependabot stops
+  watching either ecosystem, so the pins cannot quietly drift back to tags
+
 ## Packaging proof
 
 - `uv run python -m oaknational.python_repo_template.devtools build` builds the

@@ -56,14 +56,37 @@ All merged to `main` unless noted. `main` is green.
     `--admin` — the harness classifier blocks admin bypass, correctly). `--auto`
     merges once the ruleset's actual requirements are met (a PR exists; no
     required status checks). Merging it triggers the publish phase → `v0.3.0`.
-- **Supply-chain branch `feat/supply-chain-pinning` (commit `4c6d603`, pushed, NO
-  PR yet).** Contains: all workflow action `uses:` SHA-pinned (with `# vX`
-  comments) + `.github/dependabot.yml` (uv + github-actions, weekly, grouped).
-  Resolved SHAs are committed in the files. **Remaining for this PR:** add the
-  *optional* `audit_supply_chain` repo_audit self-check (assert every workflow
-  `uses:` is a 40-hex SHA + dependabot has uv+github-actions ecosystems) + tests,
-  then open the PR. Or open the PR as-is (pin+dependabot are complete) and treat
-  the audit as a fast-follow.
+- **Supply-chain PR #28 `feat/supply-chain-pinning` (HEAD `f5225cb`, OPEN).**
+  Contains: all workflow action `uses:` SHA-pinned (with `# vX` comments) +
+  `.github/dependabot.yml` (uv + github-actions, weekly, grouped) + the
+  **`audit_supply_chain` self-check** (asserts every workflow `uses:` — step- AND
+  job-level — is a 40-hex SHA or a `sha256:` docker digest, and dependabot watches
+  uv+github-actions) + the packaging-schema fix below. All four pinned SHAs were
+  verified to match their upstream `vN` tags. **Next: get it green (CI +
+  SonarCloud) and merge** with `gh pr merge 28 --squash --delete-branch` (a normal
+  PR — CodeQL runs and it merges on green; NOT the bot-PR `--auto` path #25 needs).
+- **Packaging-schema fix folded into PR #28** (committed `f5225cb`), separate from
+  supply-chain: `pyproject` `[tool.hatch.build.targets.wheel].sources` `["src"]`
+  → `{ "src" = "" }` (array tripped the *Even Better TOML* SchemaStore Hatch
+  schema, which types `sources` as object; wheels are byte-identical) **and
+  removal** of the `audit_packaging_contract` audit and its test — it asserted
+  config *shape* (`sources == [...]`, `only-include == [...]`), a "test behaviour,
+  not implementation details" violation. **Do not re-add it, and do not add a
+  wheel-namelist test in its place:** the packaging behaviour is already proven
+  end-to-end by the build-gate wheel-smoke (`_run_build_probe` →
+  `_run_installed_wheel_smoke_check` in `devtools.py`, run in `check`/`check-ci`/
+  CI: build → install into fresh venv → `import oaknational.python_repo_template`
+  resolves to the *installed* wheel → run both entry points). All gates green.
+- **SonarCloud is a live PR quality gate (`SonarCloud Code Analysis`).** Org-level
+  automatic analysis — there is no `sonar-project.properties` in-repo and no Sonar
+  workflow; it posts a check on every PR. It is **NOT** a *required* status check
+  on the `main` ruleset (so it does not mechanically block merge), but its gate is
+  blocking by repo doctrine ("all quality-gate issues are blocking"). It evaluates
+  **new-code** conditions — PR #28's first push failed `new_code_smells_severity`
+  (cognitive complexity > 15 + a duplicated literal), fixed by decomposing the
+  audit. Inspect it via the **SonarQube MCP**: `get_project_quality_gate_status`
+  and `search_sonar_issues_in_projects`, projectKey
+  `oaknational_oak-python-starter`, `pullRequest <n>`.
 
 ## Remaining Program Work (each its own branch off main + PR)
 
@@ -84,9 +107,10 @@ All merged to `main` unless noted. `main` is green.
   - an ADR recording the deliberate single-version bleeding-edge (3.14) policy
     (the repo intentionally does NOT use a version matrix) — or adopt a matrix if
     broad compatibility becomes a goal (owner decision).
-- **Tier 2 — governance write-up** (code + a checklist): land the
-  `audit_supply_chain` self-check (above), and produce an owner-action checklist
-  (see Owner Actions below). I cannot change repo/org settings.
+- **Tier 2 — governance write-up** (code + a checklist): the
+  `audit_supply_chain` self-check is **done** (landed at `990c042`); remaining is
+  to produce an owner-action checklist (see Owner Actions below). I cannot change
+  repo/org settings.
 
 ## Owner Actions Outstanding (settings, not code — I cannot do these)
 
@@ -133,8 +157,8 @@ All merged to `main` unless noted. `main` is green.
 
 ## Next Safe Step
 
-1. Open the **supply-chain PR** from `feat/supply-chain-pinning` (optionally add
-   `audit_supply_chain` first), verify green, merge.
+1. **Supply-chain PR #28 is OPEN** (HEAD `f5225cb`). Get it green (CI +
+   SonarCloud) and merge with `gh pr merge 28 --squash --delete-branch`.
 2. Then Tier 1b (F3 → F8 → F5/6/7), then Tier 3, then the Tier 2 checklist.
 3. When the sprint's PRs are all merged, **merge release PR #25 with `--auto`**
    to cut the accumulated release, then verify the new GitHub Release + the

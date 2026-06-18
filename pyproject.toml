@@ -90,7 +90,7 @@ skip = "*.lock,./.git,./.venv,./dist,./build,./.ruff_cache,./.pytest_cache,./htm
 
 [tool.hatch.build.targets.wheel]
 only-include = ["src/oaknational/python_repo_template"]
-sources = ["src"]
+sources = { "src" = "" }
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/oaknational/python_repo_template/py.typed" = "oaknational/python_repo_template/py.typed"
