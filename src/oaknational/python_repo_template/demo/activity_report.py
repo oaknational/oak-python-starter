@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, TextIO
 
 import numpy as np
+from matplotlib import patheffects
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
@@ -38,8 +39,15 @@ CHART_BACKGROUND = "#f6f8fb"
 PLOT_BACKGROUND = "#ffffff"
 AXIS_COLOUR = "#4b5563"
 GRID_COLOUR = "#e5e7eb"
-PALETTE = ("#315c9e", "#4c9195", "#d08d46", "#b96060", "#7261b5")
+# Every bar colour clears WCAG 2.2 SC 1.4.11 (>=3:1 against PLOT_BACKGROUND); the
+# amber was darkened from #d08d46 (2.77:1) to reach the floor. The contrast
+# invariant is pinned by tests in test_activity_report.py.
+PALETTE = ("#315c9e", "#4c9195", "#b07a37", "#b96060", "#7261b5")
+# The target marker overlaps the bars, where its dark core cannot reach 3:1
+# against every bar; a white halo (SC 1.4.11) gives a high-contrast edge on the
+# bars while the dark core stays high-contrast against the white plot area.
 TARGET_COLOUR = "#374151"
+TARGET_HALO_COLOUR = "#ffffff"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -99,6 +107,42 @@ def render_summary(summary: ActivitySummary, metadata: ActivityMetadata | None =
     return "\n".join(lines)
 
 
+def render_chart_alt_text(
+    summary: ActivitySummary, metadata: ActivityMetadata | None = None
+) -> str:
+    """Render the chart's text alternative (WCAG 2.2 SC 1.1.1).
+
+    A non-visual reader of the PNG gets the same information the bars convey:
+    each category's minutes, its share of the total, and any target delta.
+    """
+
+    title = _chart_title(metadata)
+    targets = metadata.category_targets if metadata is not None else {}
+    grand_total = sum(minutes for _category, minutes in summary.category_totals)
+
+    lead = (
+        f'Bar chart "{title}": total minutes per category, with each bar labelled by its '
+        "percentage share of the total"
+    )
+    lead += " and a target marker where a target is set." if targets else "."
+    lines = [lead]
+    for category, minutes in summary.category_totals:
+        label = _display_label(category, metadata)
+        share = (minutes / grand_total) if grand_total else 0.0
+        line = f"- {label}: {minutes} minutes ({share:.0%})"
+        if category in targets:
+            target = targets[category]
+            line += f"; target {target} ({minutes - target:+d})"
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def _alt_text_path(output_path: Path) -> Path:
+    """The sidecar text-alternative path paired with a chart image."""
+
+    return output_path.with_name(f"{output_path.name}.txt")
+
+
 def default_chart_writer(
     summary: ActivitySummary,
     metadata: ActivityMetadata | None,
@@ -121,9 +165,7 @@ def default_chart_writer(
     axis.set_facecolor(PLOT_BACKGROUND)
 
     bars: list[Any] = list(axis.bar(positions, totals, width=0.65, color=colours, edgecolor="none"))
-    axis.set_title(
-        metadata.name if metadata is not None and metadata.name is not None else "Activity summary"
-    )
+    axis.set_title(_chart_title(metadata))
     axis.set_ylabel("Minutes")
     axis.set_xticks(positions, labels)
     axis.tick_params(axis="x", labelrotation=15)
@@ -151,7 +193,7 @@ def default_chart_writer(
     if target_points:
         target_positions = np.asarray([point[0] for point in target_points], dtype=np.float64)
         target_values = np.asarray([point[1] for point in target_points], dtype=np.float64)
-        axis.scatter(
+        target_marker = axis.scatter(
             target_positions,
             target_values,
             marker="_",
@@ -160,11 +202,23 @@ def default_chart_writer(
             color=TARGET_COLOUR,
             label="Target",
         )
+        # White halo so the marker stays perceivable on any bar colour (SC 1.4.11).
+        target_marker.set_path_effects(
+            [
+                patheffects.withStroke(linewidth=5.0, foreground=TARGET_HALO_COLOUR),
+                patheffects.Normal(),
+            ]
+        )
         axis.legend(frameon=False)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.tight_layout()
     figure.savefig(output_path, format="png", dpi=150)
+    # Write the text alternative (SC 1.1.1) beside the image so a non-visual
+    # consumer of the PNG can read the same information the bars convey.
+    _alt_text_path(output_path).write_text(
+        render_chart_alt_text(summary, metadata) + "\n", encoding="utf-8"
+    )
 
 
 def main(
@@ -239,6 +293,12 @@ def main(
 
     msg = f"Unsupported command: {args.command!r}"
     raise SystemExit(msg)
+
+
+def _chart_title(metadata: ActivityMetadata | None) -> str:
+    if metadata is not None and metadata.name is not None:
+        return metadata.name
+    return "Activity summary"
 
 
 def _display_label(category: str, metadata: ActivityMetadata | None) -> str:

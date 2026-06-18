@@ -166,6 +166,79 @@ def test_default_chart_writer_creates_a_png_file(tmp_path: Path) -> None:
     assert output_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
 
 
+def _relative_luminance(hex_colour: str) -> float:
+    # WCAG relative-luminance formula. The 0.03928 knee is the 2.0/2.1 wording;
+    # it is equivalent to WCAG 2.2's 0.04045 for every 8-bit hex colour (no
+    # channel value falls in the gap between them).
+    channels = [int(hex_colour.lstrip("#")[i : i + 2], 16) / 255 for i in (0, 2, 4)]
+    linear = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def _contrast_ratio(first: str, second: str) -> float:
+    high = max(_relative_luminance(first), _relative_luminance(second))
+    low = min(_relative_luminance(first), _relative_luminance(second))
+    return (high + 0.05) / (low + 0.05)
+
+
+def test_chart_palette_meets_non_text_contrast() -> None:
+    # WCAG 2.2 SC 1.4.11: each bar must reach >=3:1 against the plot background,
+    # so a low-vision reader can tell the bars from the chart area.
+    for colour in subject.PALETTE:
+        assert _contrast_ratio(colour, subject.PLOT_BACKGROUND) >= 3.0, colour
+
+
+def test_target_marker_is_perceivable_on_every_background() -> None:
+    # The marker overlaps the bars and the plot area; on each, either its dark
+    # core or its white halo must clear 3:1, so it stays distinguishable (SC 1.4.11).
+    for background in (subject.PLOT_BACKGROUND, *subject.PALETTE):
+        core = _contrast_ratio(subject.TARGET_COLOUR, background)
+        halo = _contrast_ratio(subject.TARGET_HALO_COLOUR, background)
+        assert max(core, halo) >= 3.0, background
+
+
+def test_render_chart_alt_text_describes_bars_shares_and_targets() -> None:
+    summary = subject.summarise_activity(make_frame())
+    metadata = make_metadata(
+        category_labels={"focus": "Deep focus"},
+        category_targets={"focus": 90},
+    )
+
+    alt = subject.render_chart_alt_text(summary, metadata)
+
+    assert alt.startswith('Bar chart "weekly-activity"')
+    assert "target marker" in alt
+    assert "- Deep focus: 105 minutes (68%); target 90 (+15)" in alt
+    assert "- learning: 30 minutes (19%)" in alt
+    assert "- exercise: 20 minutes (13%)" in alt
+
+
+def test_render_chart_alt_text_without_metadata_omits_targets() -> None:
+    summary = subject.summarise_activity(make_frame())
+
+    alt = subject.render_chart_alt_text(summary)
+
+    assert alt.startswith('Bar chart "Activity summary"')
+    assert "target" not in alt
+    assert "- focus: 105 minutes (68%)" in alt
+
+
+def test_default_chart_writer_writes_the_alt_text_sidecar(tmp_path: Path) -> None:
+    output_path = tmp_path / "activity-summary.png"
+
+    subject.default_chart_writer(
+        subject.summarise_activity(make_frame()),
+        make_metadata(),
+        output_path,
+    )
+
+    sidecar = tmp_path / "activity-summary.png.txt"
+    assert sidecar.exists()
+    contents = sidecar.read_text(encoding="utf-8")
+    assert 'Bar chart "weekly-activity"' in contents
+    assert "- Deep focus: 105 minutes (68%); target 90 (+15)" in contents
+
+
 def test_main_report_reads_parquet_when_requested() -> None:
     output = io.StringIO()
 
