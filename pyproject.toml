@@ -134,6 +134,10 @@ pythonpath = [".", "src"]
 [tool.coverage.run]
 source = ["oaknational.python_repo_template"]
 omit = ["src/oaknational/python_repo_template/devtools.py"]
+# Measure branch coverage, not just line coverage, so an untaken branch of a
+# conditional counts as a gap. audit_coverage_contract pins this on so it cannot
+# be silently disabled to inflate the number.
+branch = true
 # Emit repo-relative paths so the Cobertura report maps onto repository files in
 # GitHub Code Quality and stays reproducible across machines and CI runners.
 relative_files = true
@@ -141,11 +145,12 @@ relative_files = true
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
-# Honest floor: the suite achieves ~88%, so the gate guards that level rather
-# than rubber-stamping a far-lower number. audit_coverage_contract pins this at
-# or above 85 and pins the omit-list, so neither can be quietly weakened to game
-# the gate (the coverage gate itself cannot protect its own threshold).
-fail_under = 85
+# Honest floor: with branch coverage on the suite achieves ~87.6%, so the gate
+# guards that level rather than rubber-stamping a far-lower number.
+# audit_coverage_contract pins this at or above 86 and pins the omit-list, so
+# neither can be quietly weakened to game the gate (the coverage gate itself
+# cannot protect its own threshold).
+fail_under = 86
 
 [tool.importlinter]
 root_package = "oaknational.python_repo_template"

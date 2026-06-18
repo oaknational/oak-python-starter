@@ -1511,15 +1511,19 @@ updates:
     assert "github-actions" in joined
 
 
-def _coverage_pyproject(*, fail_under: float = 85, omit: list[str] | None = None) -> str:
+def _coverage_pyproject(
+    *, fail_under: float = 86, omit: list[str] | None = None, branch: bool = True
+) -> str:
     if omit is None:
         omit = ["src/oaknational/python_repo_template/devtools.py"]
     omit_literal = "[" + ", ".join(f'"{entry}"' for entry in omit) + "]"
+    branch_line = f"branch = {'true' if branch else 'false'}\n"
     return (
         "[project]\n"
         'name = "oaknational-python-repo-template"\n\n'
         "[tool.coverage.run]\n"
         'source = ["oaknational.python_repo_template"]\n'
+        f"{branch_line}"
         f"omit = {omit_literal}\n\n"
         "[tool.coverage.report]\n"
         f"fail_under = {fail_under}\n"
@@ -1545,7 +1549,7 @@ def test_audit_coverage_contract_rejects_a_lowered_fail_under(tmp_path: Path) ->
     joined = "\n".join(subject.audit_coverage_contract(tmp_path))
 
     assert "fail_under" in joined
-    assert "85" in joined
+    assert "86" in joined
 
 
 def test_audit_coverage_contract_rejects_a_missing_fail_under(tmp_path: Path) -> None:
@@ -1555,12 +1559,23 @@ def test_audit_coverage_contract_rejects_a_missing_fail_under(tmp_path: Path) ->
         'name = "oaknational-python-repo-template"\n\n'
         "[tool.coverage.run]\n"
         'source = ["oaknational.python_repo_template"]\n'
+        "branch = true\n"
         'omit = ["src/oaknational/python_repo_template/devtools.py"]\n',
     )
 
     joined = "\n".join(subject.audit_coverage_contract(tmp_path))
 
     assert "fail_under" in joined
+
+
+def test_audit_coverage_contract_rejects_disabled_branch_coverage(tmp_path: Path) -> None:
+    # Switching branch coverage off inflates the number; the gate cannot catch
+    # that, so the audit must.
+    _write(tmp_path / "pyproject.toml", _coverage_pyproject(branch=False))
+
+    joined = "\n".join(subject.audit_coverage_contract(tmp_path))
+
+    assert "branch" in joined
 
 
 def test_audit_coverage_contract_rejects_an_unjustified_omit(tmp_path: Path) -> None:
@@ -1589,9 +1604,10 @@ def test_audit_coverage_contract_accepts_an_absent_omit(tmp_path: Path) -> None:
         "[project]\n"
         'name = "oaknational-python-repo-template"\n\n'
         "[tool.coverage.run]\n"
-        'source = ["oaknational.python_repo_template"]\n\n'
+        'source = ["oaknational.python_repo_template"]\n'
+        "branch = true\n\n"
         "[tool.coverage.report]\n"
-        "fail_under = 85\n",
+        "fail_under = 86\n",
     )
 
     assert subject.audit_coverage_contract(tmp_path) == []
@@ -1605,6 +1621,7 @@ def test_audit_coverage_contract_rejects_a_boolean_fail_under(tmp_path: Path) ->
         "[project]\n"
         'name = "oaknational-python-repo-template"\n\n'
         "[tool.coverage.run]\n"
+        "branch = true\n"
         'omit = ["src/oaknational/python_repo_template/devtools.py"]\n\n'
         "[tool.coverage.report]\n"
         "fail_under = true\n",
