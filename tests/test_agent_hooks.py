@@ -12,8 +12,8 @@ QUALITY_GATE_MESSAGE = (
     "oaknational.python_repo_template.devtools check before you stop."
 )
 SKIP_BYPASS_REASON = (
-    "SKIP is prohibited here when it bypasses the repo's quality-gates or "
-    "commitizen-commit-msg hooks."
+    "SKIP is prohibited here when it bypasses the repo's quality-gates, "
+    "commitizen-commit-msg, or prevent-accidental-major hooks."
 )
 HOOKS_PATH_BYPASS_REASON = (
     "core.hooksPath overrides are prohibited here because they bypass repo git hooks."
@@ -38,7 +38,11 @@ def test_load_policy_reads_the_canonical_repo_policy() -> None:
         == "Read .agent/commands/start-right-quick.md before substantive work."
     )
     assert policy.quality_gate_message == QUALITY_GATE_MESSAGE
-    assert policy.blocked_pre_commit_skip_ids == ("quality-gates", "commitizen-commit-msg")
+    assert policy.blocked_pre_commit_skip_ids == (
+        "quality-gates",
+        "commitizen-commit-msg",
+        "prevent-accidental-major",
+    )
     assert policy.blocked_pre_commit_skip_reason == SKIP_BYPASS_REASON
     assert policy.blocked_hook_bypass_env_var_prefixes == (
         subject.BlockedPrefix(

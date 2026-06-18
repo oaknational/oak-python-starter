@@ -29,12 +29,13 @@ gap the in-repo gates structurally cannot.
    CodeQL check, but **not** these two — so `main` can go red and a PR can still
    merge. This is the single biggest enforcement gap.
 
-2. **Give the release PR a token.**
-   The standing release PR is opened by `GITHUB_TOKEN`, so `ci.yml` does not run
-   on it and it sits `UNSTABLE` indefinitely (merge it with
-   `gh pr merge <n> --squash --auto`). Provide `create-pull-request` with a PAT
-   or GitHub App token so `ci.yml` runs on the release PR; it then goes `CLEAN`
-   and merges without `--auto`. See [Releases](dev-tooling.md#releases).
+2. **Release bot (done — keep it wired).**
+   Continuous release pushes the bump commit + tag straight to protected `main`
+   via the **Oak Semantic Release Bot** GitHub App. This needs the
+   `RELEASE_APP_ID` / `RELEASE_APP_PRIVATE_KEY` repo secrets **and** the app added
+   as a **bypass actor** on the `main` ruleset (both are in place). If the app's
+   key is rotated or it is removed as a bypass actor, the release push will be
+   rejected. See [Releases](dev-tooling.md#releases).
 
 3. **Enable GitHub Code Quality (organisation preview).**
    Coverage is uploaded as Cobertura on every PR, but the upload runs with

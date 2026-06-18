@@ -69,8 +69,9 @@
   ],
   "blocked_pre_commit_skip_ids": [
     "quality-gates",
-    "commitizen-commit-msg"
+    "commitizen-commit-msg",
+    "prevent-accidental-major"
   ],
-  "blocked_pre_commit_skip_reason": "SKIP is prohibited here when it bypasses the repo's quality-gates or commitizen-commit-msg hooks.",
+  "blocked_pre_commit_skip_reason": "SKIP is prohibited here when it bypasses the repo's quality-gates, commitizen-commit-msg, or prevent-accidental-major hooks.",
   "blocked_dynamic_git_config_reason": "Dynamic git config is prohibited here for git commit and git push because it can hide hook bypasses or force pushes."
 }

@@ -4,6 +4,8 @@ __pycache__/
 .pytest_cache/
 .hypothesis/
 .ruff_cache/
+.sonarlint/
+.vscode/
 .coverage
 .coverage.*
 coverage.xml

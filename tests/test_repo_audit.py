@@ -852,11 +852,16 @@ _VALID_BUMP_MAP = 'bump_map = { "^feat" = "MINOR", "^fix" = "MINOR", "^.+" = "PA
 
 
 def _release_workflow_yaml(
-    *, triggers: str = "both", with_cz_bump: bool = True, with_increment_tool: bool = True
+    *,
+    triggers: str = "both",
+    with_cz_bump: bool = True,
+    with_increment_tool: bool = True,
+    with_skip_ci: bool = True,
 ) -> str:
     on_block = {
-        "both": "on:\n  push:\n    branches: [main]\n  workflow_dispatch:\n",
-        "push-only": "on:\n  push:\n    branches: [main]\n",
+        "both": "on:\n  workflow_run:\n    workflows: [CI]\n    types: [completed]\n"
+        "  workflow_dispatch:\n",
+        "run-only": "on:\n  workflow_run:\n    workflows: [CI]\n    types: [completed]\n",
         "dispatch-only": "on:\n  workflow_dispatch:\n",
     }[triggers]
     steps = ""
@@ -870,6 +875,8 @@ def _release_workflow_yaml(
         if with_cz_bump
         else "      - run: uv build\n"
     )
+    if with_skip_ci:
+        steps += '      - run: git commit -m "bump v0.1.1 [skip ci]"\n'
     return (
         "name: Release\n"
         + on_block
@@ -918,22 +925,30 @@ def test_audit_release_workflow_rejects_a_non_mapping_workflow(tmp_path: Path) -
     assert ".github/workflows/release.yml must define a top-level mapping" in joined
 
 
-def test_audit_release_workflow_requires_a_push_trigger(tmp_path: Path) -> None:
+def test_audit_release_workflow_requires_a_workflow_run_trigger(tmp_path: Path) -> None:
     _write_release_world(tmp_path, workflow=_release_workflow_yaml(triggers="dispatch-only"))
 
     joined = "\n".join(subject.audit_release_workflow(tmp_path))
 
-    assert "must trigger on push to main" in joined
+    assert "must trigger on workflow_run" in joined
     assert "must offer workflow_dispatch" not in joined
 
 
 def test_audit_release_workflow_requires_workflow_dispatch_for_manual_major(tmp_path: Path) -> None:
-    _write_release_world(tmp_path, workflow=_release_workflow_yaml(triggers="push-only"))
+    _write_release_world(tmp_path, workflow=_release_workflow_yaml(triggers="run-only"))
 
     joined = "\n".join(subject.audit_release_workflow(tmp_path))
 
     assert "must offer workflow_dispatch for manual major releases" in joined
-    assert "must trigger on push to main" not in joined
+    assert "must trigger on workflow_run" not in joined
+
+
+def test_audit_release_workflow_requires_the_skip_ci_loop_guard(tmp_path: Path) -> None:
+    _write_release_world(tmp_path, workflow=_release_workflow_yaml(with_skip_ci=False))
+
+    joined = "\n".join(subject.audit_release_workflow(tmp_path))
+
+    assert "[skip ci]" in joined
 
 
 def test_audit_release_workflow_requires_a_cz_bump_step(tmp_path: Path) -> None:
