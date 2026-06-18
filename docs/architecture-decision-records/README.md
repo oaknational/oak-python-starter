@@ -10,3 +10,4 @@ decisions they delivered should be readable here without replaying plan prose.
 | ADR | Subject | Status |
 | --- | --- | --- |
 | [ADR-0001](ADR-0001-cross-platform-practice-surface-contract.md) | Cross-platform Practice surface contract | Accepted |
+| [ADR-0002](ADR-0002-single-bleeding-edge-python-version.md) | Single bleeding-edge Python version (no matrix) | Accepted |
