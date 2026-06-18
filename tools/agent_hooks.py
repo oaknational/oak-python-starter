@@ -419,40 +419,11 @@ def _blocked_shell_pattern_reason_for_command(policy: HookPolicy, command: str) 
 
 
 def _hook_bypass_reason(policy: HookPolicy, command: str) -> str | None:
-    command = _strip_quoted_heredoc_bodies(command)
     return _reason_with_substitutions(policy, command, _hook_bypass_reason_for_command)
 
 
 def _blocked_shell_pattern_reason(policy: HookPolicy, command: str) -> str | None:
-    command = _strip_quoted_heredoc_bodies(command)
     return _reason_with_substitutions(policy, command, _blocked_shell_pattern_reason_for_command)
-
-
-_QUOTED_HEREDOC_OPENER = re.compile(r"<<-?\s*(['\"])(\w+)\1")
-
-
-def _strip_quoted_heredoc_bodies(command: str) -> str:
-    """Drop the literal body of each quoted-delimiter here-document.
-
-    A quoted delimiter (``<<'EOF'`` / ``<<"EOF"``) makes the body literal text
-    with no expansion, so it is data rather than commands; analysing it produces
-    false positives — most importantly a commit message that merely *documents* a
-    blocked command. Unquoted ``<<EOF`` bodies undergo expansion and may contain a
-    live ``$(...)``, so they are left in place to stay checked.
-    """
-
-    if "<<" not in command:
-        return command
-    kept_lines: list[str] = []
-    open_tags: list[str] = []
-    for line in command.split("\n"):
-        if open_tags:
-            if line.strip() == open_tags[0]:
-                open_tags.pop(0)
-            continue
-        kept_lines.append(line)
-        open_tags.extend(match.group(2) for match in _QUOTED_HEREDOC_OPENER.finditer(line))
-    return "\n".join(kept_lines)
 
 
 def _blocked_shell_pattern_reason_for_segments(

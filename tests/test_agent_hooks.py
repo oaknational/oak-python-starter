@@ -329,9 +329,11 @@ def test_evaluate_hook_policy_denies_substitution_and_pipe_bypasses() -> None:
         ('echo "$(git push --force)"', force_push_reason),
         # Unterminated substitution fails safe-side: the remainder is still checked.
         ("echo $(git push --force", force_push_reason),
-        # An UNQUOTED heredoc body undergoes expansion, so a live $(...) in it
-        # must still be caught (only quoted-delimiter bodies are literal data).
+        # A live $(...) inside an unquoted heredoc body must still be caught.
         ("cat <<EOF\n$(git push --force)\nEOF", force_push_reason),
+        # A quoted delimiter blocks expansion but NOT execution: bash still runs
+        # the body, so heredoc bodies are never stripped and this stays denied.
+        ("bash <<'EOF'\ngit push --force\nEOF", force_push_reason),
     ]
 
     for command, reason in cases:
@@ -363,18 +365,8 @@ def test_evaluate_hook_policy_allows_benign_substitutions_and_pipes() -> None:
         "EOF\n"
         ')"'
     )
-    # A quoted-delimiter heredoc body is literal data: a commit message that
-    # *documents* blocked commands must not be denied as if it ran them.
-    heredoc_commit_documenting_blocked_commands = (
-        "git commit -m \"$(cat <<'EOF'\n"
-        "docs: explain why git push --force and HUSKY=0 git push are banned\n"
-        "and why true | git stash must never appear in CI\n"
-        "EOF\n"
-        ')"'
-    )
     safe_commands = [
         heredoc_commit,
-        heredoc_commit_documenting_blocked_commands,
         "echo $(date)",
         "echo $(git status)",
         "git status | grep modified",
