@@ -99,6 +99,12 @@ uv run activity-report report \
   --chart activity-summary.png
 ```
 
+The chart is built to WCAG 2.2 AA: every bar clears a 3:1 non-text contrast
+ratio and the target marker carries a contrasting halo (SC 1.4.11), and a text
+alternative is written beside the image — `activity-summary.png.txt` — so a
+non-visual reader gets the same per-category minutes, shares, and target deltas
+(SC 1.1.1).
+
 Report directly from a bounded HTTPS input:
 
 ```bash
