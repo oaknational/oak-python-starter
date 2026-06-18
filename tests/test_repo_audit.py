@@ -1511,6 +1511,110 @@ updates:
     assert "github-actions" in joined
 
 
+def _coverage_pyproject(*, fail_under: float = 85, omit: list[str] | None = None) -> str:
+    if omit is None:
+        omit = ["src/oaknational/python_repo_template/devtools.py"]
+    omit_literal = "[" + ", ".join(f'"{entry}"' for entry in omit) + "]"
+    return (
+        "[project]\n"
+        'name = "oaknational-python-repo-template"\n\n'
+        "[tool.coverage.run]\n"
+        'source = ["oaknational.python_repo_template"]\n'
+        f"omit = {omit_literal}\n\n"
+        "[tool.coverage.report]\n"
+        f"fail_under = {fail_under}\n"
+    )
+
+
+def test_audit_coverage_contract_accepts_the_pinned_floor_and_omit_list(tmp_path: Path) -> None:
+    _write(tmp_path / "pyproject.toml", _coverage_pyproject())
+
+    assert subject.audit_coverage_contract(tmp_path) == []
+
+
+def test_audit_coverage_contract_accepts_a_raised_floor(tmp_path: Path) -> None:
+    # The audit pins a floor, not an exact value, so raising the bar is fine.
+    _write(tmp_path / "pyproject.toml", _coverage_pyproject(fail_under=92))
+
+    assert subject.audit_coverage_contract(tmp_path) == []
+
+
+def test_audit_coverage_contract_rejects_a_lowered_fail_under(tmp_path: Path) -> None:
+    _write(tmp_path / "pyproject.toml", _coverage_pyproject(fail_under=70))
+
+    joined = "\n".join(subject.audit_coverage_contract(tmp_path))
+
+    assert "fail_under" in joined
+    assert "85" in joined
+
+
+def test_audit_coverage_contract_rejects_a_missing_fail_under(tmp_path: Path) -> None:
+    _write(
+        tmp_path / "pyproject.toml",
+        "[project]\n"
+        'name = "oaknational-python-repo-template"\n\n'
+        "[tool.coverage.run]\n"
+        'source = ["oaknational.python_repo_template"]\n'
+        'omit = ["src/oaknational/python_repo_template/devtools.py"]\n',
+    )
+
+    joined = "\n".join(subject.audit_coverage_contract(tmp_path))
+
+    assert "fail_under" in joined
+
+
+def test_audit_coverage_contract_rejects_an_unjustified_omit(tmp_path: Path) -> None:
+    # Adding files to the omit-list hides them from the coverage denominator;
+    # the gate cannot catch that, so the audit must.
+    _write(
+        tmp_path / "pyproject.toml",
+        _coverage_pyproject(
+            omit=[
+                "src/oaknational/python_repo_template/devtools.py",
+                "src/oaknational/python_repo_template/data/activity_store.py",
+            ]
+        ),
+    )
+
+    joined = "\n".join(subject.audit_coverage_contract(tmp_path))
+
+    assert "omit" in joined
+    assert "activity_store.py" in joined
+
+
+def test_audit_coverage_contract_accepts_an_absent_omit(tmp_path: Path) -> None:
+    # No omit at all is the safest case (no files hidden) and must pass.
+    _write(
+        tmp_path / "pyproject.toml",
+        "[project]\n"
+        'name = "oaknational-python-repo-template"\n\n'
+        "[tool.coverage.run]\n"
+        'source = ["oaknational.python_repo_template"]\n\n'
+        "[tool.coverage.report]\n"
+        "fail_under = 85\n",
+    )
+
+    assert subject.audit_coverage_contract(tmp_path) == []
+
+
+def test_audit_coverage_contract_rejects_a_boolean_fail_under(tmp_path: Path) -> None:
+    # TOML `true` parses to a Python bool (a subclass of int); it must not pass
+    # the numeric floor.
+    _write(
+        tmp_path / "pyproject.toml",
+        "[project]\n"
+        'name = "oaknational-python-repo-template"\n\n'
+        "[tool.coverage.run]\n"
+        'omit = ["src/oaknational/python_repo_template/devtools.py"]\n\n'
+        "[tool.coverage.report]\n"
+        "fail_under = true\n",
+    )
+
+    joined = "\n".join(subject.audit_coverage_contract(tmp_path))
+
+    assert "fail_under" in joined
+
+
 def test_main_reports_success_and_failure() -> None:
     stdout = StringIO()
     subject.main(root=subject.REPO_ROOT, stdout=stdout)
