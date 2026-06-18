@@ -9,16 +9,19 @@ todos:
     content: "F2 — make the CSV boundary robust to pandas NA/dtype sniffing, with negative tests."
     status: completed
   - id: honest-gates
-    content: "F3 — raise coverage threshold toward achieved and audit the omit-list."
-    status: pending
+    content: "F3 — raise coverage threshold toward achieved and audit the omit-list. DONE (PR #31)."
+    status: completed
   - id: ci-workflow
     content: "F4 — add a CI workflow that runs check-ci on push and PR."
     status: completed
   - id: accessible-output
-    content: "F8 — emit a text alternative for the chart and lift failing contrasts."
-    status: pending
-  - id: adoptability
-    content: "F5/F6/F7 — trust-boundary note + size cap, guardrail simplify-and-fail-close, rename guide."
+    content: "F8 — emit a text alternative for the chart and lift failing contrasts. DONE (PR #33)."
+    status: completed
+  - id: adoptability-f5-f7
+    content: "F5 remote size cap + trust-boundary note and F7 rename guide. DONE (PR #34)."
+    status: completed
+  - id: guardrail-f6
+    content: "F6 — agent_hooks.py guardrail hardening. DEFERRED: needs owner intent on the fail-closed semantics + a dedicated security-reviewed session (a blanket $( deny would break the agent's own heredoc commits). See the gate-expansion thread."
     status: pending
 ---
 

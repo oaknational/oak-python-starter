@@ -1,16 +1,18 @@
 # Repo Continuity
 
-**Last refreshed**: 2026-06-18 (later) — **supply-chain PR #28 + coverage PR #31
-both MERGED**. `main` is green and now carries: SHA-pinned actions +
-`dependabot.yml` + `audit_supply_chain` + the packaging-schema fix (#28), and the
-honest coverage floor (`fail_under` 70→85) + `audit_coverage_contract` (#31).
-Earlier this program: gitleaks gate (#16), coverage→GitHub Code Quality (#18),
-**release automation** (live-verified — `v0.1.0` + `v0.2.0` released),
-**pip-audit** gate (#24), **codespell** gate (#26) all merged. An
-owner-approved **"highest proportionate bar" program** (4 lanes) is in progress —
-Tier 1a done; Tier 1b **F3 done**; **next is Tier 1b F8** (WCAG 2.2 AA accessible
-chart), then F5/6/7, Tier 3, Tier 2, then merge release PR #25.
-Full program state + the critical release-PR `--auto` mechanic live in the
+**Last refreshed**: 2026-06-18 (later) — **Tier 1b complete except F6**. `main`
+is green; merged this session: #28 supply-chain pinning + `audit_supply_chain` +
+packaging-schema fix, #31 honest coverage floor (`fail_under` 70→85) +
+`audit_coverage_contract`, #33 WCAG 2.2 AA accessible chart (F8), #34 remote
+size-cap (F5) + rename guide (F7). **Tier 1b F6** (the `agent_hooks.py` guardrail
+hardening) is **DEFERRED** — it modifies the safety hook that runs on every bash
+command, the "fail-closed on `$(`" requirement is ambiguous (a blanket deny
+breaks the agent's own heredoc commits), and a bad edit self-locks; it needs
+owner intent + a dedicated session. Earlier this program: gitleaks (#16),
+coverage→Code Quality (#18), release automation (live-verified, `v0.1.0`/`v0.2.0`),
+pip-audit (#24), codespell (#26). **Next: Tier 1b F6, then Tier 3, then Tier 2,
+then merge release PR #25.** Full state + the F6 analysis + the release-PR
+`--auto` mechanic live in the
 [gate-expansion thread record](threads/quality-gate-surface-expansion.next-session.md).
 
 ## Active Threads
@@ -36,7 +38,10 @@ Full program state + the critical release-PR `--auto` mechanic live in the
 - Merged this program: #16 gitleaks, #18 coverage→Code Quality, #19/#20/#22
   release automation, #24 pip-audit, #26 codespell, **#28 supply-chain pinning +
   `audit_supply_chain` + packaging-schema fix**, **#31 honest coverage floor
-  (85) + `audit_coverage_contract`**. `main` is green.
+  (85) + `audit_coverage_contract`**, **#33 WCAG 2.2 AA accessible chart (F8)**,
+  **#34 remote size-cap (F5) + rename guide (F7)**. `main` is green.
+- **Tier 1b F6 DEFERRED** (the `agent_hooks.py` guardrail hardening) — full
+  analysis + recommended safe design in the thread record's Remaining Work.
 - **Open: release PR #25 `chore(release): v0.3.0`** (standing, intentionally
   accumulating every merged feat/fix — merge with `--auto` at sprint end; it now
   also includes #28 + #31). The next prepare run will retitle it to the bumped
@@ -78,8 +83,14 @@ Full program state + the critical release-PR `--auto` mechanic live in the
   (honest coverage floor 85 + `audit_coverage_contract`), config-reviewed (fixed
   a false-positive on an absent `omit` key) and merged. Checkpointing here so the
   WCAG work (F8) starts with fresh context.
-- Next: **Tier 1b F8** (WCAG 2.2 AA accessible chart) → F5/6/7 → Tier 3 → Tier 2;
-  then merge release PR #25. Authoritative detail in the gate-expansion thread.
+- 2026-06-18 (later still, cont.): landed **F8** (PR #33, WCAG chart — code-review
+  adopted) and **F5+F7** (PR #34, remote size-cap + rename guide — security-review
+  adopted the connection-closing `with` and `stream=True` assertions). **Deferred
+  F6** (the `agent_hooks.py` guardrail) on safety/ambiguity grounds — see the
+  thread record. Tier 1b is complete bar F6.
+- Next: **Tier 1b F6** (deferred — owner intent + dedicated session) → Tier 3 →
+  Tier 2; then merge release PR #25. Authoritative detail in the gate-expansion
+  thread.
 
 ## Repo-Wide Invariants / Non-Goals
 
@@ -103,15 +114,16 @@ Full program state + the critical release-PR `--auto` mechanic live in the
 
 ## Next Safe Step
 
-- **Tier 1b F8 — WCAG 2.2 AA accessible chart** (next; org accessibility mandate
-  makes this important to get right): write a text alternative from
-  `render_summary` (SC 1.1.1); darken `#d08d46` and halo the target marker for
-  ≥3:1 contrast (SC 1.4.11); test the sidecar + the contrast ratios. See the
-  template-fitness-remediation plan. Then F5/6/7, Tier 3 (branch coverage,
-  Hypothesis, version-policy ADR), Tier 2 (governance checklist). Finally **merge
-  release PR #25 with `--auto`** to cut the accumulated release. Normal feature
-  PRs merge with `gh pr merge <n> --squash --delete-branch` once green (CI +
-  SonarCloud); the bot-opened release PR #25 needs `--auto` (it sits UNSTABLE).
+- **Tier 1b F6 — `agent_hooks.py` guardrail hardening (DEFERRED).** Get owner
+  intent on the "fail-closed on `$(`/backticks" semantics first (blanket-deny vs
+  recurse-and-check), then implement in a dedicated session. The full analysis,
+  the two bypasses it closes, the recommended safe design, and the mandatory
+  pre-verification (run the edited hook against a heredoc commit → must ALLOW)
+  are in the gate-expansion thread's Remaining Work entry. Then Tier 3 (branch
+  coverage, Hypothesis, version-policy ADR), Tier 2 (governance checklist).
+  Finally **merge release PR #25 with `--auto`** (bot PR, sits UNSTABLE) to cut
+  the accumulated release. Normal feature PRs merge with
+  `gh pr merge <n> --squash --delete-branch` once green (CI + SonarCloud).
   Authoritative detail in the gate-expansion thread record.
 
 ## Open Side-Tasks
