@@ -869,6 +869,63 @@ def audit_supply_chain(root: Path) -> list[str]:
     return failures
 
 
+# The coverage gate enforces "coverage >= threshold" at runtime, but it cannot
+# protect its own threshold from being lowered, the omit-list from growing to
+# hide uncovered code, nor branch coverage from being switched off to inflate the
+# number. This audit guards exactly those three governance gaps. The floor is a
+# minimum, not an exact value, so the bar can still be raised.
+_COVERAGE_FAIL_UNDER_FLOOR = 86
+_COVERAGE_JUSTIFIED_OMIT = ("src/oaknational/python_repo_template/devtools.py",)
+
+
+def audit_coverage_contract(root: Path) -> list[str]:
+    check = "coverage-contract"
+    failures: list[str] = []
+    data = _load_pyproject(root, failures, check)
+    if data is None:
+        return failures
+    tool = _object_mapping(data.get("tool"))
+    coverage = _object_mapping(tool.get("coverage")) if tool is not None else None
+    run = _object_mapping(coverage.get("run")) if coverage is not None else None
+    report = _object_mapping(coverage.get("report")) if coverage is not None else None
+
+    fail_under = report.get("fail_under") if report is not None else None
+    require(
+        failures,
+        check,
+        isinstance(fail_under, (int, float))
+        and not isinstance(fail_under, bool)
+        and fail_under >= _COVERAGE_FAIL_UNDER_FLOOR,
+        f"pyproject [tool.coverage.report].fail_under must be >= "
+        f"{_COVERAGE_FAIL_UNDER_FLOOR} to keep the coverage gate honest "
+        f"(found: {fail_under!r})",
+    )
+
+    require(
+        failures,
+        check,
+        run is not None and run.get("branch") is True,
+        "pyproject [tool.coverage.run].branch must be true so the coverage gate "
+        "measures branch coverage and cannot be inflated by switching it off "
+        f"(found: {run.get('branch') if run is not None else None!r})",
+    )
+
+    # An absent omit key means no exclusions — trivially within the justified
+    # set, so it must pass. A present-but-non-list value is malformed and fails.
+    omit_value = run.get("omit") if run is not None else None
+    omit = _string_list(omit_value)
+    omitted: set[str] = set(omit) if omit is not None else set()
+    require(
+        failures,
+        check,
+        omit_value is None or (omit is not None and omitted <= set(_COVERAGE_JUSTIFIED_OMIT)),
+        "pyproject [tool.coverage.run].omit must not exclude files beyond the "
+        f"justified set {list(_COVERAGE_JUSTIFIED_OMIT)} (found: {omit_value!r}); "
+        "excluding more hides code from the coverage denominator",
+    )
+    return failures
+
+
 def audit_secret_scanning(root: Path) -> list[str]:
     check = "secret-scanning"
     failures: list[str] = []
@@ -2079,6 +2136,7 @@ DEFAULT_AUDIT_CHECKS: tuple[AuditFunction, ...] = (
     audit_ci_workflow,
     audit_release_workflow,
     audit_supply_chain,
+    audit_coverage_contract,
     audit_secret_scanning,
     audit_gate_scripts,
     audit_typing_contract,

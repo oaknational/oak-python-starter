@@ -16,6 +16,11 @@ Install the distribution as `oaknational-python-repo-template` and import it as
 `oaknational.python_repo_template`. That is the baseline convention this repo
 uses to define "Pythonic within Oak".
 
+Adopting this template for a new project? See
+[docs/using-this-template.md](docs/using-this-template.md) for the ordered rename
+steps — `repo-audit` pins the template identity, so it doubles as a checklist
+that flags any surface you miss.
+
 The package ships `py.typed`, and the repo type-checks `src/`, `tests/`, and
 `tools/` under explicit strict `pyright` settings.
 
@@ -98,6 +103,12 @@ uv run activity-report report \
   --input data/fixtures/activity_log.parquet \
   --chart activity-summary.png
 ```
+
+The chart is built to WCAG 2.2 AA: every bar clears a 3:1 non-text contrast
+ratio and the target marker carries a contrasting halo (SC 1.4.11), and a text
+alternative is written beside the image — `activity-summary.png.txt` — so a
+non-visual reader gets the same per-category minutes, shares, and target deltas
+(SC 1.1.1).
 
 Report directly from a bounded HTTPS input:
 
@@ -184,6 +195,15 @@ The bump level is computed by Commitizen with this repo's policy:
 **Major versions are manual.** A breaking change makes the automation stand
 down; cut the major deliberately via the Release workflow's *Run workflow*
 button (`increment = MAJOR`). Releases publish to GitHub Releases only (no PyPI).
+
+## Governance
+
+Most of the quality bar is enforced in code (the `check-ci` gates, the
+`repo_audit.py` self-checks, and the SonarCloud PR gate). A few protections live
+only in GitHub settings — required status checks, a release-PR token, the Code
+Quality preview, and tag protection. Those owner actions are listed in
+[docs/repository-governance.md](docs/repository-governance.md); an adopter should
+work through them once per repository.
 
 ## Practice Surface
 

@@ -1,5 +1,36 @@
 # Napkin
 
+## Session: 2026-06-18 (later still) — Tier 1b F3/F8/F5/F7 landed, F6 deferred
+
+### What Was Done
+
+- **F3** (#31): coverage `fail_under` 70→85 + `audit_coverage_contract`.
+- **F8** (#33): WCAG 2.2 AA chart — darkened the amber bar, white-haloed the
+  target marker, alt-text sidecar. Five PRs merged green this session (28/31/32/
+  33/34), each through CI + CodeQL + SonarCloud.
+- **F5/F7** (#34): remote 10 MiB streaming size-cap (in a connection-closing
+  `with`) + `docs/using-this-template.md` rename guide.
+
+### Surprises & corrections (critically assess)
+
+- **A failing accessibility check can reveal an *existing* bug, not just the new
+  requirement.** The dark target marker (`#374151`) already failed 3:1 on most
+  bars — invisible on blue/teal/red/purple — before F8. Computing the contrasts
+  honestly (independent WCAG helper in the test) surfaced it.
+- **Don't trust a thread-hint's framing of a security change — verify intent.**
+  F6's "fail-closed on `$(`/backticks" reads as a blanket deny, but that would
+  break legitimate command substitution *including this agent's own
+  `git commit -m "$(cat <<EOF …)"` heredoc pattern*, and the hook runs on the
+  working-tree copy → a bad edit self-locks. **Deferred F6** for owner intent +
+  a dedicated session rather than rush a dangerous, ambiguous edit to the safety
+  rail. Recommended design recorded (pipe-separator + recurse-into-substitution,
+  not blanket-deny; pre-verify the edited hook allows a heredoc commit).
+- **Reviewer adoption, filtered:** code-review on F8 (added the missing exercise
+  assertion, extracted `_chart_title`); security-review on F5 (connection leak →
+  `with`; assert `stream=True`). Each adopted finding got a test. The `with`
+  exposed a fake-response needing a closeable `raw` — a test-fixture fix, not a
+  prod bug.
+
 ## Session: 2026-06-18 (later) — supply-chain PR #28, SonarCloud gate, multi-agent collision
 
 ### What Was Done

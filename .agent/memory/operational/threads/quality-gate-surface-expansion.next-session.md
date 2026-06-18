@@ -9,8 +9,8 @@
 ## Owning Plans
 
 - Gates: [`../../../plans/runtime-infrastructure/current/quality-gate-surface-expansion.md`](../../../plans/runtime-infrastructure/current/quality-gate-surface-expansion.md)
-- Release automation: [`../../../plans/runtime-infrastructure/current/release-automation.md`](../../../plans/runtime-infrastructure/current/release-automation.md)
-- Template fitness (F3/F8/F5-7): [`../../../plans/runtime-infrastructure/current/template-fitness-remediation.md`](../../../plans/runtime-infrastructure/current/template-fitness-remediation.md)
+- Release automation (ARCHIVED 2026-06-18): [`../../../plans/runtime-infrastructure/archive/release-automation.md`](../../../plans/runtime-infrastructure/archive/release-automation.md)
+- Template fitness (F3/F8/F5/F7 done; F6 deferred): [`../../../plans/runtime-infrastructure/current/template-fitness-remediation.md`](../../../plans/runtime-infrastructure/current/template-fitness-remediation.md)
 - Source review: [`../../../reports/2026-06-17-oak-quality-gate-types-review.md`](../../../reports/2026-06-17-oak-quality-gate-types-review.md)
 
 ## Current Objective (owner-approved 2026-06-18)
@@ -56,15 +56,19 @@ All merged to `main` unless noted. `main` is green.
     `--admin` — the harness classifier blocks admin bypass, correctly). `--auto`
     merges once the ruleset's actual requirements are met (a PR exists; no
     required status checks). Merging it triggers the publish phase → `v0.3.0`.
-- **Supply-chain PR #28 `feat/supply-chain-pinning` (HEAD `f5225cb`, OPEN).**
-  Contains: all workflow action `uses:` SHA-pinned (with `# vX` comments) +
-  `.github/dependabot.yml` (uv + github-actions, weekly, grouped) + the
-  **`audit_supply_chain` self-check** (asserts every workflow `uses:` — step- AND
-  job-level — is a 40-hex SHA or a `sha256:` docker digest, and dependabot watches
-  uv+github-actions) + the packaging-schema fix below. All four pinned SHAs were
-  verified to match their upstream `vN` tags. **Next: get it green (CI +
-  SonarCloud) and merge** with `gh pr merge 28 --squash --delete-branch` (a normal
-  PR — CodeQL runs and it merges on green; NOT the bot-PR `--auto` path #25 needs).
+- **Supply-chain PR #28 — MERGED** (`feat/supply-chain-pinning`). Landed: all
+  workflow action `uses:` SHA-pinned + `.github/dependabot.yml` (uv +
+  github-actions) + the **`audit_supply_chain` self-check** (asserts every
+  workflow `uses:` — step- AND job-level — is a 40-hex SHA or a `sha256:` docker
+  digest, and dependabot watches both ecosystems) + the packaging-schema fix
+  below. All four pinned SHAs verified to match their upstream `vN` tags.
+- **Coverage PR #31 — MERGED** (Tier 1b F3). `fail_under` 70→85 + the
+  `audit_coverage_contract` repo_audit check (floor + omit-list guard — guards
+  what the coverage gate structurally cannot). Normal feature PRs merge with
+  `gh pr merge <n> --squash --delete-branch` once green (CI + SonarCloud).
+- **Accessible-chart PR #33 — MERGED** (Tier 1b F8, WCAG 2.2 AA).
+- **Adoptability PR #34 — MERGED** (Tier 1b F5 remote size cap + F7 rename
+  guide). **F6 (the agent_hooks guardrail) is DEFERRED** — see Remaining Work.
 - **Packaging-schema fix folded into PR #28** (committed `f5225cb`), separate from
   supply-chain: `pyproject` `[tool.hatch.build.targets.wheel].sources` `["src"]`
   → `{ "src" = "" }` (array tripped the *Even Better TOML* SchemaStore Hatch
@@ -91,16 +95,40 @@ All merged to `main` unless noted. `main` is green.
 ## Remaining Program Work (each its own branch off main + PR)
 
 - **Tier 1b — template fitness** (template-fitness-remediation plan):
-  - **F3 honest coverage gate**: raise `fail_under` from 70 → ~85 (achieved ~88);
-    add `audit_coverage_contract` pinning the threshold floor + the exact
-    coverage omit-list (`governance-claim-needs-a-scanner`).
-  - **F8 accessible chart** (org WCAG 2.2 AA mandate, currently unmet): write a
-    text alternative from `render_summary` (SC 1.1.1); darken `#d08d46` and halo
-    the target marker for ≥3:1 contrast (SC 1.4.11); test the sidecar + contrasts.
-  - **F5/F6/F7 adoptability**: remote-fetch size cap + trust-boundary note;
-    guardrail fail-closed + simplify in `agent_hooks.py` (treat `|` as separator,
-    fail-closed on `$(`/backticks; allow-path tests for git commit/push/status);
-    a "rename this template" guide.
+  - **F3 honest coverage gate — DONE (PR #31).** `fail_under` 70→85 +
+    `audit_coverage_contract` (floor + omit-list guard). The audit asserts a
+    *floor* (>=85, raising allowed) and that `omit` stays a subset of the
+    justified set — guarding what the coverage gate structurally cannot.
+  - **F8 accessible chart — DONE (PR #33).** Darkened the amber bar
+    `#d08d46`→`#b07a37` (2.77→3.69:1), added a white halo to the target marker
+    (it failed 3:1 on most bars), and a `<chart>.png.txt` alt-text sidecar from
+    `render_chart_alt_text`. Tests pin the WCAG contrasts with an independent
+    contrast helper. (Discovery: the dark target marker was an *existing* a11y
+    bug — invisible on blue/teal/red/purple bars.)
+  - **F5 remote size cap — DONE (PR #34).** `default_remote_reader` streams under
+    a 10 MiB `REMOTE_MAX_BYTES` cap (declared-Content-Length early reject + decoded
+    streaming cap), inside a `with` so the connection closes on every exit.
+  - **F7 rename guide — DONE (PR #34).** `docs/using-this-template.md`, linked
+    from the README.
+  - **F6 guardrail hardening — DEFERRED (needs owner input + a dedicated
+    session).** Goal: close two bypasses in the self-imposed safety rail
+    (`tools/agent_hooks.py`): (a) `_shell_segments` (line ~484) does NOT split on
+    `|`, so a piped stage isn't analysed as its own segment; (b) the anchored
+    force-push/etc. regexes are defeated by `$(...)`/backticks — e.g.
+    `echo $(git push --force)` slips through because the trailing `)` breaks the
+    `(\s|$)` anchor. **Why deferred:** "fail-closed on `$(`/backticks" is
+    ambiguous and, taken as a *blanket deny*, would break legitimate command
+    substitution — including the agent's own `git commit -m "$(cat <<'EOF' …)"`
+    heredoc pattern — and the hook runs on the working-tree copy, so a bad edit
+    self-locks the agent out of committing the fix. **Recommended safe design:**
+    add `|` to the `_shell_segments` separator set (safe; `||` stays distinct),
+    and *recurse into* `$(...)`/backtick substitutions to check the inner command
+    for blocked patterns (mirroring the existing `_shell_launcher_command`
+    recursion) rather than blanket-denying. **Before relying on any edit, run the
+    modified hook directly against (i) a heredoc `git commit` → must ALLOW,
+    (ii) `echo $(git push --force)` → must DENY, (iii) `git status` → ALLOW.**
+    Owner to confirm whether they want strict blanket-deny (and accept simple
+    `-m` messages for git commit/push) or the recurse-and-check interpretation.
 - **Tier 3 — Pythonic additions**:
   - branch coverage (`--cov-branch`) + raise threshold;
   - Hypothesis property-based tests for the CSV/data boundary;
@@ -157,13 +185,19 @@ All merged to `main` unless noted. `main` is green.
 
 ## Next Safe Step
 
-1. **Supply-chain PR #28 is OPEN** (HEAD `f5225cb`). Get it green (CI +
-   SonarCloud) and merge with `gh pr merge 28 --squash --delete-branch`.
-2. Then Tier 1b (F3 → F8 → F5/6/7), then Tier 3, then the Tier 2 checklist.
+1. **#28, #31, #33, #34 are MERGED; `main` is green. Tier 1b is done except F6.**
+   Resume at **Tier 1b F6** (the deferred `agent_hooks.py` guardrail hardening —
+   read its full entry under Remaining Program Work; get owner intent on the
+   fail-closed semantics first, and pre-verify the modified hook allows a heredoc
+   commit before relying on it).
+2. Then Tier 3 (branch coverage, Hypothesis, version-policy ADR), then the
+   Tier 2 governance checklist.
 3. When the sprint's PRs are all merged, **merge release PR #25 with `--auto`**
    to cut the accumulated release, then verify the new GitHub Release + the
    bumped `main` version.
-4. **Deep `consolidate-docs` graduation is deferred to a fresh-context session**
-   (do not attempt it at low context): home durable doctrine out of plans,
-   archive completed plans (release-automation is essentially done + verified),
-   rotate the napkin, refresh `completed-plans.md`/indexes.
+4. **A deep `consolidate-docs` ran 2026-06-18:** the release-automation plan was
+   archived (doctrine confirmed homed in README/docs/workflow/audit),
+   `completed-plans.md` and the plan indexes refreshed, durable lessons distilled,
+   and a session experience note added. The napkin (222 lines) was not rotated
+   (under threshold). Remaining graduation is light and can wait for a natural
+   break.

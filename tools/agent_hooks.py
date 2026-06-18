@@ -8,6 +8,7 @@ import json
 import re
 import shlex
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, TextIO, cast
@@ -388,12 +389,41 @@ def _json(payload: object) -> str:
     return json.dumps(payload, separators=(",", ":"))
 
 
-def _hook_bypass_reason(policy: HookPolicy, command: str) -> str | None:
+def _reason_with_substitutions(
+    policy: HookPolicy,
+    command: str,
+    check: Callable[[HookPolicy, str], str | None],
+) -> str | None:
+    """Run ``check`` on ``command``, then recurse into each substitution body.
+
+    Recursion is bounded because every substitution body is strictly shorter
+    than the command that contains it.
+    """
+
+    reason = check(policy, command)
+    if reason is not None:
+        return reason
+    for inner_command in _substitution_commands(command):
+        nested_reason = _reason_with_substitutions(policy, inner_command, check)
+        if nested_reason is not None:
+            return nested_reason
+    return None
+
+
+def _hook_bypass_reason_for_command(policy: HookPolicy, command: str) -> str | None:
     return _hook_bypass_reason_for_segments(policy, _shell_segments(command), {})
 
 
-def _blocked_shell_pattern_reason(policy: HookPolicy, command: str) -> str | None:
+def _blocked_shell_pattern_reason_for_command(policy: HookPolicy, command: str) -> str | None:
     return _blocked_shell_pattern_reason_for_segments(policy, _shell_segments(command))
+
+
+def _hook_bypass_reason(policy: HookPolicy, command: str) -> str | None:
+    return _reason_with_substitutions(policy, command, _hook_bypass_reason_for_command)
+
+
+def _blocked_shell_pattern_reason(policy: HookPolicy, command: str) -> str | None:
+    return _reason_with_substitutions(policy, command, _blocked_shell_pattern_reason_for_command)
 
 
 def _blocked_shell_pattern_reason_for_segments(
@@ -490,7 +520,7 @@ def _shell_segments(command: str) -> tuple[tuple[str, ...], ...]:
     segments: list[tuple[str, ...]] = []
     current: list[str] = []
     for token in tokens:
-        if token in {"&&", "||", ";"}:
+        if token in {"&&", "||", ";", "|"}:
             if current:
                 segments.append(tuple(current))
                 current = []
@@ -499,6 +529,99 @@ def _shell_segments(command: str) -> tuple[tuple[str, ...], ...]:
     if current:
         segments.append(tuple(current))
     return tuple(segments)
+
+
+def _single_quoted_mask(command: str) -> tuple[bool, ...]:
+    """Mark each character that lies inside a single-quoted span.
+
+    Single quotes suppress command substitution in POSIX shells; double quotes
+    do not. A single quote that itself sits inside double quotes is literal, so
+    double-quote state is tracked only to gate single-quote toggling. Backslash
+    escaping is intentionally not modelled — erring towards more checking.
+    """
+
+    mask: list[bool] = []
+    in_single = False
+    in_double = False
+    for char in command:
+        mask.append(in_single)
+        if in_single:
+            if char == "'":
+                in_single = False
+        elif in_double:
+            if char == '"':
+                in_double = False
+        elif char == "'":
+            in_single = True
+        elif char == '"':
+            in_double = True
+    return tuple(mask)
+
+
+def _substitution_commands(command: str) -> tuple[str, ...]:
+    """Extract the inner command of each ``$(...)`` and backtick substitution.
+
+    Substitutions inside single quotes are skipped because the shell treats them
+    as literal text. Only the outermost substitutions are returned; nested ones
+    are recovered when each inner command is itself evaluated, which also bounds
+    the recursion because every inner command is strictly shorter than its
+    parent. Bare subshells ``(...)`` are deliberately out of scope here; see the
+    rename/guardrail notes for the documented residual.
+    """
+
+    inner_commands: list[str] = []
+    mask = _single_quoted_mask(command)
+    index = 0
+    length = len(command)
+    while index < length:
+        char = command[index]
+        if mask[index]:
+            index += 1
+            continue
+        if char == "$" and index + 1 < length and command[index + 1] == "(":
+            body, index = _read_balanced_substitution(command, index + 2, mask)
+            if body:
+                inner_commands.append(body)
+            continue
+        if char == "`":
+            end = command.find("`", index + 1)
+            if end == -1:
+                inner_commands.append(command[index + 1 :])
+                break
+            inner_commands.append(command[index + 1 : end])
+            index = end + 1
+            continue
+        index += 1
+    return tuple(inner_commands)
+
+
+def _read_balanced_substitution(
+    command: str,
+    start: int,
+    mask: tuple[bool, ...],
+) -> tuple[str, int]:
+    """Return the body of a ``$(...)`` opened before ``start`` and the index past it.
+
+    Parentheses are balanced so nested ``$(...)`` and subshells close correctly,
+    ignoring parentheses inside single-quoted spans. An unterminated
+    substitution fails safe-side: the remainder is returned so it is still
+    checked rather than silently skipped.
+    """
+
+    depth = 1
+    index = start
+    length = len(command)
+    while index < length:
+        if not mask[index]:
+            char = command[index]
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    return command[start:index], index + 1
+        index += 1
+    return command[start:], length
 
 
 def _exported_environment_assignments(

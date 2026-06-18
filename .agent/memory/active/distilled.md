@@ -65,3 +65,27 @@
   extension (else a closing `---` reads as a setext heading) and never blind-run
   `pymarkdown fix`: it renumbers ordered lists, so disable MD029 where docs use
   continuous numbering as stable IDs.
+- A `repo_audit` self-check is justified only when it guards something a runtime
+  gate structurally *cannot* — e.g. the coverage gate enforces "coverage >=
+  threshold" but cannot stop its own `fail_under` being lowered or the `omit`
+  list growing to hide code, so `audit_coverage_contract` pins a floor + the
+  omit-set. Contrast `audit_packaging_contract`, removed for asserting config
+  *shape* (`sources == ["src"]`) already proven behaviourally by the wheel-smoke.
+  Test the governance gap, never the config spelling.
+- SonarCloud Code Analysis is a live, org-level PR gate (no in-repo config) that
+  scores **new code** (`new_code_smells_severity`, etc.); it is not a *required*
+  ruleset check but is blocking by doctrine. Inspect it via the SonarQube MCP
+  (`get_project_quality_gate_status` / `search_sonar_issues_in_projects`,
+  projectKey `oaknational_oak-python-starter`, `pullRequest <n>`). Its
+  cognitive-complexity and duplicate-literal rules are easy to trip with a new
+  multi-branch function — decompose rather than suppress.
+- Pin a chart's WCAG contrasts with a test that computes the ratios from an
+  independent relative-luminance helper (not the production colours), asserting
+  bars clear 3:1 against the background and the target marker's core *or* halo
+  clears 3:1 on every background. This catches both regressions and latent bugs.
+- `tools/agent_hooks.py` runs on the *working-tree* copy for every Bash command,
+  so editing it changes the live guardrail mid-session — a bad edit can self-lock
+  the agent out of committing the fix (esp. anything that denies the
+  `git commit -m "$(cat <<EOF …)"` heredoc pattern). Before relying on an edit,
+  run the modified hook directly against a heredoc commit (must ALLOW) and the
+  pattern you intend to block (must DENY).

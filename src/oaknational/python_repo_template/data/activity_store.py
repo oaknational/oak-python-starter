@@ -25,7 +25,15 @@ ALLOWED_METADATA_KEYS = {
     "category_labels",
     "category_targets",
 }
+# Per-read timeout (requests has no total-transfer timeout); paired with the
+# size cap below and the connection-closing `with` in default_remote_reader.
 REMOTE_TIMEOUT_SECONDS = 10
+# Remote sources are untrusted input. The reader already requires HTTPS, forbids
+# redirects/queries/fragments, and times out; this caps the body size so a hostile
+# or runaway endpoint cannot exhaust memory. Enforced while streaming, since the
+# Content-Length header is advisory and may be absent or understated.
+REMOTE_MAX_BYTES = 10 * 1024 * 1024
+_REMOTE_CHUNK_BYTES = 65536
 _INT64_MAX = 2**63 - 1
 _INT64_MIN = -(2**63)
 
@@ -120,15 +128,40 @@ def default_remote_reader(
     url: str,
     *,
     http_get: HttpGet = requests.get,
+    max_bytes: int = REMOTE_MAX_BYTES,
 ) -> bytes:
-    """Fetch one remote artefact over HTTPS."""
+    """Fetch one remote artefact over HTTPS, capped at ``max_bytes``."""
 
-    response = http_get(url, timeout=REMOTE_TIMEOUT_SECONDS, allow_redirects=False)
-    if 300 <= response.status_code < 400:
-        msg = "Remote activity sources must not redirect."
-        raise requests.HTTPError(msg, response=response)
-    response.raise_for_status()
-    return response.content
+    # The `with` closes the streamed connection on every exit path, including
+    # when the cap fires mid-stream, rather than leaving it for the GC.
+    with http_get(
+        url, timeout=REMOTE_TIMEOUT_SECONDS, allow_redirects=False, stream=True
+    ) as response:
+        if 300 <= response.status_code < 400:
+            msg = "Remote activity sources must not redirect."
+            raise requests.HTTPError(msg, response=response)
+        response.raise_for_status()
+
+        # Advisory early exit: Content-Length counts compressed bytes and may be
+        # absent or understated, so the streaming cap below is the real bound.
+        declared = response.headers.get("Content-Length")
+        if declared is not None and declared.isdigit() and int(declared) > max_bytes:
+            raise ActivityDataError(_remote_too_large_message(max_bytes))
+
+        # iter_content yields post-decompression bytes, so this caps decoded
+        # memory. Peak allocation is at most max_bytes + _REMOTE_CHUNK_BYTES.
+        body = bytearray()
+        for chunk in response.iter_content(chunk_size=_REMOTE_CHUNK_BYTES):
+            if not chunk:
+                continue
+            body.extend(chunk)
+            if len(body) > max_bytes:
+                raise ActivityDataError(_remote_too_large_message(max_bytes))
+    return bytes(body)
+
+
+def _remote_too_large_message(max_bytes: int) -> str:
+    return f"Remote activity source exceeds the {max_bytes}-byte limit."
 
 
 def default_local_text_loader(path: Path) -> str:

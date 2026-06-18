@@ -1,16 +1,18 @@
 # Repo Continuity
 
-**Last refreshed**: 2026-06-18 (later) — **supply-chain PR #28 opened**. The
-`feat/supply-chain-pinning` branch now carries (all committed, HEAD `f5225cb`):
-action SHA-pins + `dependabot.yml` + the `audit_supply_chain` self-check + the
-incidental packaging-schema fix (below). **PR #28 is open and awaiting CI + the
-SonarCloud gate green, then merge.** Earlier this program:
-gitleaks gate (#16), coverage→GitHub Code Quality (#18), **release automation**
-(live-verified — `v0.1.0` + `v0.2.0` released), **pip-audit** gate (#24),
-**codespell** gate (#26) all merged; `main` is green at `v0.2.0`. An
-owner-approved **"highest proportionate bar" program** (4 lanes) is in progress —
-Tier 1a effectively done (supply-chain in PR #28), Tiers 1b/3/2 queued.
-Full program state + the critical release-PR `--auto` mechanic live in the
+**Last refreshed**: 2026-06-18 (later) — **Tier 1b complete except F6**. `main`
+is green; merged this session: #28 supply-chain pinning + `audit_supply_chain` +
+packaging-schema fix, #31 honest coverage floor (`fail_under` 70→85) +
+`audit_coverage_contract`, #33 WCAG 2.2 AA accessible chart (F8), #34 remote
+size-cap (F5) + rename guide (F7). **Tier 1b F6** (the `agent_hooks.py` guardrail
+hardening) is **DEFERRED** — it modifies the safety hook that runs on every bash
+command, the "fail-closed on `$(`" requirement is ambiguous (a blanket deny
+breaks the agent's own heredoc commits), and a bad edit self-locks; it needs
+owner intent + a dedicated session. Earlier this program: gitleaks (#16),
+coverage→Code Quality (#18), release automation (live-verified, `v0.1.0`/`v0.2.0`),
+pip-audit (#24), codespell (#26). **Next: Tier 1b F6, then Tier 3, then Tier 2,
+then merge release PR #25.** Full state + the F6 analysis + the release-PR
+`--auto` mechanic live in the
 [gate-expansion thread record](threads/quality-gate-surface-expansion.next-session.md).
 
 ## Active Threads
@@ -34,13 +36,17 @@ Full program state + the critical release-PR `--auto` mechanic live in the
 ## Branch-Primary Lane State
 
 - Merged this program: #16 gitleaks, #18 coverage→Code Quality, #19/#20/#22
-  release automation, #24 pip-audit, #26 codespell. `main` is green at `v0.2.0`.
+  release automation, #24 pip-audit, #26 codespell, **#28 supply-chain pinning +
+  `audit_supply_chain` + packaging-schema fix**, **#31 honest coverage floor
+  (85) + `audit_coverage_contract`**, **#33 WCAG 2.2 AA accessible chart (F8)**,
+  **#34 remote size-cap (F5) + rename guide (F7)**. `main` is green.
+- **Tier 1b F6 DEFERRED** (the `agent_hooks.py` guardrail hardening) — full
+  analysis + recommended safe design in the thread record's Remaining Work.
 - **Open: release PR #25 `chore(release): v0.3.0`** (standing, intentionally
-  accumulating — merge with `--auto` at sprint end).
-- **Open: supply-chain PR #28** (branch `feat/supply-chain-pinning`, HEAD
-  `f5225cb`): action SHA-pins + `dependabot.yml` + `audit_supply_chain`
-  self-check, plus the packaging-schema fix below. Awaiting CI + SonarCloud green.
-- **Folded into PR #28** (committed by this session): a packaging-schema fix —
+  accumulating every merged feat/fix — merge with `--auto` at sprint end; it now
+  also includes #28 + #31). The next prepare run will retitle it to the bumped
+  version.
+- **Folded into PR #28** (merged): a packaging-schema fix —
   `pyproject.toml` `[tool.hatch.build.targets.wheel].sources` `["src"]` →
   `{ "src" = "" }` (the array tripped the *Even Better TOML* SchemaStore Hatch
   schema, which types `sources` as an object; both forms build byte-identical
@@ -57,7 +63,8 @@ Full program state + the critical release-PR `--auto` mechanic live in the
   `get_project_quality_gate_status` / `search_sonar_issues_in_projects`,
   projectKey `oaknational_oak-python-starter`, `pullRequest <n>`.
 - Releases cut + verified: **`v0.1.0`, `v0.2.0`** (wheel + sdist attached).
-- Coverage `fail_under` still 70 (achieved ~88); raising it is Tier 1b / F3.
+- Coverage `fail_under` is now **85** (achieved ~88), pinned by
+  `audit_coverage_contract` (#31). F3 done.
 
 ## Current Session Focus
 
@@ -72,9 +79,18 @@ Full program state + the critical release-PR `--auto` mechanic live in the
   helper extraction). Verified all four pinned action SHAs match their upstream
   `vN` tags. SonarCloud flagged two new-code smells on the first push → fixed by
   decomposing `audit_supply_chain`; awaiting the Sonar re-run.
-- Next: get PR #28 green (CI + SonarCloud) → merge → Tier 1b (F3/F8/F5-7) →
-  Tier 3 → Tier 2; then merge release PR #25. Authoritative detail in the
-  gate-expansion thread record.
+- 2026-06-18 (later still): merged PR #28; then landed **Tier 1b F3** as PR #31
+  (honest coverage floor 85 + `audit_coverage_contract`), config-reviewed (fixed
+  a false-positive on an absent `omit` key) and merged. Checkpointing here so the
+  WCAG work (F8) starts with fresh context.
+- 2026-06-18 (later still, cont.): landed **F8** (PR #33, WCAG chart — code-review
+  adopted) and **F5+F7** (PR #34, remote size-cap + rename guide — security-review
+  adopted the connection-closing `with` and `stream=True` assertions). **Deferred
+  F6** (the `agent_hooks.py` guardrail) on safety/ambiguity grounds — see the
+  thread record. Tier 1b is complete bar F6.
+- Next: **Tier 1b F6** (deferred — owner intent + dedicated session) → Tier 3 →
+  Tier 2; then merge release PR #25. Authoritative detail in the gate-expansion
+  thread.
 
 ## Repo-Wide Invariants / Non-Goals
 
@@ -98,21 +114,23 @@ Full program state + the critical release-PR `--auto` mechanic live in the
 
 ## Next Safe Step
 
-- **Get supply-chain PR #28 green** (CI + the SonarCloud gate) and **merge**
-  (it is a normal PR, so CodeQL triggers and `gh pr merge 28 --squash
-  --delete-branch` once green — not the bot-PR `--auto` path). Then Tier 1b
-  (F3 → F8 → F5/6/7), Tier 3 (branch coverage, Hypothesis, version-policy ADR),
-  Tier 2 (governance checklist). Finally **merge release PR #25 with `--auto`**
-  to cut the accumulated release. Authoritative detail + the `--auto`/UNSTABLE
-  mechanic are in the gate-expansion thread record.
+- **Tier 1b F6 — `agent_hooks.py` guardrail hardening (DEFERRED).** Get owner
+  intent on the "fail-closed on `$(`/backticks" semantics first (blanket-deny vs
+  recurse-and-check), then implement in a dedicated session. The full analysis,
+  the two bypasses it closes, the recommended safe design, and the mandatory
+  pre-verification (run the edited hook against a heredoc commit → must ALLOW)
+  are in the gate-expansion thread's Remaining Work entry. Then Tier 3 (branch
+  coverage, Hypothesis, version-policy ADR), Tier 2 (governance checklist).
+  Finally **merge release PR #25 with `--auto`** (bot PR, sits UNSTABLE) to cut
+  the accumulated release. Normal feature PRs merge with
+  `gh pr merge <n> --squash --delete-branch` once green (CI + SonarCloud).
+  Authoritative detail in the gate-expansion thread record.
 
 ## Open Side-Tasks
 
 - **Owner actions (settings, not code):** add "Quality gates" + "Secret scanning"
   to the ruleset's required checks; provide a release-PR PAT/App token; enable
   GitHub Code Quality preview; add `v*` tag protection. (See thread record.)
-- **Deferred to fresh context:** a deep `consolidate-docs` graduation (home
-  durable doctrine, archive the done release-automation plan, rotate the napkin).
 - Re-check the Dependabot security-alert count before assuming zero open vulns
   (pip-audit now scans the locked set in `check-ci`, so new advisories surface).
 
@@ -121,13 +139,16 @@ Full program state + the critical release-PR `--auto` mechanic live in the
 - The 2026-06-17 later session captured its learning into the napkin, the two
   thread records, the two active plans, the gate-types review report, and the
   continuity/high-level surfaces.
-- 2026-06-18 (later): ran a light `consolidate-docs` pass alongside the
-  packaging-fix handoff. Findings: incoming Practice boxes empty (only a
-  placeholder dir); napkin 160 lines (no rotation due); this session's lesson
-  already lives in `testing-strategy.md` (nothing to graduate); plan/thread/
-  continuity reconciled. **The deep graduation remains DEFERRED to a dedicated
-  fresh-context session** — specifically archiving the **release-automation
-  plan** (marked DELIVERED & LIVE-VERIFIED; needs its release doctrine homed +
-  move to `archive/` + `completed-plans.md` row + index/link fixes). Not done
-  now by design (low-context risk on a 5-surface plan operation).
+- 2026-06-18 (deep pass): ran a full `consolidate-docs` at end of the Tier 1b
+  session. **Archived the release-automation plan** to
+  `runtime-infrastructure/archive/` (doctrine confirmed homed in README "##
+  Releases", `docs/dev-tooling.md`, the `release.yml` comment,
+  `tools/release_increment.py`, and `audit_release_workflow`); added its
+  `completed-plans.md` row and archive index entry; fixed the thread-record link;
+  refreshed `current/README.md` to current reality. Distilled the session's
+  settled lessons into `distilled.md` and added a session experience note.
+  Incoming Practice boxes empty (no-op). Napkin 222 lines — under the rotation
+  threshold, left in place. Both remaining `current/` plans
+  (quality-gate-surface-expansion as the live program spine; template-fitness
+  with only F6 left) are deliberately kept open.
 - The earlier 2026-04-23 source-Practice transfer remains the closed baseline.

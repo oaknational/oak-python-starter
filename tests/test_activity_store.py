@@ -1,13 +1,46 @@
 from __future__ import annotations
 
 import io
+from collections.abc import Callable, Sequence
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
 import pytest
 import requests
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from oaknational.python_repo_template.data import activity_store as subject
+
+# A valid raw activity row as the CSV loader would yield it: every field a
+# string. Categories exclude whitespace (codepoint >= 33) so stripping never
+# empties them; minutes stay well inside the int64/float64-exact range so the
+# round-trip exercises behaviour, not numeric precision (range limits are
+# covered by the example-based tests below).
+_Row = tuple[str, str, str, str]
+_iso_dates = st.dates(min_value=date(1900, 1, 1), max_value=date(2200, 1, 1)).map(
+    lambda value: value.isoformat()
+)
+_categories = st.text(st.characters(min_codepoint=33, max_codepoint=126), min_size=1, max_size=12)
+_positive_minutes = st.integers(min_value=1, max_value=1_000_000_000).map(str)
+_notes = st.text(st.characters(min_codepoint=32, max_codepoint=126), max_size=20)
+_activity_rows = st.lists(
+    st.tuples(_iso_dates, _categories, _positive_minutes, _notes),
+    min_size=1,
+    max_size=8,
+)
+
+
+def _frame_from_rows(rows: Sequence[_Row]) -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "date": [row[0] for row in rows],
+            "category": [row[1] for row in rows],
+            "minutes": [row[2] for row in rows],
+            "notes": [row[3] for row in rows],
+        }
+    )
 
 
 def make_frame() -> pd.DataFrame:
@@ -44,6 +77,9 @@ def make_redirect_response(url: str, location: str) -> requests.Response:
     response.status_code = 302
     response.url = url
     response.headers["Location"] = location
+    # default_remote_reader uses the response as a context manager, which closes
+    # `raw` on exit; a real response always has one, so give the fake a closeable.
+    response.raw = io.BytesIO()
     return response
 
 
@@ -276,15 +312,71 @@ def test_load_activity_log_dispatches_remote_sources_by_suffix() -> None:
 
 
 def test_load_activity_log_rejects_remote_redirects() -> None:
-    def fake_get(url: str, *, timeout: int, allow_redirects: bool) -> requests.Response:
+    def fake_get(
+        url: str, *, timeout: int, allow_redirects: bool, stream: bool = False
+    ) -> requests.Response:
         assert timeout == subject.REMOTE_TIMEOUT_SECONDS
         assert allow_redirects is False
+        assert stream is True
         return make_redirect_response(url, "http://example.test/activity.csv")
 
     with pytest.raises(subject.ActivityDataError, match="Could not load activity data"):
         subject.load_activity_log(
             "https://example.test/activity.csv",
             remote_reader=lambda url: subject.default_remote_reader(url, http_get=fake_get),
+        )
+
+
+def make_content_response(data: bytes, *, content_length: str | None = None) -> requests.Response:
+    response = requests.Response()
+    response.status_code = 200
+    # Pre-buffer the body so iter_content yields it in slices (no live socket).
+    response._content = data  # noqa: SLF001
+    response.__dict__["_content_consumed"] = True
+    if content_length is not None:
+        response.headers["Content-Length"] = content_length
+    return response
+
+
+def _content_getter(response: requests.Response) -> Callable[..., requests.Response]:
+    def fake_get(url: str, **kwargs: object) -> requests.Response:
+        assert kwargs.get("stream") is True
+        return response
+
+    return fake_get
+
+
+def test_default_remote_reader_returns_streamed_body_within_the_cap() -> None:
+    payload = b"date,category,minutes,notes\n2026-01-01,focus,30,ok\n"
+
+    body = subject.default_remote_reader(
+        "https://example.test/activity.csv",
+        http_get=_content_getter(make_content_response(payload)),
+    )
+
+    assert body == payload
+
+
+def test_default_remote_reader_rejects_a_declared_oversize_body() -> None:
+    response = make_content_response(b"small", content_length=str(50 * 1024 * 1024))
+
+    with pytest.raises(subject.ActivityDataError, match="exceeds the .* limit"):
+        subject.default_remote_reader(
+            "https://example.test/activity.csv",
+            http_get=_content_getter(response),
+            max_bytes=1024,
+        )
+
+
+def test_default_remote_reader_rejects_a_streamed_body_over_the_cap() -> None:
+    # No (or understated) Content-Length: the cap must still fire while streaming.
+    response = make_content_response(b"x" * 4096)
+
+    with pytest.raises(subject.ActivityDataError, match="exceeds the .* limit"):
+        subject.default_remote_reader(
+            "https://example.test/activity.csv",
+            http_get=_content_getter(response),
+            max_bytes=1024,
         )
 
 
@@ -401,3 +493,55 @@ def test_load_activity_metadata_rejects_invalid_yaml() -> None:
             categories=make_categories(),
             local_text_loader=lambda path: "category_targets: [",
         )
+
+
+# --- Property-based tests for the validation boundary -----------------------
+
+
+@settings(max_examples=50, deadline=None)
+@given(rows=_activity_rows)
+def test_validate_activity_frame_is_idempotent(rows: list[_Row]) -> None:
+    # The canonical frame is a fixed point: validating it again is a no-op.
+    once = subject.validate_activity_frame(_frame_from_rows(rows))
+    twice = subject.validate_activity_frame(once)
+
+    assert twice.equals(once)
+
+
+@settings(max_examples=50, deadline=None)
+@given(rows=_activity_rows, data=st.data())
+def test_validate_activity_frame_is_order_independent(
+    rows: list[_Row], data: st.DataObject
+) -> None:
+    # Canonical output is sorted deterministically, so row order in is irrelevant.
+    permuted = data.draw(st.permutations(rows))
+
+    from_original = subject.validate_activity_frame(_frame_from_rows(rows))
+    from_permuted = subject.validate_activity_frame(_frame_from_rows(permuted))
+
+    assert from_original.equals(from_permuted)
+
+
+@settings(max_examples=50, deadline=None)
+@given(rows=_activity_rows)
+def test_validate_activity_frame_preserves_in_range_positive_minutes(rows: list[_Row]) -> None:
+    result = subject.validate_activity_frame(_frame_from_rows(rows))
+
+    assert result["minutes"].dtype == "int64"
+    assert sorted(result["minutes"].tolist()) == sorted(int(row[2]) for row in rows)
+
+
+@settings(max_examples=50, deadline=None)
+@given(rows=_activity_rows, data=st.data())
+def test_validate_activity_frame_rejects_non_positive_minutes(
+    rows: list[_Row], data: st.DataObject
+) -> None:
+    # Whatever else is valid, a single non-positive minutes value must fail-fast.
+    index = data.draw(st.integers(min_value=0, max_value=len(rows) - 1))
+    non_positive = data.draw(st.integers(min_value=-1_000_000_000, max_value=0))
+    mutated = list(rows)
+    date_value, category, _minutes, notes = mutated[index]
+    mutated[index] = (date_value, category, str(non_positive), notes)
+
+    with pytest.raises(subject.ActivityDataError, match="positive integers"):
+        subject.validate_activity_frame(_frame_from_rows(mutated))

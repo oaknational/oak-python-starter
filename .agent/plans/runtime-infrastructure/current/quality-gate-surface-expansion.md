@@ -18,8 +18,11 @@ todos:
     content: "Add a codespell spell-check gate with an en-GB-aware repo wordlist."
     status: completed
   - id: supply-chain-config
-    content: "dependabot.yml (uv + github-actions) + action SHA-pins + the audit_supply_chain repo_audit self-check + an incidental packaging-schema fix (pyproject sources -> object form; removal of the config-shape audit_packaging_contract) — all committed and OPEN as PR #28 (HEAD f5225cb). Remaining: get green (CI + SonarCloud) and merge."
-    status: pending
+    content: "dependabot.yml (uv + github-actions) + action SHA-pins + the audit_supply_chain repo_audit self-check + an incidental packaging-schema fix (pyproject sources -> object form; removal of the config-shape audit_packaging_contract). MERGED as PR #28."
+    status: completed
+  - id: coverage-gate-f3
+    content: "Tier 1b F3 honest coverage gate: fail_under 70->85 + audit_coverage_contract (floor + omit-list guard). MERGED as PR #31."
+    status: completed
 ---
 
 # Quality-Gate Surface Expansion
