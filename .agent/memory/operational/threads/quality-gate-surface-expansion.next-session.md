@@ -1,109 +1,145 @@
-# Thread: quality-gate-surface-expansion
+# Thread: quality-gate-surface-expansion → "highest proportionate bar" program
 
 ## Participating Agent Identities
 
 | agent_name | platform | model | role | first_session | last_session |
 | --- | --- | --- | --- | --- | --- |
-| Claude | claude | opus-4.8 | executor | 2026-06-17 | 2026-06-17 |
+| Claude | claude | opus-4.8 | executor | 2026-06-17 | 2026-06-18 |
 
-## Owning Plan
+## Owning Plans
 
-- [`../../../plans/runtime-infrastructure/current/quality-gate-surface-expansion.md`](../../../plans/runtime-infrastructure/current/quality-gate-surface-expansion.md)
+- Gates: [`../../../plans/runtime-infrastructure/current/quality-gate-surface-expansion.md`](../../../plans/runtime-infrastructure/current/quality-gate-surface-expansion.md)
+- Release automation: [`../../../plans/runtime-infrastructure/current/release-automation.md`](../../../plans/runtime-infrastructure/current/release-automation.md)
+- Template fitness (F3/F8/F5-7): [`../../../plans/runtime-infrastructure/current/template-fitness-remediation.md`](../../../plans/runtime-infrastructure/current/template-fitness-remediation.md)
 - Source review: [`../../../reports/2026-06-17-oak-quality-gate-types-review.md`](../../../reports/2026-06-17-oak-quality-gate-types-review.md)
 
-## Current Objective
+## Current Objective (owner-approved 2026-06-18)
 
-Add the high-value quality-gate types the ecosystem review surfaced, each as its
-own PR wired into `check-ci`. Reviewer agents, the Markdown gate, and gitleaks
-are done; pip-audit, codespell, and supply-chain config remain.
+Bring the repo to the **highest *proportionate* combination** of Pythonic best
+practice + Oak ecosystem standards. The owner explicitly selected **all four
+lanes** below. Proportionate = finish these tiers and **consciously STOP before
+Tier 4** (SBOM, SLSA provenance, OpenSSF Scorecard, dependency-review, lychee
+link-check, mutation testing) unless the owner later asks for maximal. The
+repo's First Question ("could it be simpler without compromising quality?") and
+its identity ("a template foundation, not a feature product") govern scope.
 
-## What Landed (2026-06-17)
+## What Landed This Program (2026-06-17 → 2026-06-18)
 
-- **Reviewer agents (PR #12, merged).** Gave the code/architecture/security/test
-  Claude adapters the registration frontmatter that only `config-reviewer` had
-  (an incomplete migration), so all five are now usable agent types. Added a
-  "Pythonic Idiom" lens to the canonical `code-reviewer` template. Confirmed
-  registered (they appear as agent types after merge).
-- **Markdown gate (PR #13, merged).** PyMarkdown wired into `check-ci`. Ruleset
-  in `[tool.pymarkdown]`: recognise front matter; disable MD013/MD041/MD029;
-  MD024 siblings-only; keep MD040 and the rest. Surfaced and fixed a real
-  duplicated `## Boundaries` block in the test-reviewer template.
+All merged to `main` unless noted. `main` is green.
 
-## What Landed (gitleaks, PR #16, merged)
+- **Coverage → GitHub Code Quality (PR #18, merged).** CI derives a Cobertura
+  `coverage.xml` from the existing check-ci coverage run (`coverage xml`, no
+  second test run) and uploads via `actions/upload-code-coverage`
+  (`code-quality: write`, fork-guarded, `fail-on-error: false`). `relative_files`
+  set; `coverage.xml`/`.coverage.*` git-ignored; `devtools clean` removes them.
+- **Release automation (PRs #19 plan, #20 impl, #22 fix; merged).** Release-PR
+  pattern via Commitizen — see the release-automation plan. **Live-verified**:
+  `v0.1.0` (bootstrap) and `v0.2.0` (full bump cycle) released with wheel+sdist.
+- **pip-audit gate (PR #24, merged).** In `check-ci` after dependency-hygiene;
+  exports locked deps (`uv export --no-emit-project`) and audits them. Replaced
+  the now-false "deptry is not vulnerability scanning" claim across README /
+  docs / `.agent/commands/gates.md`, enforced by `audit_dependency_hygiene`.
+- **codespell gate (PR #26, merged).** In `check-ci` after markdownlint. No
+  ignore-list needed: the one false positive was removed at source (the SECURITY
+  substring check now matches `"vulnerab"`).
 
-- **Design decision (owner):** enforce gitleaks *alongside* `check-ci`, NOT inside
-  it. gitleaks is a Go binary, not a uv package; keeping it out of `check-ci`
-  preserves the "`uv sync` is sufficient" invariant. This is the first gate
-  outside the single `check-ci` signal — accepted, documented cost.
-- **Channels:** pinned pre-commit mirror (`github.com/gitleaks/gitleaks` `rev:
-  v8.30.1`; pre-commit auto-provisions Go, no manual install) + a pinned
-  `secret-scan` CI job that downloads the binary and verifies a hardcoded sha256.
-  `gitleaks-action` rejected: needs `GITLEAKS_LICENSE` for org repos + v2 dies
-  when Node 20 runners retire (Sept 2026).
-- **Governance:** `audit_secret_scanning` (new `repo_audit` check) keeps the
-  pre-commit rev, the CI version, and `[secret_scanning].gitleaks_version` in
-  `tools/repo_audit_contract.toml` in lockstep. CI archive name is *derived* from
-  the version so a partial bump fails loudly at the checksum step.
-- **`.gitleaks.toml`:** `[extend] useDefault = true`; no `[allowlist]` block (an
-  empty one is rejected by gitleaks ≥8.30 — keep it absent until a real exemption
-  with at least one concrete check exists). Working-tree (`dir`) scan only, not
-  history — documented as a deliberate later enhancement.
-- **Prerequisites policy (owner):** binary / non-standard-install tools go in the
-  README Prerequisites section with an official install link; the auditor
-  enforces the gitleaks link. See memory `binary-tools-need-readme-prerequisites`.
+## In Flight / Open (DO NOT lose)
 
-## Next Session — Start Here
+- **Standing release PR #25 `chore(release): v0.3.0`** (branch `release/next`) is
+  **intentionally open and accumulating** every merged feat/fix since v0.2.0
+  (release automation, pip-audit, codespell, …). Strategy: let it accumulate
+  through the sprint, then merge it **once** for a single clean release. It will
+  keep auto-updating as more PRs merge.
+  - **CRITICAL merge mechanic:** the release PR is opened by `GITHUB_TOKEN`, so
+    `ci.yml` does NOT run on it → it sits `mergeStateStatus: UNSTABLE` forever.
+    Merge it with **`gh pr merge 25 --squash --auto --delete-branch`** (NOT
+    `--admin` — the harness classifier blocks admin bypass, correctly). `--auto`
+    merges once the ruleset's actual requirements are met (a PR exists; no
+    required status checks). Merging it triggers the publish phase → `v0.3.0`.
+- **Supply-chain branch `feat/supply-chain-pinning` (commit `4c6d603`, pushed, NO
+  PR yet).** Contains: all workflow action `uses:` SHA-pinned (with `# vX`
+  comments) + `.github/dependabot.yml` (uv + github-actions, weekly, grouped).
+  Resolved SHAs are committed in the files. **Remaining for this PR:** add the
+  *optional* `audit_supply_chain` repo_audit self-check (assert every workflow
+  `uses:` is a 40-hex SHA + dependabot has uv+github-actions ecosystems) + tests,
+  then open the PR. Or open the PR as-is (pin+dependabot are complete) and treat
+  the audit as a fast-follow.
 
-Each its own feature branch off the current `main`, its own PR. Follow the
-gate-machinery coupling map in the plan (seven surfaces per gate). **pip-audit
-and codespell are Python packages**, so unlike gitleaks they DO follow the full
-in-`check-ci` seven-surface coupling map (dev dependency, devtools handler,
-gate sequence, etc.).
+## Remaining Program Work (each its own branch off main + PR)
 
-1. **pip-audit** — dependency-vulnerability scan (uv-aware, e.g. `uv export`
-   piped to `pip-audit`), complementing deptry hygiene. Update the README line
-   that says deptry "is dependency hygiene, not vulnerability scanning".
-2. **codespell** — en-GB-aware spell check with a small repo wordlist for jargon.
-3. **supply-chain config** — commit `.github/dependabot.yml` (pip + github-actions)
-   and pin the `ci.yml` action SHAs (unblocked now #11 is merged); optional
-   `repo_audit` self-check that workflow actions are SHA-pinned.
+- **Tier 1b — template fitness** (template-fitness-remediation plan):
+  - **F3 honest coverage gate**: raise `fail_under` from 70 → ~85 (achieved ~88);
+    add `audit_coverage_contract` pinning the threshold floor + the exact
+    coverage omit-list (`governance-claim-needs-a-scanner`).
+  - **F8 accessible chart** (org WCAG 2.2 AA mandate, currently unmet): write a
+    text alternative from `render_summary` (SC 1.1.1); darken `#d08d46` and halo
+    the target marker for ≥3:1 contrast (SC 1.4.11); test the sidecar + contrasts.
+  - **F5/F6/F7 adoptability**: remote-fetch size cap + trust-boundary note;
+    guardrail fail-closed + simplify in `agent_hooks.py` (treat `|` as separator,
+    fail-closed on `$(`/backticks; allow-path tests for git commit/push/status);
+    a "rename this template" guide.
+- **Tier 3 — Pythonic additions**:
+  - branch coverage (`--cov-branch`) + raise threshold;
+  - Hypothesis property-based tests for the CSV/data boundary;
+  - an ADR recording the deliberate single-version bleeding-edge (3.14) policy
+    (the repo intentionally does NOT use a version matrix) — or adopt a matrix if
+    broad compatibility becomes a goal (owner decision).
+- **Tier 2 — governance write-up** (code + a checklist): land the
+  `audit_supply_chain` self-check (above), and produce an owner-action checklist
+  (see Owner Actions below). I cannot change repo/org settings.
 
-## Key Decisions and Mechanics (would be lost otherwise)
+## Owner Actions Outstanding (settings, not code — I cannot do these)
 
-- **Merge mechanics for this repo.** `main` is governed by a *repository ruleset*
-  (not classic branch protection): a PR is required (0 approvals) and a CodeQL
-  `code_quality` check must pass. Direct pushes to `main` are blocked.
-  - CodeQL default setup does **not** trigger on PR reopen; it needs a
-    `synchronize` event (a new commit).
-  - The repo's own pre-tool hook blocks `git push --force`, so you cannot rebase
-    a PR branch locally. Use `gh pr update-branch <n>` — it merges `main`
-    server-side (no force-push), brings the branch up to date, and triggers
-    CodeQL + CI. Then **squash-merge** to flatten the update-branch merge commit.
-  - `ci.yml` has a `concurrency` group with `cancel-in-progress`, so superseded
-    push runs on `main` show as "cancelled" — that is expected, not a failure.
-  - **Only the CodeQL `code_quality` check is ruleset-required — the `ci.yml`
-    "Quality gates" run is NOT.** A PR can therefore merge (and `main` can go
-    red) even if Quality gates fails. Always confirm Quality gates green before
-    merging, and verify gate-affecting PRs locally first. **Recommended
-    hardening**: add "Quality gates" to the ruleset's required status checks so
-    CI actually gates merges (owner/repo-settings action).
-  - Literal merge: `gh pr merge <n> --squash --delete-branch` (use `--rebase`
-    when the branch is a single commit with no update-branch merge commit).
-- **Bandit is not needed as a separate gate** — ruff's `S` (flake8-bandit)
-  ruleset covers most Python SAST.
-- **Never blind-autofix the Markdown estate.** `pymarkdown fix` renumbers
-  ordered lists, which corrupts docs that number items continuously across
-  sections as stable IDs (hence MD029 is disabled). Fix violations by hand.
-- **Cumulative pre-commit latency** is a watch item: every gate adds to
-  `check-ci`, which pre-commit and pre-push both run.
+1. **Make CI a real merge gate.** Add **"Quality gates"** and **"Secret
+   scanning"** to the `main` ruleset's required status checks. Today only the
+   PR-required + (non-blocking `code_quality`) rules apply, so `main` can go red
+   and a PR can still merge. This is the single biggest enforcement gap.
+2. **Release-PR token.** Give `create-pull-request` a PAT or GitHub App token so
+   `ci.yml` runs on the release PR (then it goes CLEAN and merges without
+   `--auto`). Until then, use `--auto` (above).
+3. **Enable GitHub Code Quality** (public preview) for the org so the coverage
+   upload surfaces on PRs (today `fail-on-error: false` makes it a harmless
+   no-op).
+4. **Tag protection** for `v*` so release tags can't be force-moved/deleted.
 
-## Blockers / Low-Confidence Areas
+## Key Mechanics & Gotchas (would be lost otherwise)
 
-- None blocking. Each remaining gate is independent and well-scoped.
+- **`cz_conventional_commits` IGNORES `[tool.commitizen].bump_map`** — it reads
+  the plugin's hardcoded map (`bump.py:_find_increment` uses `self.cz.bump_map`).
+  The custom policy (feat/fix→minor, else→patch, breaking→manual major) is
+  therefore applied by `tools/release_increment.py`, which reads the bump_map
+  from pyproject and the workflow passes `cz bump --increment <X>`. The live
+  verification of release automation is what caught this.
+- **Release PR is perpetually UNSTABLE → `gh pr merge --auto`** (see In Flight).
+- **`main` ruleset:** PR required (0 approvals); no *required status checks*
+  (so verify "Quality gates" + "Secret scanning" green manually before merging;
+  both run via GitHub Apps even on bot PRs, but `ci.yml`'s jobs do not run on
+  bot PRs). Direct pushes blocked. The pre-tool hook blocks `git push --force`
+  and `git checkout --` (use `uv lock`/`git restore` alternatives).
+- **Seven-surface gate coupling map** (for in-`check-ci` gates like pip-audit /
+  codespell): pyproject (dep+config) · `_step_runners` · gate_contract sequences
+  · the **verbatim** `SKILL.md` check-ci string (enforced by
+  `audit_dependency_hygiene`) · `repo_audit` · docs · the test fixtures
+  (`CHECK_CI_SEQUENCE`, `GATE_CONTRACT`, `test_aggregate_gate_sequences`). Keep
+  all in lockstep or `check` fails. Current check-ci order:
+  `format → typecheck → lint → markdownlint → codespell → import-linter →
+  dependency-hygiene → pip-audit → repo-audit → build → test → coverage`.
+- **`__pycache__`/private-name test idiom:** access private functions in tests
+  via `getattr(subject, "name")` (a variable) to dodge ruff B009 + pyright
+  reportPrivateUsage (see `test_devtools.py`).
+- **Tier 4 is deliberately deferred** (SBOM, SLSA, Scorecard, dependency-review,
+  lychee, mutation testing) — diminishing returns for a template; revisit only
+  on explicit request.
 
 ## Next Safe Step
 
-- Open a feature branch for **pip-audit** off the current `main` and proceed.
-  Note the gitleaks pre-commit hook now runs on every commit (~6s installed),
-  and `secret-scan` is a separate CI job — confirm both it and Quality gates are
-  green on the next PR too (neither is ruleset-required yet).
+1. Open the **supply-chain PR** from `feat/supply-chain-pinning` (optionally add
+   `audit_supply_chain` first), verify green, merge.
+2. Then Tier 1b (F3 → F8 → F5/6/7), then Tier 3, then the Tier 2 checklist.
+3. When the sprint's PRs are all merged, **merge release PR #25 with `--auto`**
+   to cut the accumulated release, then verify the new GitHub Release + the
+   bumped `main` version.
+4. **Deep `consolidate-docs` graduation is deferred to a fresh-context session**
+   (do not attempt it at low context): home durable doctrine out of plans,
+   archive completed plans (release-automation is essentially done + verified),
+   rotate the napkin, refresh `completed-plans.md`/indexes.

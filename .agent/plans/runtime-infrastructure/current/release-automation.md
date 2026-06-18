@@ -21,9 +21,16 @@ todos:
 
 # Release Automation
 
-**Last Updated**: 2026-06-17  
-**Status**: 🟡 PLANNING  
+**Last Updated**: 2026-06-18  
+**Status**: ✅ DELIVERED & LIVE-VERIFIED (PRs #20/#22 merged; `v0.1.0` + `v0.2.0` released). Ready to archive in the next deep `consolidate-docs`.  
 **Scope**: Automate versioned GitHub Releases with a committed version and a custom bump policy, via a Commitizen-driven release-PR, under the protected `main` ruleset.
+
+> **Delivered note (2026-06-18):** Live verification caught a real bug —
+> `cz_conventional_commits` ignores `[tool.commitizen].bump_map`, so the custom
+> policy is computed by `tools/release_increment.py` and applied via
+> `cz bump --increment`. The standing release PR is opened by `GITHUB_TOKEN` so
+> `ci.yml` does not run on it; it sits `UNSTABLE` and must be merged with
+> `gh pr merge <n> --squash --auto` (not `--admin`). See the thread record.
 
 ## End Goal
 
