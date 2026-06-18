@@ -870,10 +870,11 @@ def audit_supply_chain(root: Path) -> list[str]:
 
 
 # The coverage gate enforces "coverage >= threshold" at runtime, but it cannot
-# protect its own threshold from being lowered, nor stop the omit-list from
-# growing to hide uncovered code. This audit guards exactly those two governance
-# gaps. The floor is a minimum, not an exact value, so the bar can still be raised.
-_COVERAGE_FAIL_UNDER_FLOOR = 85
+# protect its own threshold from being lowered, the omit-list from growing to
+# hide uncovered code, nor branch coverage from being switched off to inflate the
+# number. This audit guards exactly those three governance gaps. The floor is a
+# minimum, not an exact value, so the bar can still be raised.
+_COVERAGE_FAIL_UNDER_FLOOR = 86
 _COVERAGE_JUSTIFIED_OMIT = ("src/oaknational/python_repo_template/devtools.py",)
 
 
@@ -898,6 +899,15 @@ def audit_coverage_contract(root: Path) -> list[str]:
         f"pyproject [tool.coverage.report].fail_under must be >= "
         f"{_COVERAGE_FAIL_UNDER_FLOOR} to keep the coverage gate honest "
         f"(found: {fail_under!r})",
+    )
+
+    require(
+        failures,
+        check,
+        run is not None and run.get("branch") is True,
+        "pyproject [tool.coverage.run].branch must be true so the coverage gate "
+        "measures branch coverage and cannot be inflated by switching it off "
+        f"(found: {run.get('branch') if run is not None else None!r})",
     )
 
     # An absent omit key means no exclusions — trivially within the justified
