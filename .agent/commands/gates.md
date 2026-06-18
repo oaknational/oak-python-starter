@@ -27,7 +27,10 @@ uv run deptry .
 
 Dependency hygiene runs through `uv run deptry .` and is included in both
 aggregate gate commands before `repo-audit`. It proves declared dependency
-hygiene, not vulnerability scanning.
+hygiene (unused, missing, misplaced) — which is distinct from vulnerability
+scanning. Vulnerability scanning is a separate blocking gate, `pip-audit`, which
+runs immediately after dependency hygiene and checks the locked dependencies for
+known advisories.
 
 ## Rules
 

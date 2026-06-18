@@ -45,6 +45,7 @@ check = [
   "lint",
   "markdownlint",
   "dependency-hygiene",
+  "pip-audit",
   "repo-audit",
   "build",
   "test",
@@ -57,6 +58,7 @@ check-ci = [
   "markdownlint",
   "import-linter",
   "dependency-hygiene",
+  "pip-audit",
   "repo-audit",
   "build",
   "test",
@@ -111,7 +113,7 @@ GITLEAKS_VERSION = "v8.30.1"
 
 CHECK_CI_SEQUENCE = (
     "format -> typecheck -> lint -> markdownlint -> import-linter -> "
-    "dependency-hygiene -> repo-audit -> build -> test -> coverage"
+    "dependency-hygiene -> pip-audit -> repo-audit -> build -> test -> coverage"
 )
 
 
@@ -507,7 +509,7 @@ DEP002 = ["pyarrow"]
         tmp_path / "README.md",
         """
 Dependency hygiene runs through uv run deptry .
-It stays blocking in the aggregate gates, and it is not vulnerability scanning.
+It stays blocking in the aggregate gates. Vulnerability scanning is pip-audit.
 """,
     )
     _write(
@@ -515,13 +517,14 @@ It stays blocking in the aggregate gates, and it is not vulnerability scanning.
         """
 deptry
 uv run deptry .
-It is dependency hygiene, not vulnerability scanning.
+Dependency hygiene is distinct from vulnerability scanning, which is pip-audit.
 """,
     )
     _write(
         tmp_path / ".agent" / "commands" / "gates.md",
         """
 Dependency hygiene runs with uv run deptry .
+Vulnerability scanning runs with pip-audit.
 """,
     )
     _write(
@@ -582,9 +585,13 @@ format -> typecheck -> lint -> dependency-hygiene -> repo-audit -> build -> test
     assert "must configure deptry to treat the Oak namespace as first party" in joined
     assert "must limit deptry per-rule ignores to the single DEP002 exception" in joined
     assert "must document the single DEP002 ignore for pyarrow" in joined
-    assert "README must explain that deptry is not vulnerability scanning" in joined
-    assert "docs/dev-tooling.md must explain that deptry is not vulnerability scanning" in joined
+    assert "README must document the pip-audit dependency-vulnerability scan" in joined
+    assert "docs/dev-tooling.md must document the pip-audit dependency-vulnerability scan" in joined
     assert ".agent/commands/gates.md must document the dependency-hygiene gate" in joined
+    assert (
+        ".agent/commands/gates.md must document the pip-audit dependency-vulnerability scan"
+        in joined
+    )
     assert "must document the exact check-ci gate sequence" in joined
 
 

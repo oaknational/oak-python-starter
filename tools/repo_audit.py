@@ -1611,8 +1611,8 @@ def audit_dependency_hygiene(root: Path) -> list[str]:
         require(
             failures,
             check,
-            "not vulnerability scanning" in readme.lower(),
-            "README must explain that deptry is not vulnerability scanning",
+            "pip-audit" in readme.lower(),
+            "README must document the pip-audit dependency-vulnerability scan",
         )
 
     tooling_doc = read_text(root / "docs/dev-tooling.md", failures, check)
@@ -1626,8 +1626,8 @@ def audit_dependency_hygiene(root: Path) -> list[str]:
         require(
             failures,
             check,
-            "not vulnerability scanning" in tooling_doc.lower(),
-            "docs/dev-tooling.md must explain that deptry is not vulnerability scanning",
+            "pip-audit" in tooling_doc.lower(),
+            "docs/dev-tooling.md must document the pip-audit dependency-vulnerability scan",
         )
 
     gates_command = read_text(root / ".agent/commands/gates.md", failures, check)
@@ -1637,6 +1637,12 @@ def audit_dependency_hygiene(root: Path) -> list[str]:
             check,
             "dependency hygiene" in gates_command.lower() and "uv run deptry ." in gates_command,
             ".agent/commands/gates.md must document the dependency-hygiene gate",
+        )
+        require(
+            failures,
+            check,
+            "pip-audit" in gates_command.lower(),
+            ".agent/commands/gates.md must document the pip-audit dependency-vulnerability scan",
         )
 
     start_right_skill = read_text(

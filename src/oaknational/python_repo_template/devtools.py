@@ -399,6 +399,42 @@ def coverage(args: Sequence[str] | None = None) -> None:
     )
 
 
+def _export_locked_requirements(
+    path: Path,
+    *,
+    process_runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+) -> int:
+    # Export only the locked dependencies (not the project itself), so pip-audit
+    # scans the pinned set with no "project not on PyPI" skip noise.
+    result = process_runner(
+        ["uv", "export", "--no-emit-project", "--no-hashes", "--format", "requirements-txt"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        sys.stderr.write(result.stderr)
+        return result.returncode
+    path.write_text(result.stdout, encoding="utf-8")
+    return 0
+
+
+def _run_pip_audit(
+    *,
+    export_requirements: Callable[[Path], int] = _export_locked_requirements,
+    command_runner: Callable[..., int] = run_command,
+    temporary_directory: TemporaryDirectoryFactory = tempfile.TemporaryDirectory,
+) -> int:
+    with temporary_directory(prefix="oaknational-python-repo-template-audit-") as out_dir:
+        requirements = Path(out_dir) / "requirements.txt"
+        code = export_requirements(requirements)
+        if code != 0:
+            return code
+        return command_runner(
+            ["pip-audit", "--requirement", str(requirements), "--progress-spinner", "off"]
+        )
+
+
 def _step_runners(
     *,
     python_executable: str = sys.executable,
@@ -413,6 +449,7 @@ def _step_runners(
         "markdownlint-fix": ["pymarkdown", "fix", "-r", "--respect-gitignore", "."],
         "import-linter": ["lint-imports"],
         "dependency-hygiene": ["deptry", "."],
+        "pip-audit": _run_pip_audit,
         "repo-audit": [python_executable, "tools/repo_audit.py"],
         "build": _run_build_probe,
         "test": ["pytest"],

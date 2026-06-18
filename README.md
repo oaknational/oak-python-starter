@@ -25,7 +25,10 @@ installed package import plus the `activity-report` and
 `python -m oaknational.python_repo_template` entry surfaces.
 
 Dependency hygiene runs through `uv run deptry .` and is included as a blocking
-step inside both aggregate gate commands. It is dependency hygiene, not vulnerability scanning.
+step inside both aggregate gate commands — it proves declared-dependency hygiene
+(unused, missing, misplaced), which is distinct from vulnerability scanning.
+Vulnerability scanning is a separate blocking gate: `pip-audit` checks the locked
+dependencies for known advisories.
 
 Secret scanning uses `gitleaks`. Because `gitleaks` is a Go binary rather than a
 `uv` package, it runs alongside `check-ci` rather than inside it (so `uv sync`

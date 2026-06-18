@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import cast
@@ -154,6 +155,127 @@ def test_run_build_probe_uses_a_temporary_dist_dir(tmp_path: Path) -> None:
     assert not temp_root.is_relative_to(subject.REPO_ROOT)
 
 
+def _audit_tempdir(root: Path) -> type:
+    """A TemporaryDirectory stand-in that yields ``root`` and pins the prefix."""
+
+    class FakeTemporaryDirectory:
+        def __init__(self, *, prefix: str) -> None:
+            assert prefix == "oaknational-python-repo-template-audit-"
+
+        def __enter__(self) -> str:
+            root.mkdir(parents=True, exist_ok=True)
+            return str(root)
+
+        def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+            return None
+
+    return FakeTemporaryDirectory
+
+
+def test_run_pip_audit_exports_then_audits_the_locked_requirements(tmp_path: Path) -> None:
+    run_pip_audit_name = "_run_pip_audit"
+    run_pip_audit = cast(Callable[..., int], getattr(subject, run_pip_audit_name))
+    temp_root = tmp_path / "audit"
+    exported: list[Path] = []
+    audited: list[Sequence[str]] = []
+
+    def fake_export(path: Path) -> int:
+        exported.append(path)
+        return 0
+
+    def fake_command_runner(args: Sequence[str]) -> int:
+        audited.append(args)
+        return 0
+
+    assert (
+        run_pip_audit(
+            export_requirements=fake_export,
+            command_runner=fake_command_runner,
+            temporary_directory=_audit_tempdir(temp_root),
+        )
+        == 0
+    )
+    requirements = temp_root / "requirements.txt"
+    assert exported == [requirements]
+    assert audited == [
+        ["pip-audit", "--requirement", str(requirements), "--progress-spinner", "off"]
+    ]
+
+
+def test_run_pip_audit_short_circuits_when_the_export_fails(tmp_path: Path) -> None:
+    run_pip_audit_name = "_run_pip_audit"
+    run_pip_audit = cast(Callable[..., int], getattr(subject, run_pip_audit_name))
+    audited: list[Sequence[str]] = []
+
+    def failing_export(path: Path) -> int:
+        return 3
+
+    def fake_command_runner(args: Sequence[str]) -> int:
+        audited.append(args)
+        return 0
+
+    assert (
+        run_pip_audit(
+            export_requirements=failing_export,
+            command_runner=fake_command_runner,
+            temporary_directory=_audit_tempdir(tmp_path / "audit"),
+        )
+        == 3
+    )
+    assert audited == []
+
+
+def test_run_pip_audit_propagates_an_audit_failure(tmp_path: Path) -> None:
+    run_pip_audit_name = "_run_pip_audit"
+    run_pip_audit = cast(Callable[..., int], getattr(subject, run_pip_audit_name))
+
+    def fake_export(path: Path) -> int:
+        return 0
+
+    def failing_command_runner(args: Sequence[str]) -> int:
+        return 1
+
+    assert (
+        run_pip_audit(
+            export_requirements=fake_export,
+            command_runner=failing_command_runner,
+            temporary_directory=_audit_tempdir(tmp_path / "audit"),
+        )
+        == 1
+    )
+
+
+def test_export_locked_requirements_writes_the_uv_export_to_the_path(tmp_path: Path) -> None:
+    export_name = "_export_locked_requirements"
+    export = cast(Callable[..., int], getattr(subject, export_name))
+    requirements = tmp_path / "requirements.txt"
+    calls: list[Sequence[str]] = []
+
+    def fake_runner(args: Sequence[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return subprocess.CompletedProcess(
+            args=list(args), returncode=0, stdout="anyio==4.0.0\n", stderr=""
+        )
+
+    assert export(requirements, process_runner=fake_runner) == 0
+    assert calls == [
+        ["uv", "export", "--no-emit-project", "--no-hashes", "--format", "requirements-txt"]
+    ]
+    assert requirements.read_text(encoding="utf-8") == "anyio==4.0.0\n"
+
+
+def test_export_locked_requirements_propagates_failure_without_writing(tmp_path: Path) -> None:
+    export_name = "_export_locked_requirements"
+    export = cast(Callable[..., int], getattr(subject, export_name))
+    requirements = tmp_path / "requirements.txt"
+
+    def failing_runner(args: Sequence[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(args=list(args), returncode=2, stdout="", stderr="boom")
+
+    assert export(requirements, process_runner=failing_runner) == 2
+    assert not requirements.exists()
+
+
 def test_run_installed_wheel_smoke_check_uses_out_of_repo_workspace_and_installed_surfaces(
     tmp_path: Path,
 ) -> None:
@@ -256,6 +378,7 @@ def test_build_rejects_passthrough_args() -> None:
                 "markdownlint",
                 "import-linter",
                 "dependency-hygiene",
+                "pip-audit",
                 "repo-audit",
                 "build",
                 "test",
@@ -275,6 +398,7 @@ def test_build_rejects_passthrough_args() -> None:
                 "lint",
                 "markdownlint",
                 "dependency-hygiene",
+                "pip-audit",
                 "repo-audit",
                 "build",
                 "test",
@@ -283,7 +407,7 @@ def test_build_rejects_passthrough_args() -> None:
         ),
     ],
 )
-def test_aggregate_gates_include_dependency_hygiene(
+def test_aggregate_gate_sequences(
     function: Callable[..., None],
     expected_names: list[str],
 ) -> None:
