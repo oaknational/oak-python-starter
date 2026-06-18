@@ -23,6 +23,34 @@ link-check, mutation testing) unless the owner later asks for maximal. The
 repo's First Question ("could it be simpler without compromising quality?") and
 its identity ("a template foundation, not a feature product") govern scope.
 
+## SUPERSEDED: release model is now continuous-on-merge (2026-06-18, post-program)
+
+After the program completed, the owner directed a release-model overhaul. **The
+release-PR / `gh pr merge --auto` pattern described later in this record is now
+HISTORICAL** — it is how `v0.1.0`–`v0.3.0` were cut. The current model (PR #44+):
+
+- **Continuous release on merge, PR-merge-ONLY.** On `workflow_run` after CI
+  succeeds on `main`, the **Oak Semantic Release Bot** (app 2995796, a ruleset
+  bypass actor) bumps + tags + pushes straight to protected `main` and publishes
+  the Release. There is **no `workflow_dispatch`** (`audit_release_workflow`
+  forbids it). The bot authenticates via `client-id` (`RELEASE_APP_CLIENT_ID`).
+- **Majors are NOT automated.** A breaking marker stands the auto-release down;
+  `tools/prevent_accidental_major.py` (a commit-msg hook) blocks the marker; the
+  rare major is cut by a human outside this repo's automation.
+- **Loop guard:** the bump commit carries `[skip ci]`. **Gotcha:** a feature
+  commit/PR message that quotes that literal token makes the squash-merge skip CI
+  too, so no release fires (it bit PR #44's own merge — documented in
+  `docs/dev-tooling.md`).
+- **Verified live:** `v0.4.0` and `v0.4.1` cut automatically via PR merges.
+- **Governance now enforced in GitHub** (verified via API): required status
+  checks (Quality gates, Secret scanning, CodeQL, SonarCloud) + a `v*` tag
+  ruleset. Only the GitHub Code Quality org preview remains an owner action.
+- The same `app-id`→`client-id` fix was opened on `oak-open-curriculum-ecosystem`
+  as PR #214 (server-side, their checkout untouched).
+
+Full detail in README "## Releases" / "## Quality gates & CI/CD",
+`docs/dev-tooling.md`, `docs/repository-governance.md`, and `docs/publishing-to-pypi.md`.
+
 ## What Landed This Program (2026-06-17 → 2026-06-18)
 
 All merged to `main` unless noted. `main` is green.
@@ -162,10 +190,12 @@ All merged to `main` unless noted. `main` is green.
   therefore applied by `tools/release_increment.py`, which reads the bump_map
   from pyproject and the workflow passes `cz bump --increment <X>`. The live
   verification of release automation is what caught this.
-- **Release PR is perpetually UNSTABLE → `gh pr merge --auto`** (see In Flight).
-- **`main` ruleset:** PR required (0 approvals); no *required status checks*
-  (so verify "Quality gates" + "Secret scanning" green manually before merging;
-  both run via GitHub Apps even on bot PRs, but `ci.yml`'s jobs do not run on
+- **Release PR / `--auto` mechanic is SUPERSEDED** (see the banner near the top):
+  releases are now continuous-on-merge, PR-merge-only. This bullet is historical.
+- **`main` ruleset (now updated):** PR required; **required status checks ARE now
+  enforced** (Quality gates, Secret scanning, CodeQL, SonarCloud) — the note below
+  about "no required status checks" is historical. Earlier this program:
+  both gate apps run even on bot PRs, but `ci.yml`'s jobs do not run on
   bot PRs). Direct pushes blocked. The pre-tool hook blocks `git push --force`
   and `git checkout --` (use `uv lock`/`git restore` alternatives).
 - **Seven-surface gate coupling map** (for in-`check-ci` gates like pip-audit /

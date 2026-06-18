@@ -105,5 +105,7 @@ simplify-and-fail-close) and the deferred backlog are detailed in the plan.
 
 ## Next Safe Step
 
-- Open a feature branch for **F4 (CI workflow)** and proceed through Phase 2 in
-  order.
+- **Thread COMPLETE (2026-06-18).** All fitness items F1–F8 landed — F1/F2/F4
+  earlier, then F3 (PR #31), F8 (PR #33), F5 and F7 (PR #34), and F6 (agent-hook
+  hardening via recurse-and-check, PR #37). No further work; folded into the
+  now-complete gate-expansion program.

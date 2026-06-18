@@ -28,14 +28,14 @@ over-block). Full state in the
 ## Active Threads
 
 - **quality-gate-surface-expansion → "highest proportionate bar" program**
-  (the live spine) — gitleaks/pip-audit/codespell gates, coverage publishing, and
-  release automation all **done**; supply-chain pinning **in flight** (branch
-  `feat/supply-chain-pinning`, no PR yet); Tier 1b (F3/F8/F5-7), Tier 3
-  (Pythonic), Tier 2 (governance) queued. Tier 4 deliberately deferred. The
-  thread record is the authoritative program handoff. See
+  — **COMPLETE.** All gates, coverage publishing, supply-chain pinning, Tier 1b
+  (F3/F8/F5/F6/F7), Tier 3, and Tier 2 landed; Tier 4 deliberately deferred. A
+  follow-on **release-model overhaul** (continuous-on-merge, PR-merge-only) also
+  landed and is verified. The thread record (with its supersession banner) is the
+  authoritative handoff. See
   [`threads/quality-gate-surface-expansion.next-session.md`](threads/quality-gate-surface-expansion.next-session.md).
-- **template-fitness-remediation** — F1/F2/F4 landed; **F3/F8/F5-7** remain and
-  are now folded into the program's Tier 1b. See
+- **template-fitness-remediation** — **COMPLETE** (F1–F8 all landed; F6 via #37).
+  See
   [`threads/template-fitness-remediation.next-session.md`](threads/template-fitness-remediation.next-session.md).
 - Closed references:
   [`threads/review-findings-closeout.next-session.md`](threads/review-findings-closeout.next-session.md),
@@ -50,12 +50,10 @@ over-block). Full state in the
   `audit_supply_chain` + packaging-schema fix**, **#31 honest coverage floor
   (85) + `audit_coverage_contract`**, **#33 WCAG 2.2 AA accessible chart (F8)**,
   **#34 remote size-cap (F5) + rename guide (F7)**. `main` is green.
-- **Tier 1b F6 DEFERRED** (the `agent_hooks.py` guardrail hardening) — full
-  analysis + recommended safe design in the thread record's Remaining Work.
-- **Open: release PR #25 `chore(release): v0.3.0`** (standing, intentionally
-  accumulating every merged feat/fix — merge with `--auto` at sprint end; it now
-  also includes #28 + #31). The next prepare run will retitle it to the bumped
-  version.
+- **Tier 1b F6 DONE** (#37, recurse-and-check agent-hook hardening).
+- **Release PR #25 / the release-PR + `--auto` pattern: SUPERSEDED.** #25 merged
+  (cut `v0.3.0`); releases are now continuous-on-merge, PR-merge-only (see the
+  header and the gate-expansion thread record's supersession banner).
 - **Folded into PR #28** (merged): a packaging-schema fix —
   `pyproject.toml` `[tool.hatch.build.targets.wheel].sources` `["src"]` →
   `{ "src" = "" }` (the array tripped the *Even Better TOML* SchemaStore Hatch
@@ -98,9 +96,13 @@ over-block). Full state in the
   adopted the connection-closing `with` and `stream=True` assertions). **Deferred
   F6** (the `agent_hooks.py` guardrail) on safety/ambiguity grounds — see the
   thread record. Tier 1b is complete bar F6.
-- Next: **Tier 1b F6** (deferred — owner intent + dedicated session) → Tier 3 →
-  Tier 2; then merge release PR #25. Authoritative detail in the gate-expansion
-  thread.
+- 2026-06-18 (final): all of the above landed — F6 (#37), Tier 3 (#38/#39/#40),
+  Tier 2 (#41), Dependabot (#29/#30), release `v0.3.0` (#25). Then an
+  owner-directed **release-model overhaul**: continuous release on merge,
+  PR-merge-only, via the bot (#44/#46); PyPI guide + gates overview (#47);
+  `v0.4.0`/`v0.4.1` cut and verified. Release automation is done — see the header
+  and the gate-expansion thread record's supersession banner for the current
+  model. Cross-repo `client-id` fix opened on oak-open-curriculum (their PR #214).
 
 ## Repo-Wide Invariants / Non-Goals
 
@@ -137,9 +139,12 @@ over-block). Full state in the
 
 ## Open Side-Tasks
 
-- **Owner actions (settings, not code):** add "Quality gates" + "Secret scanning"
-  to the ruleset's required checks; provide a release-PR PAT/App token; enable
-  GitHub Code Quality preview; add `v*` tag protection. (See thread record.)
+- **Owner actions (settings, not code):** mostly DONE (verified via API) —
+  required checks (Quality gates, Secret scanning, CodeQL, SonarCloud) enforced,
+  `v*` tag ruleset added, release-bot secrets (`RELEASE_APP_CLIENT_ID` +
+  private key) + bypass actor in place. **Only remaining:** enable the GitHub
+  Code Quality org preview. (The release-PR token action is obsolete — the bot
+  pushes directly now.) See `docs/repository-governance.md`.
 - Re-check the Dependabot security-alert count before assuming zero open vulns
   (pip-audit now scans the locked set in `check-ci`, so new advisories surface).
 
@@ -160,4 +165,15 @@ over-block). Full state in the
   threshold, left in place. Both remaining `current/` plans
   (quality-gate-surface-expansion as the live program spine; template-fitness
   with only F6 left) are deliberately kept open.
+- 2026-06-18 (final, post-overhaul): ran `consolidate-docs` after the
+  release-model overhaul. Durable doctrine was homed inline during the work
+  (README "## Releases" + "## Quality gates & CI/CD", `docs/dev-tooling.md`,
+  `docs/repository-governance.md`, `docs/publishing-to-pypi.md`, `release.yml`,
+  `audit_release_workflow`). This pass: added the supersession banner + corrected
+  the stale `--auto` mechanics in the gate-expansion thread record; annotated the
+  archived release-automation plan as superseded; refreshed continuity (F6 done,
+  the release-PR pattern superseded, owner-actions mostly done); added a
+  release-model experience note. Incoming Practice boxes empty (no-op). Napkin 294 lines —
+  under the rotation threshold, left in place; `distilled.md` unchanged
+  (durable lessons already homed in docs).
 - The earlier 2026-04-23 source-Practice transfer remains the closed baseline.
