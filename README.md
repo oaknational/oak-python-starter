@@ -41,6 +41,46 @@ stays sufficient for the gate sequence): a pinned pre-commit hook locally and a
 pinned `secret-scan` job in CI, kept in lockstep by the `repo-audit`
 `secret-scanning` check. The allowlist lives in `.gitleaks.toml`.
 
+## Quality gates & CI/CD
+
+This repo is a working reference for a strict Python quality bar and CI/CD;
+everything below runs identically locally and in CI. The full detail is in
+[docs/dev-tooling.md](docs/dev-tooling.md).
+
+**Quality gates** — one `check-ci` sequence, run the same way locally and in CI:
+
+| Gate | Tool | Proves |
+| --- | --- | --- |
+| format | `ruff format` | consistent formatting |
+| typecheck | `pyright` (strict) | types across `src`/`tests`/`tools` |
+| lint | `ruff` | lint rules |
+| markdownlint | `pymarkdown` | Markdown hygiene |
+| codespell | `codespell` | spelling |
+| import-linter | `import-linter` | import-direction boundaries |
+| dependency-hygiene | `deptry` | no unused/missing/misplaced deps |
+| pip-audit | `pip-audit` | no known vulnerabilities in the locked deps |
+| repo-audit | `tools/repo_audit.py` | repo identity, and that the gates' own config cannot be weakened |
+| build | `uv build` + wheel smoke | the built wheel installs and both entry points run |
+| test | `pytest` (+ Hypothesis) | behaviour, including property-based tests |
+| coverage | `coverage.py` (branch) | coverage stays at or above the honest floor |
+
+Three more gates run outside `check-ci`: **gitleaks** (secret scanning),
+**SonarCloud** (pull-request analysis), and **CodeQL** (code quality).
+
+**CI/CD**:
+
+- **CI** runs the same `check-ci` on every push and pull request.
+- **Continuous release on merge**: every qualifying merge to `main` advances the
+  version (semantic-release via the Oak Semantic Release Bot) and publishes a
+  GitHub Release with the wheel + sdist. See [Releases](#releases).
+- **Supply-chain pinning**: every Actions `uses:` is pinned to a commit SHA, with
+  Dependabot keeping the pins and the locked deps current.
+- **Branch + tag rulesets**: PR required, required status checks, no force-push,
+  and `v*` tags protected.
+- **Self-guarding**: `repo_audit.py` audits the gates' own configuration (the
+  coverage floor + branch mode, the supply-chain pins, the release workflow's
+  shape), so the gates cannot be quietly weakened.
+
 ## Agentic Engineering
 
 This repo is optimised for agentic engineering. Its Practice surfaces,
@@ -194,7 +234,9 @@ The bump level is computed by Commitizen with this repo's policy:
 stand down, and the `prevent-accidental-major` commit-msg hook rejects `type!:` /
 `BREAKING CHANGE` in commits so one cannot land by accident. On the rare occasion
 a major is warranted, a human engineer cuts it strategically, outside this repo's
-automation. Releases publish to GitHub Releases only (not PyPI).
+automation. Releases publish to GitHub Releases only, not PyPI — if a project
+based on this template needs PyPI, see
+[docs/publishing-to-pypi.md](docs/publishing-to-pypi.md).
 
 The workflow needs the `RELEASE_APP_CLIENT_ID` / `RELEASE_APP_PRIVATE_KEY`
 secrets and the bot added as a ruleset bypass actor — see
