@@ -196,6 +196,15 @@ The bump level is computed by Commitizen with this repo's policy:
 down; cut the major deliberately via the Release workflow's *Run workflow*
 button (`increment = MAJOR`). Releases publish to GitHub Releases only (no PyPI).
 
+## Governance
+
+Most of the quality bar is enforced in code (the `check-ci` gates, the
+`repo_audit.py` self-checks, and the SonarCloud PR gate). A few protections live
+only in GitHub settings — required status checks, a release-PR token, the Code
+Quality preview, and tag protection. Those owner actions are listed in
+[docs/repository-governance.md](docs/repository-governance.md); an adopter should
+work through them once per repository.
+
 ## Practice Surface
 
 - Agent entry point: `.agent/directives/AGENT.md`
