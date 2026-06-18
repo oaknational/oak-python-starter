@@ -56,15 +56,16 @@ All merged to `main` unless noted. `main` is green.
     `--admin` — the harness classifier blocks admin bypass, correctly). `--auto`
     merges once the ruleset's actual requirements are met (a PR exists; no
     required status checks). Merging it triggers the publish phase → `v0.3.0`.
-- **Supply-chain PR #28 `feat/supply-chain-pinning` (HEAD `f5225cb`, OPEN).**
-  Contains: all workflow action `uses:` SHA-pinned (with `# vX` comments) +
-  `.github/dependabot.yml` (uv + github-actions, weekly, grouped) + the
-  **`audit_supply_chain` self-check** (asserts every workflow `uses:` — step- AND
-  job-level — is a 40-hex SHA or a `sha256:` docker digest, and dependabot watches
-  uv+github-actions) + the packaging-schema fix below. All four pinned SHAs were
-  verified to match their upstream `vN` tags. **Next: get it green (CI +
-  SonarCloud) and merge** with `gh pr merge 28 --squash --delete-branch` (a normal
-  PR — CodeQL runs and it merges on green; NOT the bot-PR `--auto` path #25 needs).
+- **Supply-chain PR #28 — MERGED** (`feat/supply-chain-pinning`). Landed: all
+  workflow action `uses:` SHA-pinned + `.github/dependabot.yml` (uv +
+  github-actions) + the **`audit_supply_chain` self-check** (asserts every
+  workflow `uses:` — step- AND job-level — is a 40-hex SHA or a `sha256:` docker
+  digest, and dependabot watches both ecosystems) + the packaging-schema fix
+  below. All four pinned SHAs verified to match their upstream `vN` tags.
+- **Coverage PR #31 — MERGED** (Tier 1b F3). `fail_under` 70→85 + the
+  `audit_coverage_contract` repo_audit check (floor + omit-list guard — guards
+  what the coverage gate structurally cannot). Normal feature PRs merge with
+  `gh pr merge <n> --squash --delete-branch` once green (CI + SonarCloud).
 - **Packaging-schema fix folded into PR #28** (committed `f5225cb`), separate from
   supply-chain: `pyproject` `[tool.hatch.build.targets.wheel].sources` `["src"]`
   → `{ "src" = "" }` (array tripped the *Even Better TOML* SchemaStore Hatch
@@ -91,10 +92,11 @@ All merged to `main` unless noted. `main` is green.
 ## Remaining Program Work (each its own branch off main + PR)
 
 - **Tier 1b — template fitness** (template-fitness-remediation plan):
-  - **F3 honest coverage gate**: raise `fail_under` from 70 → ~85 (achieved ~88);
-    add `audit_coverage_contract` pinning the threshold floor + the exact
-    coverage omit-list (`governance-claim-needs-a-scanner`).
-  - **F8 accessible chart** (org WCAG 2.2 AA mandate, currently unmet): write a
+  - **F3 honest coverage gate — DONE (PR #31).** `fail_under` 70→85 +
+    `audit_coverage_contract` (floor + omit-list guard). The audit asserts a
+    *floor* (>=85, raising allowed) and that `omit` stays a subset of the
+    justified set — guarding what the coverage gate structurally cannot.
+  - **F8 accessible chart — NEXT** (org WCAG 2.2 AA mandate, currently unmet): write a
     text alternative from `render_summary` (SC 1.1.1); darken `#d08d46` and halo
     the target marker for ≥3:1 contrast (SC 1.4.11); test the sidecar + contrasts.
   - **F5/F6/F7 adoptability**: remote-fetch size cap + trust-boundary note;
@@ -157,9 +159,9 @@ All merged to `main` unless noted. `main` is green.
 
 ## Next Safe Step
 
-1. **Supply-chain PR #28 is OPEN** (HEAD `f5225cb`). Get it green (CI +
-   SonarCloud) and merge with `gh pr merge 28 --squash --delete-branch`.
-2. Then Tier 1b (F3 → F8 → F5/6/7), then Tier 3, then the Tier 2 checklist.
+1. **#28 (supply-chain) and #31 (F3 coverage) are MERGED; `main` is green.**
+   Resume at **Tier 1b F8** (WCAG 2.2 AA accessible chart) — its own branch + PR.
+2. Then F5/6/7, then Tier 3, then the Tier 2 checklist.
 3. When the sprint's PRs are all merged, **merge release PR #25 with `--auto`**
    to cut the accumulated release, then verify the new GitHub Release + the
    bumped `main` version.
