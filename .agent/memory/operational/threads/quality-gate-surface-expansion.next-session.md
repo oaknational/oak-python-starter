@@ -66,6 +66,9 @@ All merged to `main` unless noted. `main` is green.
   `audit_coverage_contract` repo_audit check (floor + omit-list guard — guards
   what the coverage gate structurally cannot). Normal feature PRs merge with
   `gh pr merge <n> --squash --delete-branch` once green (CI + SonarCloud).
+- **Accessible-chart PR #33 — MERGED** (Tier 1b F8, WCAG 2.2 AA).
+- **Adoptability PR #34 — MERGED** (Tier 1b F5 remote size cap + F7 rename
+  guide). **F6 (the agent_hooks guardrail) is DEFERRED** — see Remaining Work.
 - **Packaging-schema fix folded into PR #28** (committed `f5225cb`), separate from
   supply-chain: `pyproject` `[tool.hatch.build.targets.wheel].sources` `["src"]`
   → `{ "src" = "" }` (array tripped the *Even Better TOML* SchemaStore Hatch
@@ -96,13 +99,36 @@ All merged to `main` unless noted. `main` is green.
     `audit_coverage_contract` (floor + omit-list guard). The audit asserts a
     *floor* (>=85, raising allowed) and that `omit` stays a subset of the
     justified set — guarding what the coverage gate structurally cannot.
-  - **F8 accessible chart — NEXT** (org WCAG 2.2 AA mandate, currently unmet): write a
-    text alternative from `render_summary` (SC 1.1.1); darken `#d08d46` and halo
-    the target marker for ≥3:1 contrast (SC 1.4.11); test the sidecar + contrasts.
-  - **F5/F6/F7 adoptability**: remote-fetch size cap + trust-boundary note;
-    guardrail fail-closed + simplify in `agent_hooks.py` (treat `|` as separator,
-    fail-closed on `$(`/backticks; allow-path tests for git commit/push/status);
-    a "rename this template" guide.
+  - **F8 accessible chart — DONE (PR #33).** Darkened the amber bar
+    `#d08d46`→`#b07a37` (2.77→3.69:1), added a white halo to the target marker
+    (it failed 3:1 on most bars), and a `<chart>.png.txt` alt-text sidecar from
+    `render_chart_alt_text`. Tests pin the WCAG contrasts with an independent
+    contrast helper. (Discovery: the dark target marker was an *existing* a11y
+    bug — invisible on blue/teal/red/purple bars.)
+  - **F5 remote size cap — DONE (PR #34).** `default_remote_reader` streams under
+    a 10 MiB `REMOTE_MAX_BYTES` cap (declared-Content-Length early reject + decoded
+    streaming cap), inside a `with` so the connection closes on every exit.
+  - **F7 rename guide — DONE (PR #34).** `docs/using-this-template.md`, linked
+    from the README.
+  - **F6 guardrail hardening — DEFERRED (needs owner input + a dedicated
+    session).** Goal: close two bypasses in the self-imposed safety rail
+    (`tools/agent_hooks.py`): (a) `_shell_segments` (line ~484) does NOT split on
+    `|`, so a piped stage isn't analysed as its own segment; (b) the anchored
+    force-push/etc. regexes are defeated by `$(...)`/backticks — e.g.
+    `echo $(git push --force)` slips through because the trailing `)` breaks the
+    `(\s|$)` anchor. **Why deferred:** "fail-closed on `$(`/backticks" is
+    ambiguous and, taken as a *blanket deny*, would break legitimate command
+    substitution — including the agent's own `git commit -m "$(cat <<'EOF' …)"`
+    heredoc pattern — and the hook runs on the working-tree copy, so a bad edit
+    self-locks the agent out of committing the fix. **Recommended safe design:**
+    add `|` to the `_shell_segments` separator set (safe; `||` stays distinct),
+    and *recurse into* `$(...)`/backtick substitutions to check the inner command
+    for blocked patterns (mirroring the existing `_shell_launcher_command`
+    recursion) rather than blanket-denying. **Before relying on any edit, run the
+    modified hook directly against (i) a heredoc `git commit` → must ALLOW,
+    (ii) `echo $(git push --force)` → must DENY, (iii) `git status` → ALLOW.**
+    Owner to confirm whether they want strict blanket-deny (and accept simple
+    `-m` messages for git commit/push) or the recurse-and-check interpretation.
 - **Tier 3 — Pythonic additions**:
   - branch coverage (`--cov-branch`) + raise threshold;
   - Hypothesis property-based tests for the CSV/data boundary;
@@ -159,9 +185,13 @@ All merged to `main` unless noted. `main` is green.
 
 ## Next Safe Step
 
-1. **#28 (supply-chain) and #31 (F3 coverage) are MERGED; `main` is green.**
-   Resume at **Tier 1b F8** (WCAG 2.2 AA accessible chart) — its own branch + PR.
-2. Then F5/6/7, then Tier 3, then the Tier 2 checklist.
+1. **#28, #31, #33, #34 are MERGED; `main` is green. Tier 1b is done except F6.**
+   Resume at **Tier 1b F6** (the deferred `agent_hooks.py` guardrail hardening —
+   read its full entry under Remaining Program Work; get owner intent on the
+   fail-closed semantics first, and pre-verify the modified hook allows a heredoc
+   commit before relying on it).
+2. Then Tier 3 (branch coverage, Hypothesis, version-policy ADR), then the
+   Tier 2 governance checklist.
 3. When the sprint's PRs are all merged, **merge release PR #25 with `--auto`**
    to cut the accumulated release, then verify the new GitHub Release + the
    bumped `main` version.
