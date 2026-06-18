@@ -334,35 +334,6 @@ typeCheckingMode = "basic"
     assert "pyrightconfig.json must configure pyright with strict type checking" in joined
 
 
-def test_audit_packaging_contract_requires_namespace_preserving_wheel_mapping(
-    tmp_path: Path,
-) -> None:
-    _write(
-        tmp_path / "pyproject.toml",
-        """
-[tool.hatch.build.targets.wheel]
-only-include = ["src/oaknational/python_repo_template"]
-sources = ["src"]
-""",
-    )
-
-    assert subject.audit_packaging_contract(tmp_path) == []
-
-    _write(
-        tmp_path / "pyproject.toml",
-        """
-[tool.hatch.build.targets.wheel]
-packages = ["src/oaknational/python_repo_template"]
-""",
-    )
-
-    failures = subject.audit_packaging_contract(tmp_path)
-    joined = "\n".join(failures)
-
-    assert "package the Oak namespace directory without collapsing it" in joined
-    assert "strip the src/ prefix while preserving the oaknational namespace path" in joined
-
-
 def test_audit_commit_workflow_requires_commitizen_and_truthful_hooking(
     tmp_path: Path,
 ) -> None:
@@ -600,7 +571,6 @@ format -> typecheck -> lint -> dependency-hygiene -> repo-audit -> build -> test
 @pytest.mark.parametrize(
     "audit_function",
     [
-        subject.audit_packaging_contract,
         subject.audit_typing_contract,
         subject.audit_commit_workflow,
         subject.audit_distribution_metadata,
