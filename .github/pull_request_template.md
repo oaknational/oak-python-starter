@@ -4,11 +4,11 @@
 
 ## Issue(s)
 
-Fixes #
+<!-- Fixes #123 or delete if not applicable -->
 
 ## How to test
 
-1. `uv run python -m oaknational.python_repo_template.devtools check-ci` — all gates pass
+1. `uv run python -m <your_package>.devtools check-ci` — all gates pass
 2. `uv run pre-commit run --all-files` — hooks clean
 
 ## Checklist
