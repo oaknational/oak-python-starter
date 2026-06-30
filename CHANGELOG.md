@@ -1,3 +1,9 @@
+## v0.6.0 (2026-06-30)
+
+### Fix
+
+- use placeholder module path and comment out issue field
+
 ## v0.5.0 (2026-06-30)
 
 ### Fix
