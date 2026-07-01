@@ -10,7 +10,7 @@ import sys
 import tomllib
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import TextIO, cast
+from typing import NamedTuple, TextIO, cast
 
 import yaml
 
@@ -1173,6 +1173,102 @@ def audit_typing_contract(root: Path) -> list[str]:
     return failures
 
 
+def _find_local_repo(
+    repos: list[dict[str, object]] | None,
+) -> dict[str, object] | None:
+    if repos is None:
+        return None
+    for repo_entry in repos:
+        if repo_entry.get("repo") == "local":
+            return repo_entry
+    return None
+
+
+def _audit_pre_commit_hooks(
+    pre_commit_mapping: dict[str, object],
+    failures: list[str],
+    check: str,
+) -> None:
+    default_install_hook_types = _string_list(
+        pre_commit_mapping.get("default_install_hook_types")
+    )
+    repos = _object_list(pre_commit_mapping.get("repos"))
+    local_repo = _find_local_repo(repos)
+    hooks = _object_list(local_repo.get("hooks")) if local_repo is not None else None
+    hook_by_id = {
+        hook_id: hook
+        for hook in hooks or []
+        for hook_id in [hook.get("id")]
+        if isinstance(hook_id, str)
+    }
+    require(
+        failures,
+        check,
+        default_install_hook_types == ["pre-commit", "pre-push", "commit-msg"],
+        ".pre-commit-config.yaml must install commit-msg hooks by default",
+    )
+    quality_gates_hook = hook_by_id.get("quality-gates")
+    require(
+        failures,
+        check,
+        quality_gates_hook is not None
+        and quality_gates_hook.get("entry") == QUALITY_GATES_ENTRY
+        and quality_gates_hook.get("language") == "system"
+        and _string_list(quality_gates_hook.get("stages")) == ["pre-commit", "pre-push"]
+        and quality_gates_hook.get("pass_filenames") is False,
+        (
+            ".pre-commit-config.yaml must enforce quality gates with the repo-local "
+            "check-ci command at pre-commit and pre-push"
+        ),
+    )
+    commitizen_hook = hook_by_id.get("commitizen-commit-msg")
+    require(
+        failures,
+        check,
+        commitizen_hook is not None
+        and commitizen_hook.get("entry") == "uv run cz check --allow-abort --commit-msg-file"
+        and commitizen_hook.get("language") == "system"
+        and _string_list(commitizen_hook.get("stages")) == ["commit-msg"],
+        ".pre-commit-config.yaml must enforce commit messages with Commitizen at commit-msg",
+    )
+
+
+def _audit_commit_docs(root: Path, failures: list[str], check: str) -> None:
+    readme = read_text(root / "README.md", failures, check)
+    if readme is not None:
+        require(
+            failures,
+            check,
+            "uv run pre-commit install" in readme
+            and "uv run cz commit" in readme
+            and "uv run cz check" in readme,
+            "README must document hook installation plus Commitizen commit creation and validation",
+        )
+
+    tooling_doc = read_text(root / "docs/dev-tooling.md", failures, check)
+    if tooling_doc is not None:
+        require(
+            failures,
+            check,
+            "commitizen" in tooling_doc
+            and "uv run cz commit" in tooling_doc
+            and "uv run cz check" in tooling_doc,
+            "docs/dev-tooling.md must document the Commitizen workflow",
+        )
+
+    commit_command = read_text(root / ".agent/commands/commit.md", failures, check)
+    if commit_command is not None:
+        require(
+            failures,
+            check,
+            "uv run cz commit" in commit_command and "uv run cz check" in commit_command,
+            (
+                ".agent/commands/commit.md must direct commit creation and validation "
+                "through Commitizen"
+            ),
+        )
+
+
 def audit_commit_workflow(root: Path) -> list[str]:
     check = "commit-workflow"
     failures: list[str] = []
@@ -1218,405 +1314,324 @@ def audit_commit_workflow(root: Path) -> list[str]:
         ".pre-commit-config.yaml must define a top-level mapping",
     )
     if pre_commit_mapping is not None:
-        default_install_hook_types = _string_list(
-            pre_commit_mapping.get("default_install_hook_types")
-        )
-        repos = _object_list(pre_commit_mapping.get("repos"))
-        local_repo = None
-        if repos is not None:
-            for repo_entry in repos:
-                if repo_entry.get("repo") == "local":
-                    local_repo = repo_entry
-                    break
-        hooks = _object_list(local_repo.get("hooks")) if local_repo is not None else None
-        hook_by_id = {
-            hook_id: hook
-            for hook in hooks or []
-            for hook_id in [hook.get("id")]
-            if isinstance(hook_id, str)
-        }
-        require(
-            failures,
-            check,
-            default_install_hook_types == ["pre-commit", "pre-push", "commit-msg"],
-            ".pre-commit-config.yaml must install commit-msg hooks by default",
-        )
-        quality_gates_hook = hook_by_id.get("quality-gates")
-        require(
-            failures,
-            check,
-            quality_gates_hook is not None
-            and quality_gates_hook.get("entry") == QUALITY_GATES_ENTRY
-            and quality_gates_hook.get("language") == "system"
-            and _string_list(quality_gates_hook.get("stages")) == ["pre-commit", "pre-push"]
-            and quality_gates_hook.get("pass_filenames") is False,
-            (
-                ".pre-commit-config.yaml must enforce quality gates with the repo-local "
-                "check-ci command at pre-commit and pre-push"
-            ),
-        )
-        commitizen_hook = hook_by_id.get("commitizen-commit-msg")
-        require(
-            failures,
-            check,
-            commitizen_hook is not None
-            and commitizen_hook.get("entry") == "uv run cz check --allow-abort --commit-msg-file"
-            and commitizen_hook.get("language") == "system"
-            and _string_list(commitizen_hook.get("stages")) == ["commit-msg"],
-            ".pre-commit-config.yaml must enforce commit messages with Commitizen at commit-msg",
-        )
+        _audit_pre_commit_hooks(pre_commit_mapping, failures, check)
 
-    readme = read_text(root / "README.md", failures, check)
-    if readme is not None:
-        require(
-            failures,
-            check,
-            "uv run pre-commit install" in readme
-            and "uv run cz commit" in readme
-            and "uv run cz check" in readme,
-            "README must document hook installation plus Commitizen commit creation and validation",
-        )
-
-    tooling_doc = read_text(root / "docs/dev-tooling.md", failures, check)
-    if tooling_doc is not None:
-        require(
-            failures,
-            check,
-            "commitizen" in tooling_doc
-            and "uv run cz commit" in tooling_doc
-            and "uv run cz check" in tooling_doc,
-            "docs/dev-tooling.md must document the Commitizen workflow",
-        )
-
-    commit_command = read_text(root / ".agent/commands/commit.md", failures, check)
-    if commit_command is not None:
-        require(
-            failures,
-            check,
-            "uv run cz commit" in commit_command and "uv run cz check" in commit_command,
-            (
-                ".agent/commands/commit.md must direct commit creation and validation "
-                "through Commitizen"
-            ),
-        )
+    _audit_commit_docs(root, failures, check)
 
     return failures
 
 
-def audit_hook_contract(root: Path) -> list[str]:
-    check = "hook-contract"
-    failures: list[str] = []
+def _require_blocked_objects(
+    policy: dict[str, object],
+    failures: list[str],
+    check: str,
+    policy_key: str,
+    key_fields: Sequence[str],
+    required: dict[object, str],
+    missing_msg: str,
+    mismatch_msg_fn: Callable[[object], str],
+) -> None:
+    """Check a blocked-object list in policy.json against required entries."""
+    blocked = _object_list(policy.get(policy_key))
+    require(failures, check, blocked is not None, missing_msg)
+    if blocked is None:
+        return
+    if len(key_fields) == 1:
+        actual: dict[object, object] = {
+            item.get(key_fields[0]): item.get("reason") for item in blocked
+        }
+    else:
+        actual = {
+            tuple(item.get(f) for f in key_fields): item.get("reason") for item in blocked
+        }
+    for key, reason in required.items():
+        require(failures, check, actual.get(key) == reason, mismatch_msg_fn(key))
 
+
+def _audit_hook_policy(root: Path, failures: list[str], check: str) -> None:
+    """Validate .agent/hooks/policy.json contents."""
     policy = _load_json(root / ".agent/hooks/policy.json", failures, check)
-    if policy is not None:
-        require(
-            failures,
-            check,
-            policy.get("session_start_message")
-            == "Read .agent/commands/start-right-quick.md before substantive work.",
-            ".agent/hooks/policy.json must keep the canonical session-start grounding message",
-        )
-        require(
-            failures,
-            check,
-            policy.get("quality_gate_message")
-            == (
-                "If Python or tooling files change, run uv run python -m "
-                "oaknational.python_repo_template.devtools check before you stop."
-            ),
-            ".agent/hooks/policy.json must keep the repo-local quality-gate reminder",
-        )
-        blocked_patterns = _object_list(policy.get("blocked_shell_patterns"))
-        require(
-            failures,
-            check,
-            blocked_patterns is not None,
-            ".agent/hooks/policy.json must define blocked_shell_patterns as an object list",
-        )
-        if blocked_patterns is not None:
-            actual_patterns = {
-                pattern.get("pattern"): pattern.get("reason") for pattern in blocked_patterns
-            }
-            for pattern, reason in REQUIRED_HOOK_POLICY_PATTERNS.items():
-                require(
-                    failures,
-                    check,
-                    actual_patterns.get(pattern) == reason,
-                    f".agent/hooks/policy.json must block {pattern!r} with the canonical reason",
-                )
-        blocked_flags = _object_list(policy.get("blocked_hook_bypass_flags"))
-        require(
-            failures,
-            check,
-            blocked_flags is not None,
-            ".agent/hooks/policy.json must define blocked_hook_bypass_flags as an object list",
-        )
-        if blocked_flags is not None:
-            actual_flags = {flag.get("token"): flag.get("reason") for flag in blocked_flags}
-            for token, reason in REQUIRED_HOOK_BYPASS_FLAGS.items():
-                require(
-                    failures,
-                    check,
-                    actual_flags.get(token) == reason,
-                    f".agent/hooks/policy.json must block hook-bypass flag {token!r}",
-                )
-        blocked_envs = _object_list(policy.get("blocked_hook_bypass_env_vars"))
-        require(
-            failures,
-            check,
-            blocked_envs is not None,
-            (".agent/hooks/policy.json must define blocked_hook_bypass_env_vars as an object list"),
-        )
-        if blocked_envs is not None:
-            actual_envs = {
-                (env.get("name"), env.get("value")): env.get("reason") for env in blocked_envs
-            }
-            for assignment, reason in REQUIRED_HOOK_BYPASS_ENV_VARS.items():
-                require(
-                    failures,
-                    check,
-                    actual_envs.get(assignment) == reason,
-                    (
-                        ".agent/hooks/policy.json must block hook-bypass env assignment "
-                        f"{assignment[0]}={assignment[1]}"
-                    ),
-                )
-        blocked_git_configs = _object_list(policy.get("blocked_git_config_overrides"))
-        require(
-            failures,
-            check,
-            blocked_git_configs is not None,
-            ".agent/hooks/policy.json must define blocked_git_config_overrides as an object list",
-        )
-        if blocked_git_configs is not None:
-            actual_git_configs = {
-                config_override.get("name"): config_override.get("reason")
-                for config_override in blocked_git_configs
-            }
-            for name, reason in REQUIRED_HOOK_GIT_CONFIG_OVERRIDES.items():
-                require(
-                    failures,
-                    check,
-                    actual_git_configs.get(name) == reason,
-                    (
-                        ".agent/hooks/policy.json must block git config override "
-                        f"{name!r} with the canonical reason"
-                    ),
-                )
-        blocked_env_prefixes = _object_list(policy.get("blocked_hook_bypass_env_var_prefixes"))
-        require(
-            failures,
-            check,
-            blocked_env_prefixes is not None,
-            (
-                ".agent/hooks/policy.json must define blocked_hook_bypass_env_var_prefixes "
-                "as an object list"
-            ),
-        )
-        if blocked_env_prefixes is not None:
-            actual_env_prefixes = {
-                prefix.get("prefix"): prefix.get("reason") for prefix in blocked_env_prefixes
-            }
-            for prefix, reason in REQUIRED_HOOK_BYPASS_ENV_VAR_PREFIXES.items():
-                require(
-                    failures,
-                    check,
-                    actual_env_prefixes.get(prefix) == reason,
-                    f".agent/hooks/policy.json must block env prefix {prefix!r}",
-                )
-        blocked_git_prefixes = _object_list(policy.get("blocked_git_config_prefixes"))
-        require(
-            failures,
-            check,
-            blocked_git_prefixes is not None,
-            ".agent/hooks/policy.json must define blocked_git_config_prefixes as an object list",
-        )
-        if blocked_git_prefixes is not None:
-            actual_git_prefixes = {
-                prefix.get("prefix"): prefix.get("reason") for prefix in blocked_git_prefixes
-            }
-            for prefix, reason in REQUIRED_HOOK_GIT_CONFIG_PREFIXES.items():
-                require(
-                    failures,
-                    check,
-                    actual_git_prefixes.get(prefix) == reason,
-                    f".agent/hooks/policy.json must block git config prefix {prefix!r}",
-                )
-        require(
-            failures,
-            check,
-            _string_tuple(policy.get("blocked_pre_commit_skip_ids"))
-            == REQUIRED_PRE_COMMIT_SKIP_IDS,
-            ".agent/hooks/policy.json must list the canonical blocked pre-commit skip ids",
-        )
-        require(
-            failures,
-            check,
-            policy.get("blocked_pre_commit_skip_reason") == REQUIRED_PRE_COMMIT_SKIP_REASON,
-            ".agent/hooks/policy.json must define the canonical pre-commit skip reason",
-        )
-        require(
-            failures,
-            check,
-            policy.get("blocked_dynamic_git_config_reason") == REQUIRED_DYNAMIC_GIT_CONFIG_REASON,
-            ".agent/hooks/policy.json must define the canonical dynamic git-config reason",
-        )
+    if policy is None:
+        return
+    require(
+        failures,
+        check,
+        policy.get("session_start_message")
+        == "Read .agent/commands/start-right-quick.md before substantive work.",
+        ".agent/hooks/policy.json must keep the canonical session-start grounding message",
+    )
+    require(
+        failures,
+        check,
+        policy.get("quality_gate_message")
+        == (
+            "If Python or tooling files change, run uv run python -m "
+            "oaknational.python_repo_template.devtools check before you stop."
+        ),
+        ".agent/hooks/policy.json must keep the repo-local quality-gate reminder",
+    )
+    _require_blocked_objects(
+        policy,
+        failures,
+        check,
+        "blocked_shell_patterns",
+        ["pattern"],
+        REQUIRED_HOOK_POLICY_PATTERNS,
+        ".agent/hooks/policy.json must define blocked_shell_patterns as an object list",
+        lambda p: f".agent/hooks/policy.json must block {p!r} with the canonical reason",
+    )
+    _require_blocked_objects(
+        policy,
+        failures,
+        check,
+        "blocked_hook_bypass_flags",
+        ["token"],
+        REQUIRED_HOOK_BYPASS_FLAGS,
+        ".agent/hooks/policy.json must define blocked_hook_bypass_flags as an object list",
+        lambda t: f".agent/hooks/policy.json must block hook-bypass flag {t!r}",
+    )
+    _require_blocked_objects(
+        policy,
+        failures,
+        check,
+        "blocked_hook_bypass_env_vars",
+        ["name", "value"],
+        REQUIRED_HOOK_BYPASS_ENV_VARS,
+        ".agent/hooks/policy.json must define blocked_hook_bypass_env_vars as an object list",
+        lambda a: (
+            f".agent/hooks/policy.json must block hook-bypass env assignment {a[0]}={a[1]}"
+        ),
+    )
+    _require_blocked_objects(
+        policy,
+        failures,
+        check,
+        "blocked_git_config_overrides",
+        ["name"],
+        REQUIRED_HOOK_GIT_CONFIG_OVERRIDES,
+        ".agent/hooks/policy.json must define blocked_git_config_overrides as an object list",
+        lambda n: (
+            f".agent/hooks/policy.json must block git config override {n!r} "
+            "with the canonical reason"
+        ),
+    )
+    _require_blocked_objects(
+        policy,
+        failures,
+        check,
+        "blocked_hook_bypass_env_var_prefixes",
+        ["prefix"],
+        REQUIRED_HOOK_BYPASS_ENV_VAR_PREFIXES,
+        (
+            ".agent/hooks/policy.json must define blocked_hook_bypass_env_var_prefixes "
+            "as an object list"
+        ),
+        lambda p: f".agent/hooks/policy.json must block env prefix {p!r}",
+    )
+    _require_blocked_objects(
+        policy,
+        failures,
+        check,
+        "blocked_git_config_prefixes",
+        ["prefix"],
+        REQUIRED_HOOK_GIT_CONFIG_PREFIXES,
+        ".agent/hooks/policy.json must define blocked_git_config_prefixes as an object list",
+        lambda p: f".agent/hooks/policy.json must block git config prefix {p!r}",
+    )
+    require(
+        failures,
+        check,
+        _string_tuple(policy.get("blocked_pre_commit_skip_ids"))
+        == REQUIRED_PRE_COMMIT_SKIP_IDS,
+        ".agent/hooks/policy.json must list the canonical blocked pre-commit skip ids",
+    )
+    require(
+        failures,
+        check,
+        policy.get("blocked_pre_commit_skip_reason") == REQUIRED_PRE_COMMIT_SKIP_REASON,
+        ".agent/hooks/policy.json must define the canonical pre-commit skip reason",
+    )
+    require(
+        failures,
+        check,
+        policy.get("blocked_dynamic_git_config_reason") == REQUIRED_DYNAMIC_GIT_CONFIG_REASON,
+        ".agent/hooks/policy.json must define the canonical dynamic git-config reason",
+    )
 
+
+def _audit_cursor_hooks(root: Path, failures: list[str], check: str) -> None:
+    """Validate .cursor/hooks.json contents."""
     cursor_hooks = _load_json(root / ".cursor/hooks.json", failures, check)
-    if cursor_hooks is not None:
-        cursor_hook_mapping = _object_mapping(cursor_hooks.get("hooks"))
-        session_start = (
-            _object_list(cursor_hook_mapping.get("sessionStart"))
-            if cursor_hook_mapping is not None
-            else None
-        )
-        pre_tool_use = (
-            _object_list(cursor_hook_mapping.get("preToolUse"))
-            if cursor_hook_mapping is not None
-            else None
-        )
-        require(
-            failures,
-            check,
-            session_start is not None
-            and len(session_start) == 1
-            and session_start[0].get("command") == CURSOR_SESSION_START_COMMAND
-            and session_start[0].get("timeout") == 30,
-            ".cursor/hooks.json must wire the canonical session-start hook runtime",
-        )
-        require(
-            failures,
-            check,
-            pre_tool_use is not None
-            and len(pre_tool_use) == 1
-            and pre_tool_use[0].get("command") == CURSOR_PRE_TOOL_COMMAND
-            and pre_tool_use[0].get("timeout") == 30
-            and pre_tool_use[0].get("matcher") == "Shell",
-            ".cursor/hooks.json must wire the canonical pre-tool hook runtime",
-        )
+    if cursor_hooks is None:
+        return
+    cursor_hook_mapping = _object_mapping(cursor_hooks.get("hooks"))
+    session_start = (
+        _object_list(cursor_hook_mapping.get("sessionStart"))
+        if cursor_hook_mapping is not None
+        else None
+    )
+    pre_tool_use = (
+        _object_list(cursor_hook_mapping.get("preToolUse"))
+        if cursor_hook_mapping is not None
+        else None
+    )
+    require(
+        failures,
+        check,
+        session_start is not None
+        and len(session_start) == 1
+        and session_start[0].get("command") == CURSOR_SESSION_START_COMMAND
+        and session_start[0].get("timeout") == 30,
+        ".cursor/hooks.json must wire the canonical session-start hook runtime",
+    )
+    require(
+        failures,
+        check,
+        pre_tool_use is not None
+        and len(pre_tool_use) == 1
+        and pre_tool_use[0].get("command") == CURSOR_PRE_TOOL_COMMAND
+        and pre_tool_use[0].get("timeout") == 30
+        and pre_tool_use[0].get("matcher") == "Shell",
+        ".cursor/hooks.json must wire the canonical pre-tool hook runtime",
+    )
 
+
+def _audit_claude_hooks(root: Path, failures: list[str], check: str) -> None:
+    """Validate .claude/settings.json hook wiring."""
     claude_settings = _load_json(root / ".claude/settings.json", failures, check)
-    if claude_settings is not None:
-        claude_hook_mapping = _object_mapping(claude_settings.get("hooks"))
-        session_start = (
-            _object_list(claude_hook_mapping.get("SessionStart"))
-            if claude_hook_mapping is not None
-            else None
-        )
-        pre_tool_use = (
-            _object_list(claude_hook_mapping.get("PreToolUse"))
-            if claude_hook_mapping is not None
-            else None
-        )
-        claude_session_hooks = (
-            _object_list(session_start[0].get("hooks"))
-            if session_start is not None and len(session_start) == 1
-            else None
-        )
-        claude_pre_tool_hooks = (
-            _object_list(pre_tool_use[0].get("hooks"))
-            if pre_tool_use is not None and len(pre_tool_use) == 1
-            else None
-        )
-        require(
-            failures,
-            check,
-            session_start is not None
-            and len(session_start) == 1
-            and session_start[0].get("matcher") == ""
-            and claude_session_hooks is not None
-            and claude_session_hooks[0].get("type") == "command"
-            and claude_session_hooks[0].get("command") == CLAUDE_SESSION_START_COMMAND,
-            ".claude/settings.json must wire the canonical session-start hook runtime",
-        )
-        require(
-            failures,
-            check,
-            pre_tool_use is not None
-            and len(pre_tool_use) == 1
-            and pre_tool_use[0].get("matcher") == "Bash"
-            and claude_pre_tool_hooks is not None
-            and claude_pre_tool_hooks[0].get("type") == "command"
-            and claude_pre_tool_hooks[0].get("command") == CLAUDE_PRE_TOOL_COMMAND,
-            ".claude/settings.json must wire the canonical pre-tool hook runtime",
-        )
+    if claude_settings is None:
+        return
+    claude_hook_mapping = _object_mapping(claude_settings.get("hooks"))
+    session_start = (
+        _object_list(claude_hook_mapping.get("SessionStart"))
+        if claude_hook_mapping is not None
+        else None
+    )
+    pre_tool_use = (
+        _object_list(claude_hook_mapping.get("PreToolUse"))
+        if claude_hook_mapping is not None
+        else None
+    )
+    claude_session_hooks = (
+        _object_list(session_start[0].get("hooks"))
+        if session_start is not None and len(session_start) == 1
+        else None
+    )
+    claude_pre_tool_hooks = (
+        _object_list(pre_tool_use[0].get("hooks"))
+        if pre_tool_use is not None and len(pre_tool_use) == 1
+        else None
+    )
+    require(
+        failures,
+        check,
+        session_start is not None
+        and len(session_start) == 1
+        and session_start[0].get("matcher") == ""
+        and claude_session_hooks is not None
+        and claude_session_hooks[0].get("type") == "command"
+        and claude_session_hooks[0].get("command") == CLAUDE_SESSION_START_COMMAND,
+        ".claude/settings.json must wire the canonical session-start hook runtime",
+    )
+    require(
+        failures,
+        check,
+        pre_tool_use is not None
+        and len(pre_tool_use) == 1
+        and pre_tool_use[0].get("matcher") == "Bash"
+        and claude_pre_tool_hooks is not None
+        and claude_pre_tool_hooks[0].get("type") == "command"
+        and claude_pre_tool_hooks[0].get("command") == CLAUDE_PRE_TOOL_COMMAND,
+        ".claude/settings.json must wire the canonical pre-tool hook runtime",
+    )
 
+
+def _audit_gemini_hooks(root: Path, failures: list[str], check: str) -> None:
+    """Validate .gemini/settings.json hook wiring."""
     gemini_settings = _load_json(root / ".gemini/settings.json", failures, check)
-    if gemini_settings is not None:
-        gemini_hook_mapping = _object_mapping(gemini_settings.get("hooks"))
-        gemini_experimental = _object_mapping(gemini_settings.get("experimental"))
-        session_start = (
-            _object_list(gemini_hook_mapping.get("SessionStart"))
-            if gemini_hook_mapping is not None
-            else None
-        )
-        before_tool = (
-            _object_list(gemini_hook_mapping.get("BeforeTool"))
-            if gemini_hook_mapping is not None
-            else None
-        )
-        gemini_session_hooks = (
-            _object_list(session_start[0].get("hooks"))
-            if session_start is not None and len(session_start) == 1
-            else None
-        )
-        gemini_pre_tool_hooks = (
-            _object_list(before_tool[0].get("hooks"))
-            if before_tool is not None and len(before_tool) == 1
-            else None
-        )
-        require(
-            failures,
-            check,
-            gemini_experimental is not None and gemini_experimental.get("enableAgents") is True,
-            ".gemini/settings.json must keep Gemini agents enabled for the repo's adapter surface",
-        )
-        require(
-            failures,
-            check,
-            session_start is not None
-            and len(session_start) == 1
-            and session_start[0].get("matcher") == ""
-            and gemini_session_hooks is not None
-            and gemini_session_hooks[0].get("type") == "command"
-            and gemini_session_hooks[0].get("name") == "repo-grounding"
-            and gemini_session_hooks[0].get("command") == GEMINI_SESSION_START_COMMAND
-            and gemini_session_hooks[0].get("timeout") == 5000,
-            ".gemini/settings.json must wire the canonical session-start hook runtime",
-        )
-        require(
-            failures,
-            check,
-            before_tool is not None
-            and len(before_tool) == 1
-            and before_tool[0].get("matcher") == "^run_shell_command$"
-            and gemini_pre_tool_hooks is not None
-            and gemini_pre_tool_hooks[0].get("type") == "command"
-            and gemini_pre_tool_hooks[0].get("name") == "repo-shell-guardrails"
-            and gemini_pre_tool_hooks[0].get("command") == GEMINI_PRE_TOOL_COMMAND
-            and gemini_pre_tool_hooks[0].get("timeout") == 5000,
-            ".gemini/settings.json must wire the canonical pre-tool hook runtime",
-        )
+    if gemini_settings is None:
+        return
+    gemini_hook_mapping = _object_mapping(gemini_settings.get("hooks"))
+    gemini_experimental = _object_mapping(gemini_settings.get("experimental"))
+    session_start = (
+        _object_list(gemini_hook_mapping.get("SessionStart"))
+        if gemini_hook_mapping is not None
+        else None
+    )
+    before_tool = (
+        _object_list(gemini_hook_mapping.get("BeforeTool"))
+        if gemini_hook_mapping is not None
+        else None
+    )
+    gemini_session_hooks = (
+        _object_list(session_start[0].get("hooks"))
+        if session_start is not None and len(session_start) == 1
+        else None
+    )
+    gemini_pre_tool_hooks = (
+        _object_list(before_tool[0].get("hooks"))
+        if before_tool is not None and len(before_tool) == 1
+        else None
+    )
+    require(
+        failures,
+        check,
+        gemini_experimental is not None and gemini_experimental.get("enableAgents") is True,
+        ".gemini/settings.json must keep Gemini agents enabled for the repo's adapter surface",
+    )
+    require(
+        failures,
+        check,
+        session_start is not None
+        and len(session_start) == 1
+        and session_start[0].get("matcher") == ""
+        and gemini_session_hooks is not None
+        and gemini_session_hooks[0].get("type") == "command"
+        and gemini_session_hooks[0].get("name") == "repo-grounding"
+        and gemini_session_hooks[0].get("command") == GEMINI_SESSION_START_COMMAND
+        and gemini_session_hooks[0].get("timeout") == 5000,
+        ".gemini/settings.json must wire the canonical session-start hook runtime",
+    )
+    require(
+        failures,
+        check,
+        before_tool is not None
+        and len(before_tool) == 1
+        and before_tool[0].get("matcher") == "^run_shell_command$"
+        and gemini_pre_tool_hooks is not None
+        and gemini_pre_tool_hooks[0].get("type") == "command"
+        and gemini_pre_tool_hooks[0].get("name") == "repo-shell-guardrails"
+        and gemini_pre_tool_hooks[0].get("command") == GEMINI_PRE_TOOL_COMMAND
+        and gemini_pre_tool_hooks[0].get("timeout") == 5000,
+        ".gemini/settings.json must wire the canonical pre-tool hook runtime",
+    )
 
+
+def _audit_github_hooks(root: Path, failures: list[str], check: str) -> None:
+    """Validate .github/hooks/guardrails.json hook wiring."""
     github_guardrails = _load_json(root / ".github/hooks/guardrails.json", failures, check)
-    if github_guardrails is not None:
-        github_hook_mapping = _object_mapping(github_guardrails.get("hooks"))
-        pre_tool_use = (
-            _object_list(github_hook_mapping.get("preToolUse"))
-            if github_hook_mapping is not None
-            else None
-        )
-        require(
-            failures,
-            check,
-            pre_tool_use is not None
-            and len(pre_tool_use) == 1
-            and pre_tool_use[0].get("type") == "command"
-            and pre_tool_use[0].get("bash") == GITHUB_PRE_TOOL_COMMAND
-            and pre_tool_use[0].get("timeoutSec") == 30,
-            ".github/hooks/guardrails.json must wire the canonical GitHub pre-tool hook runtime",
-        )
+    if github_guardrails is None:
+        return
+    github_hook_mapping = _object_mapping(github_guardrails.get("hooks"))
+    pre_tool_use = (
+        _object_list(github_hook_mapping.get("preToolUse"))
+        if github_hook_mapping is not None
+        else None
+    )
+    require(
+        failures,
+        check,
+        pre_tool_use is not None
+        and len(pre_tool_use) == 1
+        and pre_tool_use[0].get("type") == "command"
+        and pre_tool_use[0].get("bash") == GITHUB_PRE_TOOL_COMMAND
+        and pre_tool_use[0].get("timeoutSec") == 30,
+        ".github/hooks/guardrails.json must wire the canonical GitHub pre-tool hook runtime",
+    )
 
+
+def _audit_hook_matrix_and_adr(root: Path, failures: list[str], check: str) -> None:
+    """Validate the cross-platform support matrix and ADR-0001."""
     matrix_text = read_text(
         root / ".agent/memory/executive/cross-platform-agent-surface-matrix.md",
         failures,
@@ -1666,6 +1681,18 @@ def audit_hook_contract(root: Path) -> list[str]:
             "ADR-0001 must keep the matrix as the hook-support source of truth",
         )
 
+
+def audit_hook_contract(root: Path) -> list[str]:
+    check = "hook-contract"
+    failures: list[str] = []
+
+    _audit_hook_policy(root, failures, check)
+    _audit_cursor_hooks(root, failures, check)
+    _audit_claude_hooks(root, failures, check)
+    _audit_gemini_hooks(root, failures, check)
+    _audit_github_hooks(root, failures, check)
+    _audit_hook_matrix_and_adr(root, failures, check)
+
     return failures
 
 
@@ -1711,16 +1738,15 @@ def audit_repo_local_command_surface(root: Path) -> list[str]:
     return failures
 
 
-def audit_dependency_hygiene(root: Path) -> list[str]:
-    check = "dependency-hygiene"
-    failures: list[str] = []
-    contract = _load_gate_contract(root, failures, check)
-    pyproject_path = root / "pyproject.toml"
-    data = _load_toml(pyproject_path, failures, check)
-    if contract is None or data is None:
-        return failures
+class _DeptryConfig(NamedTuple):
+    dev_dependencies: list[str] | None
+    deptry_keys: set[str] | None
+    known_first_party: list[str] | None
+    per_rule_ignore_keys: set[str] | None
+    dep002_ignores: list[str] | None
 
-    gate_sequences = _gate_sequences(contract, failures, check)
+
+def _extract_deptry_config(data: dict[str, object]) -> _DeptryConfig:
     dependency_groups = _object_mapping(data.get("dependency-groups"))
     dev_dependencies = (
         _string_list(dependency_groups.get("dev")) if dependency_groups is not None else None
@@ -1738,36 +1764,58 @@ def audit_dependency_hygiene(root: Path) -> list[str]:
     dep002_ignores = (
         _string_list(per_rule_ignores.get("DEP002")) if per_rule_ignores is not None else None
     )
+    return _DeptryConfig(
+        dev_dependencies=dev_dependencies,
+        deptry_keys=deptry_keys,
+        known_first_party=known_first_party,
+        per_rule_ignore_keys=per_rule_ignore_keys,
+        dep002_ignores=dep002_ignores,
+    )
+
+
+def audit_dependency_hygiene(root: Path) -> list[str]:
+    check = "dependency-hygiene"
+    failures: list[str] = []
+    contract = _load_gate_contract(root, failures, check)
+    pyproject_path = root / "pyproject.toml"
+    data = _load_toml(pyproject_path, failures, check)
+    if contract is None or data is None:
+        return failures
+
+    gate_sequences = _gate_sequences(contract, failures, check)
+    cfg = _extract_deptry_config(data)
 
     require(
         failures,
         check,
-        dev_dependencies is not None
-        and any(_requirement_name(requirement) == "deptry" for requirement in dev_dependencies),
+        cfg.dev_dependencies is not None
+        and any(
+            _requirement_name(requirement) == "deptry" for requirement in cfg.dev_dependencies
+        ),
         "pyproject.toml must add deptry to the dev dependency group",
     )
     require(
         failures,
         check,
-        deptry_keys == {"known_first_party", "per_rule_ignores"},
+        cfg.deptry_keys == {"known_first_party", "per_rule_ignores"},
         "pyproject.toml must keep [tool.deptry] small and explicit",
     )
     require(
         failures,
         check,
-        known_first_party == ["oaknational"],
+        cfg.known_first_party == ["oaknational"],
         "pyproject.toml must configure deptry to treat the Oak namespace as first party",
     )
     require(
         failures,
         check,
-        per_rule_ignore_keys == {"DEP002"},
+        cfg.per_rule_ignore_keys == {"DEP002"},
         "pyproject.toml must limit deptry per-rule ignores to the single DEP002 exception",
     )
     require(
         failures,
         check,
-        dep002_ignores == ["pyarrow"],
+        cfg.dep002_ignores == ["pyarrow"],
         "pyproject.toml must document the single DEP002 ignore for pyarrow",
     )
 
@@ -1899,21 +1947,29 @@ class _TestPatchHelperVisitor(ast.NodeVisitor):
         if "monkeypatch" in argument_names:
             self.violations.append("monkeypatch fixture")
 
+    @staticmethod
+    def _imported_as(names: list[ast.alias], target: str) -> str | None:
+        """Return the bound name if *target* appears in *names*, else ``None``."""
+        for alias in names:
+            if alias.name == target:
+                return alias.asname or alias.name
+        return None
+
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module == "pytest":
-            for alias in node.names:
-                if alias.name == "MonkeyPatch":
-                    self.monkeypatch_type_names.add(alias.asname or alias.name)
-                    self.violations.append("pytest.MonkeyPatch")
+            found = self._imported_as(node.names, "MonkeyPatch")
+            if found:
+                self.monkeypatch_type_names.add(found)
+                self.violations.append("pytest.MonkeyPatch")
         if node.module == "unittest.mock":
-            for alias in node.names:
-                if alias.name == "patch":
-                    self.patch_names.add(alias.asname or alias.name)
-                    self.violations.append("unittest.mock.patch")
+            found = self._imported_as(node.names, "patch")
+            if found:
+                self.patch_names.add(found)
+                self.violations.append("unittest.mock.patch")
         if node.module == "unittest":
-            for alias in node.names:
-                if alias.name == "mock":
-                    self.unittest_mock_module_names.add(alias.asname or alias.name)
+            found = self._imported_as(node.names, "mock")
+            if found:
+                self.unittest_mock_module_names.add(found)
         self.generic_visit(node)
 
     def visit_Attribute(self, node: ast.Attribute) -> None:

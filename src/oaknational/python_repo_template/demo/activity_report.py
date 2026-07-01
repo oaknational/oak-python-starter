@@ -267,9 +267,7 @@ def main(
                 f"Prepared {len(frame.index)} rows at {args.output}.",
                 file=output,
             )
-            return 0
-
-        if args.command == "report":
+        elif args.command == "report":
             frame = load_activity_log(
                 args.input,
                 csv_loader=csv_loader,
@@ -287,12 +285,13 @@ def main(
             print(render_summary(summary, metadata), file=output)
             if args.chart is not None:
                 chart_writer(summary, metadata, args.chart)
-            return 0
+        else:
+            msg = f"Unsupported command: {args.command!r}"
+            raise SystemExit(msg)
     except ActivityDataError as exc:
         parser.exit(status=2, message=f"{exc}\n")
 
-    msg = f"Unsupported command: {args.command!r}"
-    raise SystemExit(msg)
+    return 0
 
 
 def _chart_title(metadata: ActivityMetadata | None) -> str:
