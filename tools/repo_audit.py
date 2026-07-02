@@ -22,6 +22,7 @@ REPO_AUDIT_CONTRACT_PATH = REPO_ROOT / "tools" / "repo_audit_contract.toml"
 HOOK_RUNTIME_COMMAND = "uv run python tools/agent_hooks.py"
 QUALITY_GATES_ENTRY = f"{REPO_LOCAL_DEVTOOLS_COMMAND} check-ci"
 CHECK_COMMAND = f"{REPO_LOCAL_DEVTOOLS_COMMAND} check"
+DEPTRY_COMMAND = "uv run deptry ."
 CURSOR_SESSION_START_COMMAND = f"{HOOK_RUNTIME_COMMAND} --platform cursor --event session-start"
 CURSOR_PRE_TOOL_COMMAND = f"{HOOK_RUNTIME_COMMAND} --platform cursor --event pre-tool"
 CLAUDE_SESSION_START_COMMAND = (
@@ -100,13 +101,16 @@ EXPECTED_HOOK_SUPPORT = {
     "GitHub": "portable",
 }
 AuditFunction = Callable[[Path], list[str]]
+_README_MD = "README.md"
+_PYPROJECT_TOML = "pyproject.toml"
+_DEV_TOOLING_MD = "docs/dev-tooling.md"
 REQUIRED_PATHS = [
-    "README.md",
+    _README_MD,
     "LICENCE",
     "SECURITY.md",
     ".github/workflows/ci.yml",
     ".pre-commit-config.yaml",
-    "pyproject.toml",
+    _PYPROJECT_TOML,
     "pyrightconfig.json",
     "AGENTS.md",
     "CLAUDE.md",
@@ -178,7 +182,7 @@ REQUIRED_PATHS = [
     "data/fixtures/activity_log.metadata.yaml",
     "docs/architecture-decision-records/ADR-0001-cross-platform-practice-surface-contract.md",
     "docs/explorations/README.md",
-    "docs/dev-tooling.md",
+    _DEV_TOOLING_MD,
 ]
 
 
@@ -285,7 +289,7 @@ def _load_yaml(path: Path, failures: list[str], check: str) -> object | None:
 
 
 def _load_pyproject(root: Path, failures: list[str], check: str) -> dict[str, object] | None:
-    return _load_toml(root / "pyproject.toml", failures, check)
+    return _load_toml(root / _PYPROJECT_TOML, failures, check)
 
 
 def _load_gate_contract(root: Path, failures: list[str], check: str) -> dict[str, object] | None:
@@ -460,7 +464,7 @@ def audit_entry_surfaces(root: Path) -> list[str]:
 def audit_identity(root: Path) -> list[str]:
     check = "repo-identity"
     failures: list[str] = []
-    readme = read_text(root / "README.md", failures, check)
+    readme = read_text(root / _README_MD, failures, check)
     pyproject = _load_pyproject(root, failures, check)
     agent = read_text(root / ".agent/directives/AGENT.md", failures, check)
     if readme is not None:
@@ -503,7 +507,7 @@ def audit_identity(root: Path) -> list[str]:
             "practice-core/practice-verification.md" in practice_index
             and "memory/operational/repo-continuity.md" in practice_index
             and "plans/high-level-plan.md" in practice_index
-            and "docs/dev-tooling.md" in practice_index,
+            and _DEV_TOOLING_MD in practice_index,
             "Practice Index must expose verification, continuity, planning, and tooling surfaces",
         )
     return failures
@@ -746,7 +750,7 @@ def audit_release_workflow(root: Path) -> list[str]:
                 ".github/workflows/release.yml must define a top-level mapping",
             )
 
-    data = _load_toml(root / "pyproject.toml", failures, check)
+    data = _load_toml(root / _PYPROJECT_TOML, failures, check)
     if data is not None:
         tool = _object_mapping(data.get("tool"))
         commitizen = _object_mapping(tool.get("commitizen")) if tool is not None else None
@@ -1020,7 +1024,7 @@ def audit_secret_scanning(root: Path) -> list[str]:
             ),
         )
 
-    readme = read_text(root / "README.md", failures, check)
+    readme = read_text(root / _README_MD, failures, check)
     if readme is not None:
         require(
             failures,
@@ -1037,7 +1041,7 @@ def audit_secret_scanning(root: Path) -> list[str]:
                 "instructions (github.com/gitleaks/gitleaks)"
             ),
         )
-    tooling_doc = read_text(root / "docs/dev-tooling.md", failures, check)
+    tooling_doc = read_text(root / _DEV_TOOLING_MD, failures, check)
     if tooling_doc is not None:
         require(
             failures,
@@ -1266,7 +1270,7 @@ def audit_commit_workflow(root: Path) -> list[str]:
             ".pre-commit-config.yaml must enforce commit messages with Commitizen at commit-msg",
         )
 
-    readme = read_text(root / "README.md", failures, check)
+    readme = read_text(root / _README_MD, failures, check)
     if readme is not None:
         require(
             failures,
@@ -1277,7 +1281,7 @@ def audit_commit_workflow(root: Path) -> list[str]:
             "README must document hook installation plus Commitizen commit creation and validation",
         )
 
-    tooling_doc = read_text(root / "docs/dev-tooling.md", failures, check)
+    tooling_doc = read_text(root / _DEV_TOOLING_MD, failures, check)
     if tooling_doc is not None:
         require(
             failures,
@@ -1715,7 +1719,7 @@ def audit_dependency_hygiene(root: Path) -> list[str]:
     check = "dependency-hygiene"
     failures: list[str] = []
     contract = _load_gate_contract(root, failures, check)
-    pyproject_path = root / "pyproject.toml"
+    pyproject_path = root / _PYPROJECT_TOML
     data = _load_toml(pyproject_path, failures, check)
     if contract is None or data is None:
         return failures
@@ -1771,12 +1775,12 @@ def audit_dependency_hygiene(root: Path) -> list[str]:
         "pyproject.toml must document the single DEP002 ignore for pyarrow",
     )
 
-    readme = read_text(root / "README.md", failures, check)
+    readme = read_text(root / _README_MD, failures, check)
     if readme is not None:
         require(
             failures,
             check,
-            "uv run deptry ." in readme and "dependency hygiene" in readme.lower(),
+            DEPTRY_COMMAND in readme and "dependency hygiene" in readme.lower(),
             "README must document the direct deptry command and aggregate dependency-hygiene gate",
         )
         require(
@@ -1786,12 +1790,12 @@ def audit_dependency_hygiene(root: Path) -> list[str]:
             "README must document the pip-audit dependency-vulnerability scan",
         )
 
-    tooling_doc = read_text(root / "docs/dev-tooling.md", failures, check)
+    tooling_doc = read_text(root / _DEV_TOOLING_MD, failures, check)
     if tooling_doc is not None:
         require(
             failures,
             check,
-            "deptry" in tooling_doc and "uv run deptry ." in tooling_doc,
+            "deptry" in tooling_doc and DEPTRY_COMMAND in tooling_doc,
             "docs/dev-tooling.md must document deptry and its direct command surface",
         )
         require(
@@ -1806,7 +1810,7 @@ def audit_dependency_hygiene(root: Path) -> list[str]:
         require(
             failures,
             check,
-            "dependency hygiene" in gates_command.lower() and "uv run deptry ." in gates_command,
+            "dependency hygiene" in gates_command.lower() and DEPTRY_COMMAND in gates_command,
             ".agent/commands/gates.md must document the dependency-hygiene gate",
         )
         require(
@@ -1980,12 +1984,13 @@ def _audit_skill_parity(root: Path) -> list[str]:
     canonical = {
         path.parent.name for path in (root / ".agent/skills").glob("*/SKILL.md") if path.is_file()
     }
+    skill_suffix = "/SKILL.md"
     families = [
-        (".agents/skills", "", "/SKILL.md"),
-        (".claude/skills", "", "/SKILL.md"),
-        (".cursor/skills", "", "/SKILL.md"),
-        (".gemini/skills", "", "/SKILL.md"),
-        (".github/skills", "", "/SKILL.md"),
+        (".agents/skills", "", skill_suffix),
+        (".claude/skills", "", skill_suffix),
+        (".cursor/skills", "", skill_suffix),
+        (".gemini/skills", "", skill_suffix),
+        (".github/skills", "", skill_suffix),
     ]
     for directory, prefix, suffix in families:
         for name in canonical:
