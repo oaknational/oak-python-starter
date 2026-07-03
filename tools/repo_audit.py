@@ -19,9 +19,12 @@ DEVTOOLS_MODULE = "oaknational.python_repo_template.devtools"
 ACTIVITY_REPORT_TARGET = "oaknational.python_repo_template.demo.activity_report:main"
 REPO_LOCAL_DEVTOOLS_COMMAND = "uv run python -m oaknational.python_repo_template.devtools"
 REPO_AUDIT_CONTRACT_PATH = REPO_ROOT / "tools" / "repo_audit_contract.toml"
+PRE_COMMIT_CONFIG_YAML = ".pre-commit-config.yaml"
 HOOK_RUNTIME_COMMAND = "uv run python tools/agent_hooks.py"
 QUALITY_GATES_ENTRY = f"{REPO_LOCAL_DEVTOOLS_COMMAND} check-ci"
 CHECK_COMMAND = f"{REPO_LOCAL_DEVTOOLS_COMMAND} check"
+CZ_COMMIT_COMMAND = "uv run cz commit"
+CZ_CHECK_COMMAND = "uv run cz check"
 CURSOR_SESSION_START_COMMAND = f"{HOOK_RUNTIME_COMMAND} --platform cursor --event session-start"
 CURSOR_PRE_TOOL_COMMAND = f"{HOOK_RUNTIME_COMMAND} --platform cursor --event pre-tool"
 CLAUDE_SESSION_START_COMMAND = (
@@ -105,7 +108,7 @@ REQUIRED_PATHS = [
     "LICENCE",
     "SECURITY.md",
     ".github/workflows/ci.yml",
-    ".pre-commit-config.yaml",
+    PRE_COMMIT_CONFIG_YAML,
     "pyproject.toml",
     "pyrightconfig.json",
     "AGENTS.md",
@@ -979,7 +982,7 @@ def audit_secret_scanning(root: Path) -> list[str]:
             ".gitleaks.toml must extend the default ruleset with useDefault = true",
         )
 
-    pre_commit = _load_yaml(root / ".pre-commit-config.yaml", failures, check)
+    pre_commit = _load_yaml(root / PRE_COMMIT_CONFIG_YAML, failures, check)
     pre_commit_mapping = _object_mapping(pre_commit)
     repos = (
         _object_list(pre_commit_mapping.get("repos")) if pre_commit_mapping is not None else None
@@ -1209,7 +1212,7 @@ def audit_commit_workflow(root: Path) -> list[str]:
         "pyproject.toml must configure Commitizen to use the uv version provider",
     )
 
-    pre_commit_config = _load_yaml(root / ".pre-commit-config.yaml", failures, check)
+    pre_commit_config = _load_yaml(root / PRE_COMMIT_CONFIG_YAML, failures, check)
     pre_commit_mapping = _object_mapping(pre_commit_config)
     require(
         failures,
@@ -1272,8 +1275,8 @@ def audit_commit_workflow(root: Path) -> list[str]:
             failures,
             check,
             "uv run pre-commit install" in readme
-            and "uv run cz commit" in readme
-            and "uv run cz check" in readme,
+            and CZ_COMMIT_COMMAND in readme
+            and CZ_CHECK_COMMAND in readme,
             "README must document hook installation plus Commitizen commit creation and validation",
         )
 
@@ -1283,8 +1286,8 @@ def audit_commit_workflow(root: Path) -> list[str]:
             failures,
             check,
             "commitizen" in tooling_doc
-            and "uv run cz commit" in tooling_doc
-            and "uv run cz check" in tooling_doc,
+            and CZ_COMMIT_COMMAND in tooling_doc
+            and CZ_CHECK_COMMAND in tooling_doc,
             "docs/dev-tooling.md must document the Commitizen workflow",
         )
 
@@ -1293,7 +1296,7 @@ def audit_commit_workflow(root: Path) -> list[str]:
         require(
             failures,
             check,
-            "uv run cz commit" in commit_command and "uv run cz check" in commit_command,
+            CZ_COMMIT_COMMAND in commit_command and CZ_CHECK_COMMAND in commit_command,
             (
                 ".agent/commands/commit.md must direct commit creation and validation "
                 "through Commitizen"
@@ -1861,6 +1864,10 @@ def _test_patch_helper_violations(tree: ast.AST) -> list[str]:
     return visitor.violations
 
 
+_PYTEST_MONKEYPATCH = "pytest.MonkeyPatch"
+_UNITTEST_MOCK_PATCH = "unittest.mock.patch"
+
+
 class _TestPatchHelperVisitor(ast.NodeVisitor):
     def __init__(self) -> None:
         self.violations: list[str] = []
@@ -1904,12 +1911,12 @@ class _TestPatchHelperVisitor(ast.NodeVisitor):
             for alias in node.names:
                 if alias.name == "MonkeyPatch":
                     self.monkeypatch_type_names.add(alias.asname or alias.name)
-                    self.violations.append("pytest.MonkeyPatch")
+                    self.violations.append(_PYTEST_MONKEYPATCH)
         if node.module == "unittest.mock":
             for alias in node.names:
                 if alias.name == "patch":
                     self.patch_names.add(alias.asname or alias.name)
-                    self.violations.append("unittest.mock.patch")
+                    self.violations.append(_UNITTEST_MOCK_PATCH)
         if node.module == "unittest":
             for alias in node.names:
                 if alias.name == "mock":
@@ -1923,25 +1930,25 @@ class _TestPatchHelperVisitor(ast.NodeVisitor):
             module_names=self.pytest_module_names,
             attribute_name="MonkeyPatch",
         ):
-            self.violations.append("pytest.MonkeyPatch")
+            self.violations.append(_PYTEST_MONKEYPATCH)
         if _matches_attribute_path(
             attribute_path,
             module_names=self.unittest_mock_module_names,
             attribute_name="patch",
         ):
-            self.violations.append("unittest.mock.patch")
+            self.violations.append(_UNITTEST_MOCK_PATCH)
         if any(
             attribute_path == f"{module_name}.mock.patch"
             for module_name in self.unittest_module_names
         ):
-            self.violations.append("unittest.mock.patch")
+            self.violations.append(_UNITTEST_MOCK_PATCH)
         self.generic_visit(node)
 
     def visit_Name(self, node: ast.Name) -> None:
         if node.id in self.monkeypatch_type_names:
-            self.violations.append("pytest.MonkeyPatch")
+            self.violations.append(_PYTEST_MONKEYPATCH)
         if node.id in self.patch_names:
-            self.violations.append("unittest.mock.patch")
+            self.violations.append(_UNITTEST_MOCK_PATCH)
         self.generic_visit(node)
 
 
