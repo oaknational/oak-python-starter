@@ -1,3 +1,10 @@
+## v0.7.0 (2026-11-02)
+
+### Fix
+
+- **ci**: lock every uv invocation, refuse source builds, keep downloads on HTTPS
+- **deps**: refresh locked dependencies and pinned Actions to clear open advisories
+
 ## v0.6.1 (2026-06-30)
 
 ## v0.6.0 (2026-06-30)
