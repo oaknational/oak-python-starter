@@ -796,6 +796,95 @@ jobs:
     assert subject.audit_ci_workflow(tmp_path) == []
 
 
+def test_audit_ci_workflow_accepts_uv_run_options_before_the_gate_command(tmp_path: Path) -> None:
+    workflow_path = tmp_path / ".github" / "workflows" / "ci.yml"
+
+    # Lock-enforcing and no-build flags harden the same gate; they are not a
+    # different command.
+    _write(
+        workflow_path,
+        """
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: uv sync --locked --no-build
+      - run: uv run --locked --no-build python -m oaknational.python_repo_template.devtools check-ci
+""",
+    )
+
+    assert subject.audit_ci_workflow(tmp_path) == []
+
+
+def test_audit_ci_workflow_rejects_another_devtools_command_behind_uv_run_options(
+    tmp_path: Path,
+) -> None:
+    workflow_path = tmp_path / ".github" / "workflows" / "ci.yml"
+
+    # Options must not let a weaker command stand in for the CI gate sequence.
+    _write(
+        workflow_path,
+        """
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: uv run --locked --no-build python -m oaknational.python_repo_template.devtools check
+""",
+    )
+
+    assert "must run the CI gate sequence" in "\n".join(subject.audit_ci_workflow(tmp_path))
+
+    # Nor may a longer command name that merely starts with the gate's name.
+    _write(
+        workflow_path,
+        """
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: uv run --locked python -m oaknational.python_repo_template.devtools check-ci-extra
+""",
+    )
+
+    assert "must run the CI gate sequence" in "\n".join(subject.audit_ci_workflow(tmp_path))
+
+
+def test_audit_ci_workflow_accepts_the_gate_command_inside_shell_syntax(tmp_path: Path) -> None:
+    workflow_path = tmp_path / ".github" / "workflows" / "ci.yml"
+
+    # Shell punctuation after the command (a closing subshell, a separator)
+    # still ends the gate command; it does not lengthen its name.
+    _write(
+        workflow_path,
+        """
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "$(uv run --locked python -m oaknational.python_repo_template.devtools check-ci)"
+""",
+    )
+
+    assert subject.audit_ci_workflow(tmp_path) == []
+
+
 def test_audit_ci_workflow_reports_missing_triggers_independently(tmp_path: Path) -> None:
     workflow_path = tmp_path / ".github" / "workflows" / "ci.yml"
 
