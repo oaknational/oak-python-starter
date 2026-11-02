@@ -865,8 +865,9 @@ jobs:
 def test_audit_ci_workflow_accepts_the_gate_command_inside_shell_syntax(tmp_path: Path) -> None:
     workflow_path = tmp_path / ".github" / "workflows" / "ci.yml"
 
-    # Shell punctuation after the command (a closing subshell, a separator)
-    # still ends the gate command; it does not lengthen its name.
+    # Shell punctuation after the command (here an `&&` list, which keeps the
+    # gate's failing exit status) ends the gate command; it does not lengthen
+    # its name.
     _write(
         workflow_path,
         """
@@ -878,7 +879,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "$(uv run --locked python -m oaknational.python_repo_template.devtools check-ci)"
+      - run: uv run python -m oaknational.python_repo_template.devtools check-ci&& echo ok
 """,
     )
 
