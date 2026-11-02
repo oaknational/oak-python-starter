@@ -21,6 +21,16 @@ REPO_LOCAL_DEVTOOLS_COMMAND = "uv run python -m oaknational.python_repo_template
 REPO_AUDIT_CONTRACT_PATH = REPO_ROOT / "tools" / "repo_audit_contract.toml"
 HOOK_RUNTIME_COMMAND = "uv run python tools/agent_hooks.py"
 QUALITY_GATES_ENTRY = f"{REPO_LOCAL_DEVTOOLS_COMMAND} check-ci"
+# CI may harden the same gate invocation with `uv run` flags (for example
+# `--locked --no-build`); the command after the flags must still be exact.
+# Flags must use the `--flag` or `--flag=value` form: a separate value token
+# is indistinguishable from the command. The gate name must not continue into
+# a longer command name, but shell punctuation may follow it.
+QUALITY_GATES_INVOCATION = re.compile(
+    r"\buv run(?:\s+-\S+)*\s+"
+    + re.escape(QUALITY_GATES_ENTRY.removeprefix("uv run "))
+    + r"(?![\w-])"
+)
 CHECK_COMMAND = f"{REPO_LOCAL_DEVTOOLS_COMMAND} check"
 CURSOR_SESSION_START_COMMAND = f"{HOOK_RUNTIME_COMMAND} --platform cursor --event session-start"
 CURSOR_PRE_TOOL_COMMAND = f"{HOOK_RUNTIME_COMMAND} --platform cursor --event pre-tool"
@@ -678,7 +688,9 @@ def audit_ci_workflow(root: Path) -> list[str]:
     require(
         failures,
         check,
-        any(QUALITY_GATES_ENTRY in command for command in _workflow_run_commands(mapping)),
+        any(
+            QUALITY_GATES_INVOCATION.search(command) for command in _workflow_run_commands(mapping)
+        ),
         f".github/workflows/ci.yml must run the CI gate sequence via `{QUALITY_GATES_ENTRY}`",
     )
     return failures

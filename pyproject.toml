@@ -5,11 +5,11 @@ description = "Reusable Oak Python template with agent infrastructure, strict qu
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-  "pandas>=3.0.3",
-  "numpy>=2.5.0",
-  "pyarrow>=24.0.0",
+  "pandas>=3.1.0",
+  "numpy>=2.5.4",
+  "pyarrow>=26.0.0",
   "pyyaml>=6.0.3",
-  "matplotlib>=3.11.0",
+  "matplotlib>=3.11.2",
   "requests>=2.34.2",
 ]
 license = "MIT"
@@ -61,20 +61,20 @@ bump_map_major_version_zero = { "^feat" = "MINOR", "^fix" = "MINOR", "^.+" = "PA
 
 [dependency-groups]
 dev = [
-  "pytest>=9.1.1",
+  "pytest>=9.2.0",
   "pytest-cov>=7.1.0",
-  "hypothesis>=6.155.7",
-  "pyright>=1.1.411",
-  "ruff>=0.15.20",
-  "pre-commit>=4.6.0",
-  "commitizen>=4.16.4",
+  "hypothesis>=6.170.14",
+  "pyright>=1.1.414",
+  "ruff>=0.17.3",
+  "pre-commit>=4.7.0",
+  "commitizen>=4.19.3",
   "deptry>=0.25.1",
-  "import-linter>=2.12",
-  "pandas-stubs>=3.0.3.260530",
-  "types-requests>=2.33.0.20260518",
-  "pymarkdownlnt>=0.9.38",
-  "pip-audit>=2.7.3",
-  "codespell>=2.3.0",
+  "import-linter>=2.15",
+  "pandas-stubs>=3.1.0.261029",
+  "types-requests>=2.33.0.20261030",
+  "pymarkdownlnt>=0.9.41",
+  "pip-audit>=2.10.1",
+  "codespell>=2.4.3",
 ]
 
 [tool.deptry]

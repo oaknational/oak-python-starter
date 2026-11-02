@@ -42,27 +42,27 @@ jobs:
       # bypass actor on the `main` ruleset, so the bump commit + tag push through.
       - name: Generate the release-bot token
         id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Check out full history and tags
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           # Keep the bot token in the git config so `git push` to protected main
           # is authenticated as the bypass actor.
           token: ${{ steps.app-token.outputs.token }}
 
+      # No explicit `enable-cache`: setup-uv's default (`auto`) disables the
+      # cache on `workflow_run`, guarding this privileged job (bypass token,
+      # direct push to main) against cache poisoning. Do not set it to true.
       - name: Install uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
-        with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
 
       - name: Sync the locked environment
-        run: uv sync --locked
+        run: uv sync --locked --no-build
 
       - name: Configure the bot git identity
         run: |
@@ -73,13 +73,13 @@ jobs:
         id: increment
         run: |
           set -euo pipefail
-          version=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          version=$(uv run --locked --no-build python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
           prev="v${version}"
           echo "previous=${prev}" >> "$GITHUB_OUTPUT"
           if git rev-parse -q --verify "refs/tags/${prev}" >/dev/null; then
             # cz_conventional_commits ignores [tool.commitizen].bump_map, so we
             # compute the increment from that single policy source ourselves.
-            increment="$(git log "${prev}..HEAD" --pretty=format:'%B%x00' | uv run python tools/release_increment.py)"
+            increment="$(git log "${prev}..HEAD" --pretty=format:'%B%x00' | uv run --locked --no-build python tools/release_increment.py)"
           else
             # The committed version is not tagged yet (a fresh fork of this
             # template): release it as-is so the adopter's first version is the
@@ -119,10 +119,10 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${MODE}" = "bump" ]; then
-            uv run cz bump --increment "${INCREMENT}" --changelog --files-only --yes
+            uv run --locked --no-build cz bump --increment "${INCREMENT}" --changelog --files-only --yes
             # Regenerate the lock so its project version matches the bump.
             uv lock
-            version=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+            version=$(uv run --locked --no-build python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
             if [ -z "${version}" ]; then echo "could not read the bumped version"; exit 1; fi
             # `[skip ci]` stops the bump push re-triggering CI -> Release (a loop).
             git add pyproject.toml uv.lock CHANGELOG.md
@@ -132,7 +132,7 @@ jobs:
             git push origin "v${version}"
           else
             # bootstrap: tag the committed version as-is (no bump, no commit).
-            version=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+            version=$(uv run --locked --no-build python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
             git tag -a "v${version}" -m "v${version}"
             git push origin "v${version}"
           fi
@@ -150,7 +150,7 @@ jobs:
           tag="v${VERSION}"
           uv build
           notes="$(mktemp)"
-          if uv run cz changelog --dry-run "${VERSION}" > "${notes}" 2>/dev/null && [ -s "${notes}" ]; then
+          if uv run --locked --no-build cz changelog --dry-run "${VERSION}" > "${notes}" 2>/dev/null && [ -s "${notes}" ]; then
             gh release create "${tag}" --title "${tag}" --notes-file "${notes}" ./dist/*
           else
             gh release create "${tag}" --title "${tag}" --generate-notes ./dist/*

@@ -58,7 +58,7 @@ composition root explicitly.
 
 **2026-04-17 Sentry L-0b close — `satisfies` gate overclaim**
 (commit `d08c6969`). The first session plan asserted that a
-TypeScript `satisfies readonly (keyof NodeOptions)[]` check would
+TypeScript `satisfies ReadonlyArray<keyof NodeOptions>` check would
 "fail the build when a new hook is added to `NodeOptions`." It
 would not — the `satisfies` constraint only validates that each
 listed name is a valid `NodeOptions` key, not that every
