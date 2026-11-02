@@ -1,5 +1,55 @@
 # Napkin
 
+## Session: 2026-11-02 — one dependency PR replaces six Dependabot PRs (#74)
+
+### What Was Done
+
+- **#74** cleared all 88 Dependabot alerts (100 pip-audit findings):
+  - `uv lock --upgrade`, which brought certifi 2026.10.23 (eMudhra roots
+    removed) and Pillow 13.
+  - Floors raised to the locked versions, following `7bd58c1`.
+  - Actions moved to their latest tags, each SHA resolved from its tag. That
+    included setup-uv v8 → v10.3.3; the release job now takes v10's default,
+    which disables the cache on `workflow_run`.
+- It replaced Dependabot PRs #64, #65, #70, #71, #72 and #73.
+- Hardened the CI `uv` and `curl` calls for Sonar rules S8544, S8541 and
+  S6506 (`--locked --no-build`, `--proto "=https"`). `audit_ci_workflow` now
+  accepts `uv run` flags before an exact gate command (test-first).
+- Restored a stray uncommitted PDR-017 edit, which said "second-consumer-side",
+  to the canonical "Third consumer-side".
+- Removed the last local absolute path from the 2026-04-23 napkin archive.
+- Merged #74 and closed the six Dependabot PRs. Release v0.7.0 ran on the
+  hardened `release.yml`, and open Dependabot alerts are now 0.
+
+### Surprises & corrections (critically assess)
+
+- **Owner word (2026-11-02):** the Copilot code review may be waived on this
+  repo. The ruleset only auto-requests it on push, and no approval is
+  required. Do not wait on it before merging.
+- **pip-audit in the commit hook blocks every commit once advisories pile up
+  on `main`.** A docs-only commit could not land before the dependency fix.
+  When `main` is red on pip-audit, the dependency PR goes first.
+- **pymarkdownlnt 0.9.40+ flags MD011 inside inline code spans.** A code
+  span holding a parenthesised term followed by empty square brackets is
+  reported as a reversed link; it is clean on 0.9.38 and 0.9.39.
+  Fixed at source by spelling the type `ReadonlyArray<…>`. Do not suppress it.
+- **Sonar GitHub Actions rules (enabled 2026-04-28) only surface when a PR
+  touches a workflow file.** That first PR inherits every finding in the
+  file. The Sonar MCP issue search returned none for PR #74, while the public
+  `api/issues/search?componentKeys=…&pullRequest=74` listed all 19, so
+  cross-check with the API when the gate fails with no visible issues.
+- **`--no-build` does not block the first-party project, even after a
+  bump.** Codex claimed both the CI sync and the post-bump release `uv run`
+  would fail. Both claims were refuted: the CI log showed `Built
+  oaknational-python-repo-template` under `--no-build`, and an empty-cache
+  reproduction on uv 0.13.6 rebuilt the project at a bumped 0.6.2. Its P2 was
+  right: `echo "$(gate)"` masks the gate's exit status.
+- **An exact-spelling audit blocked a hardening change.** This is distilled's
+  "test the governance gap, never the config spelling", applied to an
+  existing audit.
+- macOS `sed` has no `\b`: an edit silently did nothing. Grep after every
+  sed edit.
+
 ## Session: 2026-06-18 (final+) — continuous release on merge (PR #44)
 
 ### What Was Done
